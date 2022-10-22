@@ -44,6 +44,16 @@
         },
         {
             "name": "com.unity.xr.oculus",
+            "expression": "[2.2-pre,3.0-pre)",
+            "define": "USING_QUEST_PRO_COMPATIBLE_OCULUS_XR_PLUGIN_VERSION"
+        },
+        {
+            "name": "com.unity.xr.oculus",
+            "expression": "3.2.1-pre",
+            "define": "USING_QUEST_PRO_COMPATIBLE_OCULUS_XR_PLUGIN_VERSION"
+        },
+        {
+            "name": "com.unity.xr.oculus",
             "expression": "1.12.0",
             "define": "OCULUS_XR_SYMMETRIC"
         },
