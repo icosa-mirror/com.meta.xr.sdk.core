@@ -63,6 +63,9 @@ namespace Meta.XR
             if (featureSetAndroid != null && !featureSetAndroid.isEnabled)
                 needEnable = true;
 
+			// Hack: Turn off this prompt
+			needEnable = false;
+
             if (needEnable && !unityRunningInBatchmode)
             {
                 bool result =
