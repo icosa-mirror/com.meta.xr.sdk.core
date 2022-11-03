@@ -62,6 +62,9 @@ namespace Oculus.XR
 			if (featureAndroid != null && !featureAndroid.enabled)
 				needEnable = true;
 
+			// Hack: Turn off this prompt
+			needEnable = false;
+
 			if (needEnable && !unityRunningInBatchmode)
 			{
 				bool result = EditorUtility.DisplayDialog("Enable OculusXR Feature", "OculusXR Feature must be enabled in OpenXR Feature Groups to support Oculus Utilities. Do you want to enable it now?", "Enable", "Cancel");
