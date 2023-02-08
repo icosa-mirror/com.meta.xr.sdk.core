@@ -22,7 +22,6 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
-[DefaultExecutionOrder(-90)]
 public class OVRHand : MonoBehaviour,
 	OVRSkeleton.IOVRSkeletonDataProvider,
 	OVRSkeletonRenderer.IOVRSkeletonRendererDataProvider,
@@ -198,6 +197,7 @@ public class OVRHand : MonoBehaviour,
 
 		return data;
 	}
+
 
 	OVRMesh.MeshType OVRMesh.IOVRMeshDataProvider.GetMeshType()
 	{

@@ -27,7 +27,6 @@ using UnityEngine;
 /// <remarks>
 /// See <see cref="OVRPlugin.EyeGazeState"/> structure for list of eye state parameters.
 /// </remarks>
-[DefaultExecutionOrder(-80)]
 public class OVREyeGaze : MonoBehaviour
 {
     /// <summary>

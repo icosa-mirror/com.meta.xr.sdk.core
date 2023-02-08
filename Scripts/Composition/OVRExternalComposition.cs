@@ -210,6 +210,13 @@ public class OVRExternalComposition : OVRComposition
 			}
 #endif
 
+			// [Debug] Uncommenting the following code will put a cube on the external camera location for visualization
+			//GameObject cube = GameObject.CreatePrimitive(PrimitiveType.Cube);
+			//cube.transform.parent = foregroundCameraGameObject.transform;
+			//cube.transform.localPosition = Vector3.zero;
+			//cube.transform.localRotation = Quaternion.identity;
+			//cube.transform.localScale = Vector3.one * 0.1f;
+
 			previousMainCameraObject = mainCamera.gameObject;
 		}
 	}

@@ -149,6 +149,10 @@ public class OVRCameraRig : MonoBehaviour
 
         if (!useFixedUpdateForTracking)
             UpdateAnchors(true, true);
+
+#if DEVELOPMENT_BUILD || UNITY_EDITOR
+        CheckForAnchorsInParent();
+#endif
     }
 
     protected virtual void OnDestroy()
@@ -499,5 +503,27 @@ public class OVRCameraRig : MonoBehaviour
         Matrix4x4 ret = centerEyeAnchor.localToWorldMatrix * invHeadMatrix;
 
         return ret;
+    }
+
+    private void CheckForAnchorsInParent()
+    {
+        void Check<T>(Transform node) where T : MonoBehaviour
+        {
+            var anchor = node.GetComponent<T>();
+            if (anchor && anchor.enabled)
+            {
+                anchor.enabled = false;
+                Debug.LogError(
+                    $"The {typeof(T).Name} '{anchor.name}' is a parent of the {nameof(OVRCameraRig)} '{name}', which is not allowed. An {typeof(T).Name} may not be the parent of an {nameof(OVRCameraRig)} because the {nameof(OVRCameraRig)} defines the tracking space for the anchor, and its transform is relative to the {nameof(OVRCameraRig)}.");
+            }
+        }
+
+        var parent = transform.parent;
+        while (parent)
+        {
+            Check<OVRSpatialAnchor>(parent);
+            Check<OVRSceneAnchor>(parent);
+            parent = parent.parent;
+        }
     }
 }

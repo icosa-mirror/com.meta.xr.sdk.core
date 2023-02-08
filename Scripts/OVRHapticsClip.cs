@@ -19,6 +19,7 @@
  */
 
 using UnityEngine;
+using System;
 using System.Collections;
 
 /// <summary>
@@ -135,9 +136,17 @@ public class OVRHapticsClip
 
 	private void InitializeFromAudioFloatTrack(float[] sourceData, double sourceFrequency, int sourceChannelCount, int sourceChannel)
 	{
+		//If SampleRateHz == 0, most likely, controller is powered off.
+		//In this case, don't try to fill any sample data.
+		if (OVRHaptics.Config.SampleRateHz == 0)
+		{
+			Debug.Log("Unable to initialize a controller whose SampleRateHz is 0 now.");
+			return;
+		}
+
 		double stepSizePrecise = (sourceFrequency + 1e-6) / OVRHaptics.Config.SampleRateHz;
 
-		if (stepSizePrecise < 1.0)
+		if (stepSizePrecise < 1.0 || stepSizePrecise> Int32.MaxValue)
 			return;
 
 		int stepSize = (int)stepSizePrecise;

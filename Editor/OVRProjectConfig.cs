@@ -30,7 +30,7 @@ using UnityEngine.Serialization;
 #if UNITY_EDITOR
 [UnityEditor.InitializeOnLoad]
 #endif
-public class OVRProjectConfig : ScriptableObject
+public class OVRProjectConfig : ScriptableObject, ISerializationCallbackReceiver
 {
     public enum DeviceType
     {
@@ -112,9 +112,20 @@ public class OVRProjectConfig : ScriptableObject
 
     public bool requiresSystemKeyboard = false;
     public bool experimentalFeaturesEnabled = false;
-    public bool insightPassthroughEnabled = false;
-    public Texture2D systemSplashScreen;
 
+    [Obsolete("This value has no effect. Use " + nameof(insightPassthroughSupport) + " instead.")]
+    public bool insightPassthroughEnabled;
+
+    public FeatureSupport insightPassthroughSupport
+    {
+        get => _insightPassthroughSupport;
+        set => _insightPassthroughSupport = value;
+    }
+
+    [SerializeField]
+    internal FeatureSupport _insightPassthroughSupport = FeatureSupport.None;
+
+    public Texture2D systemSplashScreen;
 
 #if OVR_UNITY_PACKAGE_MANAGER
     // Store the checksum of native plugins to compare and prompt for editor restarts when changed
@@ -126,6 +137,20 @@ public class OVRProjectConfig : ScriptableObject
 #endif
 
     //public const string OculusProjectConfigAssetPath = "Assets/Oculus/OculusProjectConfig.asset";
+
+    private static OVRProjectConfig _cachedProjectConfig;
+    public static OVRProjectConfig CachedProjectConfig
+    {
+	    get
+	    {
+		    if (_cachedProjectConfig == null)
+		    {
+			    GetProjectConfig();
+		    }
+
+		    return _cachedProjectConfig;
+	    }
+    }
 
     static OVRProjectConfig()
     {
@@ -142,36 +167,41 @@ public class OVRProjectConfig : ScriptableObject
         EditorApplication.update -= Update;
     }
 
-    private static string GetOculusProjectConfigAssetPath()
+    internal static string ComputeOculusProjectAssetPath(string assetName)
     {
-        var so = ScriptableObject.CreateInstance(typeof(OVRPluginInfo));
-        var script = MonoScript.FromScriptableObject(so);
-        string assetPath = AssetDatabase.GetAssetPath(script);
-        string editorDir = Directory.GetParent(assetPath).FullName;
-        string ovrDir = Directory.GetParent(editorDir).FullName;
-        string oculusDir = Directory.GetParent(ovrDir).FullName;
+	    var so = ScriptableObject.CreateInstance(typeof(OVRPluginInfo));
+	    var script = MonoScript.FromScriptableObject(so);
+	    string assetPath = AssetDatabase.GetAssetPath(script);
+	    string editorDir = Directory.GetParent(assetPath).FullName;
+	    string ovrDir = Directory.GetParent(editorDir).FullName;
+	    string oculusDir = Directory.GetParent(ovrDir).FullName;
 
-        if (OVRPluginInfo.IsInsidePackageDistribution())
-        {
-            oculusDir = Path.GetFullPath(Path.Combine(Application.dataPath, "Oculus"));
-            if (!Directory.Exists(oculusDir))
-            {
-                Directory.CreateDirectory(oculusDir);
-            }
-        }
+	    if (OVRPluginInfo.IsInsidePackageDistribution())
+	    {
+		    oculusDir = Path.GetFullPath(Path.Combine(Application.dataPath, "Oculus"));
+		    if (!Directory.Exists(oculusDir))
+		    {
+			    Directory.CreateDirectory(oculusDir);
+		    }
+	    }
 
-        string configAssetPath = Path.GetFullPath(Path.Combine(oculusDir, "OculusProjectConfig.asset"));
-        Uri configUri = new Uri(configAssetPath);
-        Uri projectUri = new Uri(Application.dataPath);
-        Uri relativeUri = projectUri.MakeRelativeUri(configUri);
+	    string configAssetPath = Path.GetFullPath(Path.Combine(oculusDir, assetName));
+	    Uri configUri = new Uri(configAssetPath);
+	    Uri projectUri = new Uri(Application.dataPath);
+	    Uri relativeUri = projectUri.MakeRelativeUri(configUri);
 
-        return relativeUri.ToString();
+	    return relativeUri.ToString();
     }
 
-    public static OVRProjectConfig GetProjectConfig()
+    private static string ComputeOculusProjectConfigAssetPath()
+    {
+	    return ComputeOculusProjectAssetPath("OculusProjectConfig.asset");
+    }
+
+    public static OVRProjectConfig GetProjectConfig(bool create = true)
     {
         OVRProjectConfig projectConfig = null;
-        string oculusProjectConfigAssetPath = GetOculusProjectConfigAssetPath();
+        string oculusProjectConfigAssetPath = ComputeOculusProjectConfigAssetPath();
         try
         {
             projectConfig = AssetDatabase.LoadAssetAtPath(oculusProjectConfigAssetPath, typeof(OVRProjectConfig)) as OVRProjectConfig;
@@ -180,9 +210,17 @@ public class OVRProjectConfig : ScriptableObject
         {
             Debug.LogWarningFormat("Unable to load ProjectConfig from {0}, error {1}", oculusProjectConfigAssetPath, e.Message);
         }
+
+        if (projectConfig == null && !create)
+        {
+	        _cachedProjectConfig = null;
+	        return null;
+        }
+
         // Initialize the asset only if a build is not currently running.
         if (projectConfig == null && !BuildPipeline.isBuildingPlayer)
         {
+	        Debug.LogFormat("Creating ProjectConfig at path {0}", oculusProjectConfigAssetPath);
             projectConfig = ScriptableObject.CreateInstance<OVRProjectConfig>();
             projectConfig.targetDeviceTypes = new List<DeviceType>();
             projectConfig.targetDeviceTypes.Add(DeviceType.Quest);
@@ -204,7 +242,7 @@ public class OVRProjectConfig : ScriptableObject
             projectConfig.skipUnneededShaders = false;
             projectConfig.requiresSystemKeyboard = false;
             projectConfig.experimentalFeaturesEnabled = false;
-            projectConfig.insightPassthroughEnabled = false;
+            projectConfig.insightPassthroughSupport = FeatureSupport.None;
             AssetDatabase.CreateAsset(projectConfig, oculusProjectConfigAssetPath);
         }
         // Force migration to Quest device if still on legacy GearVR/Go device type
@@ -224,16 +262,42 @@ public class OVRProjectConfig : ScriptableObject
                 projectConfig.targetDeviceTypes.Add(DeviceType.QuestPro);
             }
         }
+
+        _cachedProjectConfig = projectConfig;
         return projectConfig;
     }
 
     public static void CommitProjectConfig(OVRProjectConfig projectConfig)
     {
-        string oculusProjectConfigAssetPath = GetOculusProjectConfigAssetPath();
+        string oculusProjectConfigAssetPath = ComputeOculusProjectConfigAssetPath();
         if (AssetDatabase.GetAssetPath(projectConfig) != oculusProjectConfigAssetPath)
         {
             Debug.LogWarningFormat("The asset path of ProjectConfig is wrong. Expect {0}, get {1}", oculusProjectConfigAssetPath, AssetDatabase.GetAssetPath(projectConfig));
         }
         EditorUtility.SetDirty(projectConfig);
     }
+
+    void ISerializationCallbackReceiver.OnBeforeSerialize() { }
+
+    void ISerializationCallbackReceiver.OnAfterDeserialize()
+    {
+#pragma warning disable CS0618
+        // If it was previously enabled, map that to FeatureSupport.Required
+        if (insightPassthroughEnabled)
+        {
+            if (_insightPassthroughSupport == FeatureSupport.None)
+            {
+                _insightPassthroughSupport = FeatureSupport.Required;
+            }
+
+            insightPassthroughEnabled = false;
+        }
+#pragma warning restore CS0618
+    }
+}
+
+internal static class OVRProjectConfigExtensions
+{
+    public static string ToRequiredAttributeValue(this OVRProjectConfig.FeatureSupport value)
+        => value == OVRProjectConfig.FeatureSupport.Required ? "true" : "false";
 }

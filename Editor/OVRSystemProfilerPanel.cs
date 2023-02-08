@@ -54,7 +54,7 @@ public class OVRSystemProfilerPanel : EditorWindow {
 
 	string androidSdkRootPath;
 	OVRADBTool adbTool;
-	
+
 	private static GUIStyle odhCalloutBackgroundStyle;
 	private static GUIStyle odhCalloutTextStyle;
 
@@ -76,22 +76,22 @@ public class OVRSystemProfilerPanel : EditorWindow {
 			odhCalloutTextStyle.richText = true;
 			odhCalloutTextStyle.wordWrap = true;
 		}
-		
+
 		// ODH Callout Section
 		GUILayout.BeginHorizontal(odhCalloutBackgroundStyle);
 		var script = MonoScript.FromScriptableObject(this);
 		string assetPath = AssetDatabase.GetAssetPath(script);
 		string editorPath = Path.GetDirectoryName(assetPath);
-		string odhIconPath = Path.Combine(editorPath, "Textures\\odh_icon.png");
+		string odhIconPath = Path.Combine(editorPath, "Textures\\mqdh_icon.png");
 		Texture ODHIcon = (Texture)EditorGUIUtility.Load(odhIconPath);
 		GUILayout.Box(ODHIcon, GUILayout.Width(60.0f), GUILayout.Height(60.0f));
 
 		GUILayout.BeginVertical();
 
-		EditorGUILayout.LabelField("<b>This tool is deprecated.</b> Oculus recommends profiling builds through the Metrics section of "
-			+ "<b>Oculus Developer Hub</b>, a desktop companion tool that streamlines the Quest development workflow.",
+		EditorGUILayout.LabelField("<b>This tool is deprecated.</b> Profile builds through the Metrics section of "
+			+ "<b>Meta Quest Developer Hub</b>, a desktop companion tool that streamlines the Quest development workflow.",
 			odhCalloutTextStyle);
-		GUIContent ODHLabel = new GUIContent("Download Oculus Developer Hub");
+		GUIContent ODHLabel = new GUIContent("Download Meta Quest Developer Hub");
 #if UNITY_2021_1_OR_NEWER
 		if (EditorGUILayout.LinkButton(ODHLabel))
 #else
@@ -107,7 +107,7 @@ public class OVRSystemProfilerPanel : EditorWindow {
 		GUILayout.EndVertical();
 		GUILayout.EndHorizontal();
 		GUILayout.Space(15.0f);
-	
+
 		showAndroidOptions = EditorGUILayout.Foldout(showAndroidOptions, "Android Tools");
 
 		if (showAndroidOptions)

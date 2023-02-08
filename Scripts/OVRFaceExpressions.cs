@@ -29,7 +29,6 @@ using UnityEngine;
 /// <remarks>
 /// Refers to the <see cref="OVRFaceExpressions.FaceExpression"/> enum for the list of face expressions.
 /// </remarks>
-[DefaultExecutionOrder(-80)]
 public class OVRFaceExpressions : MonoBehaviour, IReadOnlyCollection<float>
 {
     /// <summary>
@@ -364,6 +363,7 @@ public class OVRFaceExpressions : MonoBehaviour, IReadOnlyCollection<float>
         UpperLidRaiserR = OVRPlugin.FaceExpression.Upper_Lid_Raiser_R,
         UpperLipRaiserL = OVRPlugin.FaceExpression.Upper_Lip_Raiser_L,
         UpperLipRaiserR = OVRPlugin.FaceExpression.Upper_Lip_Raiser_R,
+        [InspectorName("None")]
         Max = OVRPlugin.FaceExpression.Max
     }
 

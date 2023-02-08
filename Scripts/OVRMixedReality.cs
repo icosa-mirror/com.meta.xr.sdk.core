@@ -103,18 +103,9 @@ internal static class OVRMixedReality
 				currentComposition = new OVRExternalComposition(parentObject, mainCamera, configuration);
 			}
 		}
-#if UNITY_EDITOR_WIN || UNITY_STANDALONE_WIN
-		else if (configuration.compositionMethod == OVRManager.CompositionMethod.Direct)
-		{
-			if (currentComposition == null)
-			{
-				currentComposition = new OVRDirectComposition(parentObject, mainCamera, configuration);
-			}
-		}
-#endif
 		else
 		{
-			Debug.LogError("Unknown CompositionMethod : " + configuration.compositionMethod);
+			Debug.LogError("Unknown/Unsupported CompositionMethod : " + configuration.compositionMethod);
 			return;
 		}
 		currentComposition.Update(parentObject, mainCamera, configuration, trackingOrigin);

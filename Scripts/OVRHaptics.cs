@@ -155,6 +155,7 @@ public static class OVRHaptics
 		private uint m_controller = 0;
 		private OVRNativeBuffer m_nativeBuffer = new OVRNativeBuffer(OVRHaptics.Config.MaximumBufferSamplesCount * OVRHaptics.Config.SampleSizeInBytes);
 		private OVRHapticsClip m_paddingClip = new OVRHapticsClip();
+		private int PrevSampleRateHz = -1;
 
 		public OVRHapticsOutput(uint controller)
 		{
@@ -169,6 +170,17 @@ public static class OVRHaptics
 		/// </summary>
 		public void Process()
 		{
+			if (OVRHaptics.Config.SampleRateHz == 0)
+			{
+				if(PrevSampleRateHz != 0)
+				{
+					Debug.Log("Unable to process a controller whose SampleRateHz is 0 now.");
+					PrevSampleRateHz = 0;
+				}
+				return;
+			}
+			PrevSampleRateHz = OVRHaptics.Config.SampleRateHz;
+
 			// Resize the native buffer if the Config changes
 			if (m_nativeBuffer.GetCapacity() != Config.MaximumBufferSamplesCount * Config.SampleSizeInBytes)
 			{

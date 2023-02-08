@@ -28,7 +28,7 @@ using System;
 
 public class OVRRuntimeSettings : ScriptableObject
 {
-	public OVRManager.ColorSpace colorSpace = OVRManager.ColorSpace.Rift_CV1;
+	public OVRManager.ColorSpace colorSpace = OVRManager.ColorSpace.P3;
 
 #if UNITY_EDITOR
 	private static string GetOculusRuntimeSettingsAssetPath()

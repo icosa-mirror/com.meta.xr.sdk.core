@@ -22,6 +22,9 @@ using System;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEditor;
+#if USING_XR_SDK_OCULUS
+using Unity.XR.Oculus;
+#endif
 
 [CustomEditor(typeof(OVROverlay))]
 public class OVROverlayEditor : Editor
@@ -122,7 +125,7 @@ public class OVROverlayEditor : Editor
 	private SerializedProperty _propCompositionDepth;
 	private SerializedProperty _propNoDepthBufferTesting;
 	private SerializedProperty _propCurrentOverlayShape;
-	
+
 	private SerializedProperty _propUseLegacyCubemapRotation;
 	private SerializedProperty _propUseBicubicFiltering;
 	private SerializedProperty _propUseEfficientSupersample;
@@ -138,8 +141,8 @@ public class OVROverlayEditor : Editor
 	private SerializedProperty _propColorScale;
 	private SerializedProperty _propColorOffset;
 	private SerializedProperty _propPreviewInEditor;
-	
-	
+
+
 	private void Awake()
 	{
 		List<GUIContent> selectableShapeNameList = new List<GUIContent>();
@@ -188,7 +191,7 @@ public class OVROverlayEditor : Editor
 		{
 			return;
 		}
-		
+
 		serializedObject.Update();
 
 		bool tmpEnableDepthBufferTest = !_propNoDepthBufferTesting.boolValue;
@@ -198,6 +201,18 @@ public class OVROverlayEditor : Editor
 		EditorGUILayout.PropertyField(_propCurrentOverlayType, new GUIContent("Overlay Type", "Whether this overlay should layer behind the scene or in front of it"));
 		EditorGUILayout.PropertyField(_propCompositionDepth, new GUIContent("Composition Depth", "Depth value used to sort OVROverlays in the scene, smaller value appears in front"));
 		tmpEnableDepthBufferTest = EditorGUILayout.Toggle(new GUIContent("Enable Depth Buffer Testing", "If true, will allow layer depth buffer compositing if the engine has \"Shared Depth Buffer\" enabled"), tmpEnableDepthBufferTest);
+
+#if USING_XR_SDK_OCULUS && UNITY_2021_3_OR_NEWER && OCULUS_XR_DEPTH_SUBMISSION
+		OculusSettings settings;
+		if(UnityEditor.EditorBuildSettings.TryGetConfigObject<OculusSettings>("Unity.XR.Oculus.Settings", out settings))
+		{
+			bool eyebufferDepthSubmission = settings.DepthSubmission;
+			if (tmpEnableDepthBufferTest && !eyebufferDepthSubmission)
+			{
+				EditorGUILayout.HelpBox("Enabling depth testing for this layer will result in additional GPU cost during composition if depth submission is not enabled in the Oculus XR Plugin settings. Consider disabling depth testing and using composition depth instead if only testing between layers and not eye textures.", MessageType.Warning);
+			}
+		}
+#endif
 
 		EditorGUILayout.Space();
 		EditorGUILayout.LabelField(new GUIContent("Overlay Shape", "The shape of this overlay"), EditorStyles.boldLabel);
@@ -231,7 +246,7 @@ public class OVROverlayEditor : Editor
 			"Whether this layer should use an efficient super sample filter. This can help reduce flicker artifacts."));
 		EditorGUILayout.PropertyField(_propUseEfficientSharpen, new GUIContent("Sharpen",
 			"Whether this layer should use a sharpen filter. This amplifies contrast and fine details"));
-		
+
 		EditorGUILayout.Space();
 		EditorGUILayout.LabelField("Textures", EditorStyles.boldLabel);
 
@@ -274,7 +289,7 @@ public class OVROverlayEditor : Editor
 				overlay.textures[0] = left;
 			}
 			EditorGUILayout.EndVertical();
-			
+
 			EditorGUILayout.BeginVertical();
 			EditorGUILayout.LabelField(new GUIContent("Right Eye Texture", "Texture used for the right eye"), GUILayout.Width(120));
 			EditorGUI.BeginChangeCheck();
@@ -284,7 +299,7 @@ public class OVROverlayEditor : Editor
 				Undo.RecordObject(target, "Changed Right Texture");
 			}
 			EditorGUILayout.EndVertical();
-			
+
 			overlay.textures[1] = (right == overlay.textures[0]) ? null : right;
 
 			if (overlay.textures[1] == null)
@@ -306,7 +321,7 @@ public class OVROverlayEditor : Editor
 
 			bool lastOverrideTextureRectMatrix = !overlay.overrideTextureRectMatrix;
 			EditorGUILayout.PropertyField(_propOverrideTextureRectMatrix, new GUIContent("Use Default Rects", overlay.textures[1] == null ? "If you need to use a single texture as a stereo image, uncheck this box" : "Uncheck this box if you need to clip you textures or layer"));
-			
+
 			if (lastOverrideTextureRectMatrix)
 			{
 				sourceRectsVisible = EditorGUILayout.Foldout(sourceRectsVisible, new GUIContent("Source Rects", "What portion of the source texture will ultimately be shown in each eye."));
@@ -347,14 +362,14 @@ public class OVROverlayEditor : Editor
 					EditorGUI.BeginChangeCheck();
 					var srcRectLeft = Clamp01(EditorGUI.RectField(new Rect(rectControlRect.x, rectControlRect.y, rectControlRect.width / 2 - 20, rectControlRect.height), overlay.srcRectLeft));
 					var srcRectRight = Clamp01(EditorGUI.RectField(new Rect(rectControlRect.x + rectControlRect.width / 2, rectControlRect.y, rectControlRect.width / 2 - 20, rectControlRect.height), overlay.srcRectRight));
-					
+
 					if (EditorGUI.EndChangeCheck())
 					{
 						Undo.RecordObject(target, "Changed Source Rect");
 						overlay.srcRectLeft = srcRectLeft;
 						overlay.srcRectRight = srcRectRight;
 					}
-					
+
 					EditorGUILayout.BeginHorizontal();
 					if (overlay.textures[1] != null)
 					{
@@ -437,7 +452,7 @@ public class OVROverlayEditor : Editor
 						overlay.destRectLeft = destRectLeft;
 						overlay.destRectRight = destRectRight;
 					}
-					
+
 					if (overlay.currentOverlayShape == OVROverlay.OverlayShape.Equirect)
 					{
 						EditorGUILayout.BeginHorizontal();

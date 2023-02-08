@@ -427,15 +427,15 @@ namespace Assets.Oculus.VR.Editor
 			var script = MonoScript.FromScriptableObject(this);
 			string assetPath = AssetDatabase.GetAssetPath(script);
 			string editorPath = Path.GetDirectoryName(assetPath);
-			string odhIconPath = Path.Combine(editorPath, "Textures\\odh_icon.png");
+			string odhIconPath = Path.Combine(editorPath, "Textures\\mqdh_icon.png");
 			Texture ODHIcon = (Texture)EditorGUIUtility.Load(odhIconPath);
 			GUILayout.Box(ODHIcon, GUILayout.Width(60.0f), GUILayout.Height(60.0f));
 
 			GUILayout.BeginVertical();
 
-			EditorGUILayout.LabelField("<b>Oculus Developer Hub</b> is a desktop companion tool that can upload builds, manage apps and reduce friction in daily Quest development.",
+			EditorGUILayout.LabelField("<b>Meta Quest Developer Hub</b> is a desktop companion tool that can upload builds, manage apps and reduce friction in daily Quest development.",
 				odhCalloutStyle);
-			GUIContent ODHLabel = new GUIContent("Download Oculus Developer Hub");
+			GUIContent ODHLabel = new GUIContent("Download Meta Quest Developer Hub");
 #if UNITY_2021_1_OR_NEWER
 			if (EditorGUILayout.LinkButton(ODHLabel))
 #else

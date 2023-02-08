@@ -46,43 +46,6 @@ internal class OVRCompositionUtil {
 		}
 	}
 
-	public static OVRPlugin.CameraDevice ConvertCameraDevice(OVRManager.CameraDevice cameraDevice)
-	{
-		if (cameraDevice == OVRManager.CameraDevice.WebCamera0)
-		{
-			return OVRPlugin.CameraDevice.WebCamera0;
-		}
-		else if (cameraDevice == OVRManager.CameraDevice.WebCamera1)
-		{
-			return OVRPlugin.CameraDevice.WebCamera1;
-		}
-		else if (cameraDevice == OVRManager.CameraDevice.ZEDCamera)
-		{
-			return OVRPlugin.CameraDevice.ZEDCamera;
-		}
-		else
-		{
-			return OVRPlugin.CameraDevice.None;
-		}
-	}
-
-	public static OVRBoundary.BoundaryType ToBoundaryType(OVRManager.VirtualGreenScreenType type)
-	{
-		/*if (type == OVRManager.VirtualGreenScreenType.OuterBoundary)
-		{
-			return OVRBoundary.BoundaryType.OuterBoundary;
-		}
-		else */if (type == OVRManager.VirtualGreenScreenType.PlayArea)
-		{
-			return OVRBoundary.BoundaryType.PlayArea;
-		}
-		else
-		{
-			Debug.LogWarning("Unmatched VirtualGreenScreenType");
-			return OVRBoundary.BoundaryType.PlayArea;
-		}
-	}
-
 	[System.Obsolete("GetWorldPosition should be invoked with an explicit camera parameter")]
 	public static Vector3 GetWorldPosition(Vector3 trackingSpacePosition)
 	{

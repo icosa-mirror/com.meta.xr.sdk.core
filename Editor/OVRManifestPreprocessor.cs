@@ -343,9 +343,9 @@ public class OVRManifestPreprocessor
             "/manifest",
             "uses-feature",
             "com.oculus.feature.PASSTHROUGH",
-            projectConfig.insightPassthroughEnabled,
+            projectConfig.insightPassthroughSupport != OVRProjectConfig.FeatureSupport.None,
             modifyIfFound,
-            "required", "true");
+            "required", projectConfig.insightPassthroughSupport.ToRequiredAttributeValue());
 
         //============================================================================
         // System Splash Screen
@@ -428,7 +428,7 @@ public class OVRManifestPreprocessor
             "uses-feature",
             "com.oculus.software.body_tracking",
             bodyTrackingEntryNeeded,
-            modifyIfFound,
+            (targetBodyTrackingSupport == OVRProjectConfig.FeatureSupport.Required) ? true : modifyIfFound, // If Required, we should override the current entry
             "required", (targetBodyTrackingSupport == OVRProjectConfig.FeatureSupport.Required) ? "true" : "false");
         AddOrRemoveTag(doc,
             androidNamespaceURI,
@@ -449,7 +449,7 @@ public class OVRManifestPreprocessor
             "uses-feature",
             "oculus.software.face_tracking",
             faceTrackingEntryNeeded,
-            modifyIfFound,
+            (targetFaceTrackingSupport == OVRProjectConfig.FeatureSupport.Required) ? true : modifyIfFound, // If Required, we should override the current entry
             "required", (targetFaceTrackingSupport == OVRProjectConfig.FeatureSupport.Required) ? "true" : "false");
         AddOrRemoveTag(doc,
             androidNamespaceURI,
@@ -470,7 +470,7 @@ public class OVRManifestPreprocessor
             "uses-feature",
             "oculus.software.eye_tracking",
             eyeTrackingEntryNeeded,
-            modifyIfFound,
+            (targetEyeTrackingSupport == OVRProjectConfig.FeatureSupport.Required) ? true : modifyIfFound, // If Required, we should override the current entry
             "required", (targetEyeTrackingSupport == OVRProjectConfig.FeatureSupport.Required) ? "true" : "false");
         AddOrRemoveTag(doc,
             androidNamespaceURI,

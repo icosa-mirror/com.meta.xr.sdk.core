@@ -224,10 +224,10 @@ public class OVRProjectConfigEditor : Editor
                         "If checked, application can work in both 6DoF and 3DoF modes. It's highly recommended to keep it unchecked unless your project strongly needs the 3DoF head tracking."),
                     ref projectConfig.allowOptional3DofHeadTracking, ref hasModified);
 
-                // Enable passthrough capability
-                OVREditorUtil.SetupBoolField(projectConfig, new GUIContent("Passthrough Capability Enabled",
-                        "If checked, this application can use passthrough functionality. This option must be enabled at build time, otherwise initializing passthrough and creating passthrough layers in application scenes will fail."),
-                    ref projectConfig.insightPassthroughEnabled, ref hasModified);
+                // Passthrough support
+                OVREditorUtil.SetupEnumField(projectConfig, new GUIContent("Passthrough Support",
+                    "Allows the application to use passthrough functionality. This option must be enabled at build time, otherwise initializing passthrough and creating passthrough layers in application scenes will fail."),
+                    ref projectConfig._insightPassthroughSupport, ref hasModified);
 
                 break;
 

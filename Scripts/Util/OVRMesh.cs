@@ -23,7 +23,6 @@ using Unity.Jobs;
 using UnityEngine;
 using UnityEngine.Rendering;
 
-[DefaultExecutionOrder(-80)]
 public class OVRMesh : MonoBehaviour
 {
 	public interface IOVRMeshDataProvider

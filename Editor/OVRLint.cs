@@ -59,7 +59,7 @@ using Unity.XR.Oculus;
 ///Use of projectors (Mobile; can be used carefully but slow enough to warrant a warning)
 ///Maybe in the future once quantified: Graphics jobs and IL2CPP on Mobile.
 ///Real-time global illumination
-///No texture compression, or non-ASTC texture compression as a global setting (Mobile).
+///No texture compression, or non-ASTC/ETC2 texture compression as a global setting (Mobile).
 ///Using deferred rendering
 ///Excessive texture resolution after LOD bias (>2k on Mobile; >4k on Rift)
 ///Not using trilinear or aniso filtering and not generating mipmaps
@@ -751,16 +751,16 @@ public class OVRLint : EditorWindow
 			}, null, false, "Fix");
 		}
 
-		// Check that compileSDKVersion meets minimal version 26 as required for Quest's headtracking feature. Recommend 29 to match the MinSdkVersion
+		// Check that compileSDKVersion meets minimal version 26 as required for Quest's headtracking feature. Recommend 29 to match the MinSdkVersion. Set (and allow) Auto to align with Unity Setup Tool.
 		// Unity Sets compileSDKVersion in Gradle as the value used in targetSdkVersion
 		AndroidSdkVersions requiredAndroidTargetSdkVersion = AndroidSdkVersions.AndroidApiLevel29;
 		if (OVRDeviceSelector.isTargetDeviceQuestFamily &&
-			(int)PlayerSettings.Android.targetSdkVersion != (int)requiredAndroidTargetSdkVersion)
+		    PlayerSettings.Android.targetSdkVersion < recommendedAndroidMinSdkVersion && PlayerSettings.Android.targetSdkVersion != AndroidSdkVersions.AndroidApiLevelAuto)
 		{
 			AddFix(eRecordType.StaticAndroid, "Set Android Target SDK Level", "Oculus Quest apps recommend setting target API level to " +
-				(int)requiredAndroidTargetSdkVersion, delegate (UnityEngine.Object obj, bool last, int selected)
+			                                                                  (int)requiredAndroidTargetSdkVersion, delegate (UnityEngine.Object obj, bool last, int selected)
 			{
-				PlayerSettings.Android.targetSdkVersion = requiredAndroidTargetSdkVersion;
+				PlayerSettings.Android.targetSdkVersion = AndroidSdkVersions.AndroidApiLevelAuto;
 			}, null, false, "Fix");
 		}
 
@@ -889,11 +889,11 @@ public class OVRLint : EditorWindow
 			}, null, false, "Disable Projectors");
 		}
 
-		if (EditorUserBuildSettings.androidBuildSubtarget != MobileTextureSubtarget.ASTC)
+		if (EditorUserBuildSettings.androidBuildSubtarget != MobileTextureSubtarget.ASTC && EditorUserBuildSettings.androidBuildSubtarget != MobileTextureSubtarget.ETC2)
 		{
-			AddFix(eRecordType.StaticAndroid, "Optimize Texture Compression", "For GPU performance, please use ASTC.", delegate (UnityEngine.Object obj, bool last, int selected)
+			AddFix(eRecordType.StaticAndroid, "Optimize Texture Compression", "For GPU performance, please use ASTC or ETC2.", delegate (UnityEngine.Object obj, bool last, int selected)
 			{
-				EditorUserBuildSettings.androidBuildSubtarget = MobileTextureSubtarget.ASTC;
+				EditorUserBuildSettings.androidBuildSubtarget = MobileTextureSubtarget.ETC2;
 			}, null, false, "Fix");
 		}
 
