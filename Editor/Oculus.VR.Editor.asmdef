@@ -60,6 +60,11 @@
             "define": "OCULUS_XR_SYMMETRIC"
         },
         {
+            "name": "com.unity.xr.oculus",
+            "expression": "3.2.1-pre",
+            "define": "OCULUS_XR_EYE_TRACKED_FOVEATED_RENDERING"
+        },
+        {
             "define": "OVR_UNITY_PACKAGE_MANAGER",
             "name": "com.meta.xr.sdk.utilities",
             "expression": ""

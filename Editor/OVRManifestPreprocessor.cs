@@ -333,7 +333,7 @@ public class OVRManifestPreprocessor
             "com.oculus.permission.IMPORT_EXPORT_IOT_MAP_DATA",
             sharedAnchorEntryNeeded,
             modifyIfFound,
-            "required", targetSharedAnchorSupport == OVRProjectConfig.FeatureSupport.Required ? "true" : "false");
+            "required", targetSharedAnchorSupport.ToRequiredAttributeValue());
 
 
         //============================================================================

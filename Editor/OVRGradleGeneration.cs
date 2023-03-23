@@ -180,8 +180,6 @@ public class OVRGradleGeneration
 #if USING_XR_SDK
         if (useOpenXR)
 		{
-			UnityEngine.Debug.LogWarning("Oculus Utilities Plugin with OpenXR is being used, which is under experimental status");
-
 			if (PlayerSettings.colorSpace != ColorSpace.Linear)
 			{
 				throw new BuildFailedException("Oculus Utilities Plugin with OpenXR only supports linear lighting. Please set 'Rendering/Color Space' to 'Linear' in Player Settings");
