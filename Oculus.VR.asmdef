@@ -44,6 +44,11 @@
             "define": "USING_MRC_COMPATIBLE_URP_VERSION"
         },
         {
+            "name": "com.unity.xr.oculus",
+            "expression": "3.2.6",
+            "define": "OCULUS_XR_ETFR_DELAYED_PERMISSION_REQUEST"
+        },
+        {
             "define": "OVR_UNITY_PACKAGE_MANAGER",
             "name": "com.meta.xr.sdk.utilities",
             "expression": ""

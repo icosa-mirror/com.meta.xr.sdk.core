@@ -20,7 +20,6 @@
 
 using System;
 using System.ComponentModel;
-using System.Linq;
 using UnityEngine;
 using UnityEditor;
 using UnityEditor.SceneManagement;
@@ -31,7 +30,7 @@ public class OVRCustomSkeletonEditor : Editor
 {
 	public override void OnInspectorGUI()
 	{
-		DrawPropertiesExcluding(serializedObject, new string[] { "_customBones" });
+		DrawPropertiesExcluding(serializedObject, "_customBones");
 		serializedObject.ApplyModifiedProperties();
 
 		var skeleton = (OVRCustomSkeleton)target;
@@ -39,20 +38,32 @@ public class OVRCustomSkeletonEditor : Editor
 		if (skeleton.GetSkeletonType() == OVRSkeleton.SkeletonType.None)
 		{
 			EditorGUILayout.HelpBox("Please select a SkeletonType.", MessageType.Warning);
+			return;
 		}
-		else
-		{
-			DrawBonesMapping(skeleton);
-		}
-	}
 
-	private void DrawBonesMapping(OVRCustomSkeleton skeleton)
-	{
 		var enumValues = Enum.GetNames(typeof(OVRCustomSkeleton.RetargetingType));
 		skeleton.retargetingType = (OVRCustomSkeleton.RetargetingType)
 			EditorGUILayout.Popup("Custom skeleton structure", (int) skeleton.retargetingType, enumValues);
 
-		if (GUILayout.Button($"Auto Map Bones ({enumValues[(int) skeleton.retargetingType]})"))
+		var hasBonesMapping = true;
+
+		if (hasBonesMapping)
+		{
+			DrawBonesMapping(skeleton);
+			return;
+		}
+
+		var hasClearedAnyBoneMapping = skeleton.ClearBonesMapping();
+		if (hasClearedAnyBoneMapping)
+		{
+			EditorUtility.SetDirty(skeleton);
+			EditorSceneManager.MarkSceneDirty(skeleton.gameObject.scene);
+		}
+	}
+
+	private static void DrawBonesMapping(OVRCustomSkeleton skeleton)
+	{
+		if (GUILayout.Button($"Auto Map Bones"))
 		{
 			skeleton.AutoMapBones(skeleton.retargetingType);
 			EditorUtility.SetDirty(skeleton);
@@ -134,6 +145,29 @@ public static class OVRCustomSkeletonEditorExtensions
 				}
 			}
 		}
+	}
+
+	internal static bool ClearBonesMapping(this OVRCustomSkeleton skeleton)
+	{
+		var start = skeleton.GetCurrentStartBoneId();
+		var end = skeleton.GetCurrentEndBoneId();
+		var cleared = false;
+
+		if (start == BoneId.Invalid || end == BoneId.Invalid)
+		{
+			return false;
+		}
+
+		for (var i = (int)start; i < (int)end; ++i)
+		{
+			if (skeleton.CustomBones[i] != null)
+			{
+				skeleton.CustomBones[i] = null;
+				cleared = true;
+			}
+		}
+
+		return cleared;
 	}
 
 	private static string FbxBoneNameFromBoneId(OVRSkeleton.SkeletonType skeletonType, BoneId bi)

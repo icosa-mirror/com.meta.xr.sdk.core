@@ -208,6 +208,24 @@ public class OVRGradleGeneration
 		writer.WriteLine(buildGuid.ToString());
 		writer.Close();
 #endif
+
+#if UNITY_ANDROID
+#if PRIORITIZE_OCULUS_XR_SETTINGS
+        EditorBuildSettings.TryGetConfigObject("Unity.XR.Oculus.Settings", out OculusSettings deviceSettings);
+        if (deviceSettings.TargetQuest)
+        {
+            UnityEngine.Debug.LogWarning("Quest 1 is no longer supported as a target device as of v51. Please uncheck Quest 1 as a target device, or downgrade to v50.");
+        }
+#else
+        OVRProjectConfig projectConfig = OVRProjectConfig.GetProjectConfig();
+        if (projectConfig.targetDeviceTypes.Contains(OVRProjectConfig.DeviceType.Quest))
+        {
+            projectConfig.targetDeviceTypes.Remove(OVRProjectConfig.DeviceType.Quest);
+            OVRProjectConfig.CommitProjectConfig(projectConfig);
+            UnityEngine.Debug.Log("Quest 1 is no longer supported as a target device as of v51 and has been removed as a target device from this project.");
+        };
+#endif
+#endif
 	}
 
 	public void OnPostGenerateGradleAndroidProject(string path)

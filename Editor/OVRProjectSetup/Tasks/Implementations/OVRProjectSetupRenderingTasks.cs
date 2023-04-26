@@ -24,6 +24,10 @@ using UnityEditor;
 using UnityEditor.Rendering;
 using UnityEngine;
 using UnityEngine.Rendering;
+#if USING_URP
+using UnityEngine.Rendering.Universal;
+#endif
+
 
 [InitializeOnLoad]
 internal static class OVRProjectSetupRenderingTasks
@@ -36,6 +40,42 @@ internal static class OVRProjectSetupRenderingTasks
             UnityEditor.EditorBuildSettings.TryGetConfigObject<Unity.XR.Oculus.OculusSettings>("Unity.XR.Oculus.Settings", out var settings);
             return settings;
         }
+    }
+#endif
+
+#if USING_URP && UNITY_2022_2_OR_NEWER
+    // Call action for all UniversalRendererData being used, return true if all the return value of action is true
+    private static bool ForEachRendererData(Func<UniversalRendererData, bool> action)
+    {
+        var ret = true;
+        var pipelineAssets = new System.Collections.Generic.List<RenderPipelineAsset>();
+        QualitySettings.GetAllRenderPipelineAssetsForPlatform("Android", ref pipelineAssets);
+        foreach(var pipelineAsset in pipelineAssets) {
+            var urpPipelineAsset = pipelineAsset as UniversalRenderPipelineAsset;
+            // If using URP pipeline
+            if (urpPipelineAsset)
+            {
+                var path = AssetDatabase.GetAssetPath(urpPipelineAsset);
+                var dependency = AssetDatabase.GetDependencies(path);
+                for (int i = 0; i < dependency.Length; i++)
+                {
+                    // Try to read the dependecy as UniversalRendererData
+                    if (AssetDatabase.GetMainAssetTypeAtPath(dependency[i]) != typeof(UniversalRendererData))
+                        continue;
+
+                    UniversalRendererData renderData = (UniversalRendererData)AssetDatabase.LoadAssetAtPath(dependency[i], typeof(UniversalRendererData));
+                    if (renderData)
+                    {
+                        ret = ret && action(renderData);
+                    }
+                    if(!ret)
+                    {
+                        break;
+                    }
+                }
+            }
+        }
+        return ret;
     }
 #endif
 
@@ -104,7 +144,8 @@ internal static class OVRProjectSetupRenderingTasks
         //[Recommended] Set the Graphics API order
         OVRProjectSetup.AddTask(
             level: OVRProjectSetup.TaskLevel.Recommended,
-            group: targetGroup,
+            platform: BuildTargetGroup.Android,
+			group: targetGroup,
             isDone: buildTargetGroup =>
 	            GetGraphicsAPIs(buildTargetGroup).Any(item => item == GraphicsDeviceType.OpenGLES3 || item == GraphicsDeviceType.Vulkan),
             message: "Manual selection of Graphic API, favoring Vulkan (or OpenGLES3)",
@@ -218,6 +259,44 @@ internal static class OVRProjectSetupRenderingTasks
             fix: buildTargetGroup => PlayerSettings.stereoRenderingPath = StereoRenderingPath.Instancing,
             fixMessage: "PlayerSettings.stereoRenderingPath = StereoRenderingPath.Instancing"
         );
+
+    #if USING_URP && UNITY_2022_2_OR_NEWER
+        //[Recommended] When using URP, set Intermediate texture to "Auto"
+        OVRProjectSetup.AddTask(
+            level: OVRProjectSetup.TaskLevel.Recommended,
+            group: targetGroup,
+            isDone: buildTargetGroup =>
+                ForEachRendererData(rd => { return rd.intermediateTextureMode == IntermediateTextureMode.Auto; }),
+            message: "Setting the intermate texture mode to \"Always\" might have a performance impact, it is recommended to use \"Auto\"",
+            fix: buildTargetGroup =>
+                ForEachRendererData(rd => { rd.intermediateTextureMode = IntermediateTextureMode.Auto; return true; }),
+            fixMessage: "Set Intermediate texture to \"Auto\""
+        );
+
+        //[Recommended] When using URP, disable SSAO
+        OVRProjectSetup.AddTask(
+            level: OVRProjectSetup.TaskLevel.Recommended,
+            group: targetGroup,
+            isDone: buildTargetGroup =>
+                ForEachRendererData(rd =>
+                {
+                    return rd.rendererFeatures.Count == 0 || !rd.rendererFeatures.Any(feature => feature.isActive && feature.GetType().Name == "ScreenSpaceAmbientOcclusion");
+                }),
+            message: "SSAO will have some performace impact, it is recommended to disable SSAO",
+            fix: buildTargetGroup =>
+                ForEachRendererData(rd =>
+                {
+                    rd.rendererFeatures.ForEach(feature =>
+                        {
+                            if (feature.GetType().Name == "ScreenSpaceAmbientOcclusion")
+                                feature.SetActive(false);
+                        }
+                    );
+                    return true;
+                }),
+            fixMessage: "Disable SSAO"
+        );
+#endif
 
         //[Optional] Use Non-Directional Lightmaps
         OVRProjectSetup.AddTask(
