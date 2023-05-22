@@ -18,4 +18,3 @@
  * limitations under the License.
  */
 
-// This file may be safely removed.

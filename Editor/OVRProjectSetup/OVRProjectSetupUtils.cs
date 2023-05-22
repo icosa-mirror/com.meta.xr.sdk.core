@@ -29,19 +29,22 @@ using UnityEngine.SceneManagement;
 internal static class OVRProjectSetupUtils
 {
     private static string _rootPath = null;
+
     public static string RootPath
     {
         get
         {
             if (_rootPath == null)
             {
-                var g = AssetDatabase.FindAssets ( $"t:Script {nameof(OVRProjectSetupUtils)}" );
-                _rootPath = AssetDatabase.GUIDToAssetPath ( g [ 0 ] );
+                var g = AssetDatabase.FindAssets($"t:Script {nameof(OVRProjectSetupUtils)}");
+                _rootPath = AssetDatabase.GUIDToAssetPath(g[0]);
                 _rootPath = Path.GetDirectoryName(_rootPath);
             }
+
             return _rootPath;
         }
     }
+
     private const string IconsRelativePath = "Icons/";
 
     public static string BuildIconPath(string path)
@@ -66,7 +69,7 @@ internal static class OVRProjectSetupUtils
         else
         {
             var path = BuildIconPath(name);
-            var texture =AssetDatabase.LoadAssetAtPath<Texture2D>(path);
+            var texture = AssetDatabase.LoadAssetAtPath<Texture2D>(path);
             content = new GUIContent()
             {
                 image = texture,
@@ -85,13 +88,14 @@ internal static class OVRProjectSetupUtils
     }
 
     public static bool PackageManagerListAvailable => _packageManagerListRequest.Status == StatusCode.Success;
+
     public static bool IsPackageInstalled(string packageName) =>
         PackageManagerListAvailable &&
         (_packageManagerListRequest.Result?.Any(package => package.name == packageName) ?? false);
 
     public static bool RefreshPackageList(bool blocking)
     {
-        _packageManagerListRequest = Client.List(offlineMode:false, includeIndirectDependencies:true);
+        _packageManagerListRequest = Client.List(offlineMode: false, includeIndirectDependencies: true);
         if (blocking)
         {
             while (!PackageManagerListAvailable)
@@ -137,14 +141,14 @@ internal static class OVRProjectSetupUtils
 
     public static BuildTarget GetBuildTarget(this BuildTargetGroup buildTargetGroup)
     {
-	    // It is a bit tricky to get the build target from the build target group
-	    // because of some additional variations on build targets that the build target group doesn't know about
-	    // This function aims at offering an approximation of the build target, but it's not guaranteed
-	    return buildTargetGroup switch
-	    {
-		    BuildTargetGroup.Android => BuildTarget.Android,
-		    BuildTargetGroup.Standalone => BuildTarget.StandaloneWindows64,
-		    _ => BuildTarget.NoTarget
-	    };
+        // It is a bit tricky to get the build target from the build target group
+        // because of some additional variations on build targets that the build target group doesn't know about
+        // This function aims at offering an approximation of the build target, but it's not guaranteed
+        return buildTargetGroup switch
+        {
+            BuildTargetGroup.Android => BuildTarget.Android,
+            BuildTargetGroup.Standalone => BuildTarget.StandaloneWindows64,
+            _ => BuildTarget.NoTarget
+        };
     }
 }

@@ -28,7 +28,9 @@ internal class OVRConfigurationTaskRegistry
 {
     private static readonly List<OVRConfigurationTask> EmptyTasksList = new List<OVRConfigurationTask>(0);
 
-    private readonly Dictionary<Hash128, OVRConfigurationTask> _tasksPerUid = new Dictionary<Hash128, OVRConfigurationTask>();
+    private readonly Dictionary<Hash128, OVRConfigurationTask> _tasksPerUid =
+        new Dictionary<Hash128, OVRConfigurationTask>();
+
     private readonly List<OVRConfigurationTask> _tasks = new List<OVRConfigurationTask>();
 
     private List<OVRConfigurationTask> Tasks => _tasks;
@@ -75,16 +77,16 @@ internal class OVRConfigurationTaskRegistry
     {
         if (refresh)
         {
-	        foreach (var task in Tasks)
-	        {
-		        task.InvalidateCache(buildTargetGroup);
-	        }
+            foreach (var task in Tasks)
+            {
+                task.InvalidateCache(buildTargetGroup);
+            }
         }
 
         return Tasks.Where
         (
-			task => (task.Platform == BuildTargetGroup.Unknown || task.Platform == buildTargetGroup)
-					&& task.Valid.GetValue(buildTargetGroup)
+            task => (task.Platform == BuildTargetGroup.Unknown || task.Platform == buildTargetGroup)
+                    && task.Valid.GetValue(buildTargetGroup)
         );
     }
 }

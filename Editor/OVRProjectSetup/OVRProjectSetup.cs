@@ -32,26 +32,26 @@ using System.Linq;
 /// </remarks>
 public static class OVRProjectSetup
 {
-	public enum TaskLevel
-	{
-		Optional = 0,
-		Recommended = 1,
-		Required = 2
-	}
+    public enum TaskLevel
+    {
+        Optional = 0,
+        Recommended = 1,
+        Required = 2
+    }
 
-	public enum TaskGroup
-	{
-		All = 0,
-		Compatibility = 1,
-		Rendering = 2,
-		Quality = 3,
-		Physics = 4,
-		Packages = 5,
-		Features = 6,
-		Miscellaneous = 7
-	}
+    public enum TaskGroup
+    {
+        All = 0,
+        Compatibility = 1,
+        Rendering = 2,
+        Quality = 3,
+        Physics = 4,
+        Packages = 5,
+        Features = 6,
+        Miscellaneous = 7
+    }
 
-	private static readonly OVRConfigurationTaskRegistry _principalRegistry;
+    private static readonly OVRConfigurationTaskRegistry _principalRegistry;
 
     internal static OVRConfigurationTaskRegistry Registry { get; private set; }
     internal static OVRConfigurationTaskProcessorQueue ProcessorQueue { get; }
@@ -59,14 +59,23 @@ public static class OVRProjectSetup
     internal const string KeyPrefix = "OVRProjectSetup";
     internal static OVRProjectSetupSettingBool Enabled;
     internal static OVRProjectSetupSettingBool RequiredThrowErrors;
-    internal static readonly OVRProjectSetupSettingBool AllowLogs = new OVRProjectSetupProjectSettingBool("AllowLogs", false, "Log outstanding issues");
-    internal static readonly OVRProjectSetupSettingBool ShowStatusIcon = new OVRProjectSetupProjectSettingBool("ShowStatusIcon", true, "Show Status Icon");
 
-    private static readonly HashSet<BuildTargetGroup> SupportedPlatforms = new HashSet<BuildTargetGroup> {BuildTargetGroup.Android, BuildTargetGroup.Standalone};
+    internal static readonly OVRProjectSetupSettingBool AllowLogs =
+        new OVRProjectSetupProjectSettingBool("AllowLogs", false, "Log outstanding issues");
+
+    internal static readonly OVRProjectSetupSettingBool ShowStatusIcon =
+        new OVRProjectSetupProjectSettingBool("ShowStatusIcon", true, "Show Status Icon");
+
+    internal static readonly OVRProjectSetupSettingBool ProduceReportOnBuild =
+        new OVRProjectSetupProjectSettingBool("ProduceReportOnBuild", false, "Produce Report on Build");
+
+    private static readonly HashSet<BuildTargetGroup> SupportedPlatforms = new HashSet<BuildTargetGroup>
+        { BuildTargetGroup.Android, BuildTargetGroup.Standalone };
+
 
     static OVRProjectSetup()
     {
-	    _principalRegistry = new OVRConfigurationTaskRegistry();
+        _principalRegistry = new OVRConfigurationTaskRegistry();
         ProcessorQueue = new OVRConfigurationTaskProcessorQueue();
         ConsoleLinkEventHandler.OnConsoleLink += OnConsoleLink;
         RestoreRegistry();
@@ -74,17 +83,21 @@ public static class OVRProjectSetup
 
     internal static void SetupTemporaryRegistry()
     {
-	    Registry = new OVRConfigurationTaskRegistry();
-	    Enabled = new OVRProjectSetupConstSettingBool("Enabled", true, "Enabled");
-	    RequiredThrowErrors = new OVRProjectSetupConstSettingBool("RequiredThrowErrors", false, "Required throw errors");
+        Registry = new OVRConfigurationTaskRegistry();
+        Enabled = new OVRProjectSetupConstSettingBool("Enabled", true, "Enabled");
+        RequiredThrowErrors =
+            new OVRProjectSetupConstSettingBool("RequiredThrowErrors", false, "Required throw errors");
+        OVRProjectSetupUpdater.SetupTemporaryRegistry();
     }
 
     internal static void RestoreRegistry()
     {
-	    Registry = _principalRegistry;
-	    Enabled =
-	    new OVRProjectSetupConstSettingBool("Enabled", true, "Enabled");
-	    RequiredThrowErrors = new OVRProjectSetupProjectSettingBool("RequiredThrowErrors", false, "Required throw errors");
+        Registry = _principalRegistry;
+        Enabled =
+        new OVRProjectSetupConstSettingBool("Enabled", true, "Enabled");
+        RequiredThrowErrors =
+            new OVRProjectSetupProjectSettingBool("RequiredThrowErrors", false, "Required throw errors");
+        OVRProjectSetupUpdater.RestoreRegistry();
     }
 
     private static void OnConsoleLink(Dictionary<string, string> infos)
@@ -164,14 +177,17 @@ public static class OVRProjectSetup
         Func<BuildTargetGroup, string> conditionalUrl = null,
         bool validity = true,
         Func<BuildTargetGroup, bool> conditionalValidity = null
-        )
+    )
     {
-        var optionalLevel = OptionalLambdaType<BuildTargetGroup, OVRProjectSetup.TaskLevel>.Create(level, conditionalLevel, true);
+        var optionalLevel =
+            OptionalLambdaType<BuildTargetGroup, OVRProjectSetup.TaskLevel>.Create(level, conditionalLevel, true);
         var optionalMessage = OptionalLambdaType<BuildTargetGroup, string>.Create(message, conditionalMessage, true);
-        var optionalFixMessage = OptionalLambdaType<BuildTargetGroup, string>.Create(fixMessage, conditionalFixMessage, true);
+        var optionalFixMessage =
+            OptionalLambdaType<BuildTargetGroup, string>.Create(fixMessage, conditionalFixMessage, true);
         var optionalUrl = OptionalLambdaType<BuildTargetGroup, string>.Create(url, conditionalUrl, true);
         var optionalValidity = OptionalLambdaType<BuildTargetGroup, bool>.Create(validity, conditionalValidity, true);
-        AddTask(new OVRConfigurationTask(group, platform, isDone, fix, optionalLevel, optionalMessage, optionalFixMessage, optionalUrl, optionalValidity));
+        AddTask(new OVRConfigurationTask(group, platform, isDone, fix, optionalLevel, optionalMessage,
+            optionalFixMessage, optionalUrl, optionalValidity));
     }
 
     internal static bool IsPlatformSupported(BuildTargetGroup buildTargetGroup)
@@ -190,38 +206,42 @@ public static class OVRProjectSetup
     private const int LoopExitCount = 4;
 
     internal static void FixTasks(
-	    BuildTargetGroup buildTargetGroup,
+        BuildTargetGroup buildTargetGroup,
         Func<IEnumerable<OVRConfigurationTask>, List<OVRConfigurationTask>> filter = null,
-	    LogMessages logMessages = LogMessages.Disabled,
+        LogMessages logMessages = LogMessages.Disabled,
         bool blocking = true,
-	    Action<OVRConfigurationTaskProcessor> onCompleted = null)
+        Action<OVRConfigurationTaskProcessor> onCompleted = null)
     {
-	    var fixer = new OVRConfigurationTaskFixer(Registry, buildTargetGroup, filter, logMessages, blocking, onCompleted);
-	    ProcessorQueue.Request(fixer);
+        var fixer = new OVRConfigurationTaskFixer(Registry, buildTargetGroup, filter, logMessages, blocking,
+            onCompleted);
+        ProcessorQueue.Request(fixer);
     }
 
     internal static void FixTask(
-	    BuildTargetGroup buildTargetGroup,
-	    OVRConfigurationTask task,
-	    LogMessages logMessages = LogMessages.Disabled,
-	    bool blocking = true,
-	    Action<OVRConfigurationTaskProcessor> onCompleted = null
+        BuildTargetGroup buildTargetGroup,
+        OVRConfigurationTask task,
+        LogMessages logMessages = LogMessages.Disabled,
+        bool blocking = true,
+        Action<OVRConfigurationTaskProcessor> onCompleted = null
     )
     {
-	    // TODO : A bit overkill for just one task
-	    var filter = (Func<IEnumerable<OVRConfigurationTask>, List<OVRConfigurationTask>>)(tasks => tasks.Where(otherTask => otherTask == task).ToList());
-	    var fixer = new OVRConfigurationTaskFixer(Registry, buildTargetGroup, filter, logMessages, blocking, onCompleted);
-	    ProcessorQueue.Request(fixer);
+        // TODO : A bit overkill for just one task
+        var filter = (Func<IEnumerable<OVRConfigurationTask>, List<OVRConfigurationTask>>)(tasks =>
+            tasks.Where(otherTask => otherTask == task).ToList());
+        var fixer = new OVRConfigurationTaskFixer(Registry, buildTargetGroup, filter, logMessages, blocking,
+            onCompleted);
+        ProcessorQueue.Request(fixer);
     }
 
     internal static void UpdateTasks(
-	    BuildTargetGroup buildTargetGroup,
-	    Func<IEnumerable<OVRConfigurationTask>, List<OVRConfigurationTask>> filter = null,
-	    LogMessages logMessages = LogMessages.Disabled,
-	    bool blocking = true,
-	    Action<OVRConfigurationTaskProcessor> onCompleted = null)
+        BuildTargetGroup buildTargetGroup,
+        Func<IEnumerable<OVRConfigurationTask>, List<OVRConfigurationTask>> filter = null,
+        LogMessages logMessages = LogMessages.Disabled,
+        bool blocking = true,
+        Action<OVRConfigurationTaskProcessor> onCompleted = null)
     {
-	    var updater = new OVRConfigurationTaskUpdater(Registry, buildTargetGroup, filter, logMessages, blocking, onCompleted);
-	    ProcessorQueue.Request(updater);
+        var updater =
+            new OVRConfigurationTaskUpdater(Registry, buildTargetGroup, filter, logMessages, blocking, onCompleted);
+        ProcessorQueue.Request(updater);
     }
 }

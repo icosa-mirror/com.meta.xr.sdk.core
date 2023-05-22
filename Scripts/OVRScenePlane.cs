@@ -68,9 +68,10 @@ public class OVRScenePlane : MonoBehaviour, IOVRSceneComponent
     public bool ScaleChildren
     {
         get => _scaleChildren;
-        set {
+        set
+        {
             _scaleChildren = value;
-            if(_scaleChildren && _sceneAnchor.Space.Valid)
+            if (_scaleChildren && _sceneAnchor.Space.Valid)
             {
                 SetChildScale(transform, Width, Height);
             }
@@ -105,21 +106,7 @@ public class OVRScenePlane : MonoBehaviour, IOVRSceneComponent
         }
     }
 
-    private void Awake()
-    {
-        _sceneAnchor = GetComponent<OVRSceneAnchor>();
-        if (_sceneAnchor.Space.Valid)
-        {
-            ((IOVRSceneComponent)this).Initialize();
-        }
-    }
-
-    private void Start()
-    {
-        RequestBoundary();
-    }
-
-    void IOVRSceneComponent.Initialize()
+    internal void UpdateTransform()
     {
         if (OVRPlugin.GetSpaceBoundingBox2D(GetComponent<OVRSceneAnchor>().Space, out var rect))
         {
@@ -139,13 +126,32 @@ public class OVRScenePlane : MonoBehaviour, IOVRSceneComponent
         }
     }
 
+    private void Awake()
+    {
+        _sceneAnchor = GetComponent<OVRSceneAnchor>();
+        if (_sceneAnchor.Space.Valid)
+        {
+            ((IOVRSceneComponent)this).Initialize();
+        }
+    }
+
+    private void Start()
+    {
+        RequestBoundary();
+    }
+
+    void IOVRSceneComponent.Initialize()
+    {
+        UpdateTransform();
+    }
+
     internal void ScheduleGetLengthJob()
     {
         // Don't schedule if already running
         if (_jobHandle != null) return;
 
         if (!OVRPlugin.GetSpaceComponentStatus(_sceneAnchor.Space,
-            OVRPlugin.SpaceComponentType.Bounded2D, out var isEnabled, out var isChangePending))
+                OVRPlugin.SpaceComponentType.Bounded2D, out var isEnabled, out var isChangePending))
         {
             return;
         }
@@ -205,6 +211,7 @@ public class OVRScenePlane : MonoBehaviour, IOVRSceneComponent
                 {
                     _previousBoundary = new NativeArray<Vector2>(length, Allocator.Persistent);
                 }
+
                 _jobHandle = new GetBoundaryJob
                 {
                     Space = _sceneAnchor.Space,

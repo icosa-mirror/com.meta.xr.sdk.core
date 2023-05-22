@@ -20,18 +20,18 @@
 
 public class OVRVirtualKeyboardControllerInputHandler : OVRVirtualKeyboard.OVRVirtualKeyboardInput
 {
-	public override bool PositionValid => OVRInput.IsControllerConnected(InteractionDevice);
+    public override bool PositionValid => OVRInput.IsControllerConnected(InteractionDevice);
 
-	public override bool IsPressed => OVRInput.Get(
-		OVRInput.Button.PrimaryIndexTrigger |
-		OVRInput.Button.SecondaryIndexTrigger,
-		InteractionDevice);
+    public override bool IsPressed => OVRInput.Get(
+        OVRInput.Button.PrimaryIndexTrigger |
+        OVRInput.Button.SecondaryIndexTrigger,
+        InteractionDevice);
 
-	public override OVRPlugin.Posef InputPose => new OVRPlugin.Posef()
-	{
-		Position = transform.position.ToFlippedZVector3f(),
-		Orientation = transform.rotation.ToFlippedZQuatf(),
-	};
+    public override OVRPlugin.Posef InputPose => new OVRPlugin.Posef()
+    {
+        Position = transform.position.ToFlippedZVector3f(),
+        Orientation = transform.rotation.ToFlippedZQuatf(),
+    };
 
-	public override OVRPlugin.Posef InteractorRootPose => new OVRPlugin.Posef();
+    public override OVRPlugin.Posef InteractorRootPose => new OVRPlugin.Posef();
 }

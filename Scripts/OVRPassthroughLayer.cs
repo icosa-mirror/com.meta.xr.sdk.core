@@ -36,8 +36,11 @@ public class OVRPassthroughLayer : MonoBehaviour
     /// </summary>
     public enum ProjectionSurfaceType
     {
-        Reconstructed, ///< Reconstructed surface type will render passthrough using automatic environment depth reconstruction
-        UserDefined ///< UserDefined allows you to define a surface
+        // Reconstructed surface type will render passthrough using automatic environment depth reconstruction
+        Reconstructed,
+
+        /// UserDefined allows you to define a surface
+        UserDefined
     }
 
     /// <summary>
@@ -129,7 +132,7 @@ public class OVRPassthroughLayer : MonoBehaviour
         if (surfaceGameObjects.TryGetValue(obj, out passthroughMeshInstance))
         {
             if (OVRPlugin.DestroyInsightPassthroughGeometryInstance(passthroughMeshInstance.instanceHandle) &&
-                    OVRPlugin.DestroyInsightTriangleMesh(passthroughMeshInstance.meshHandle))
+                OVRPlugin.DestroyInsightTriangleMesh(passthroughMeshInstance.meshHandle))
             {
                 surfaceGameObjects.Remove(obj);
             }
@@ -162,10 +165,7 @@ public class OVRPassthroughLayer : MonoBehaviour
     /// </summary>
     public float textureOpacity
     {
-        get
-        {
-            return textureOpacity_;
-        }
+        get { return textureOpacity_; }
         set
         {
             if (value != textureOpacity_)
@@ -183,10 +183,7 @@ public class OVRPassthroughLayer : MonoBehaviour
     /// </summary>
     public bool edgeRenderingEnabled
     {
-        get
-        {
-            return edgeRenderingEnabled_;
-        }
+        get { return edgeRenderingEnabled_; }
         set
         {
             if (value != edgeRenderingEnabled_)
@@ -202,10 +199,7 @@ public class OVRPassthroughLayer : MonoBehaviour
     /// </summary>
     public Color edgeColor
     {
-        get
-        {
-            return edgeColor_;
-        }
+        get { return edgeColor_; }
         set
         {
             if (value != edgeColor_)
@@ -240,6 +234,60 @@ public class OVRPassthroughLayer : MonoBehaviour
 
 
     /// <summary>
+    /// Applies a color LUT to the passthrough layer.
+    /// This is an experimental feature, please see
+    /// https://developer.oculus.com/experimental/experimental-overview/ for more information
+    /// and ensure that Experimental Features are enabled in OVRManager - Quest Features - Experimental.
+    /// </summary>
+    /// <param name="lut"></param>
+    /// <param name="weight">Value between 0 and 1 which defines the blend between lut and passthrough</param>
+    public void SetColorLut(OVRPassthroughColorLut lut, float weight = 1)
+    {
+        if (lut != null && lut.IsInitialized)
+        {
+            weight = ClampWeight(weight);
+            _colorLutHandler.Lut = lut;
+            _colorLutHandler.Weight = weight;
+            _styleHandler = _colorLutHandler;
+            colorMapType = ColorMapType.ColorLut;
+            colorMapEditorType = ColorMapEditorType.Custom;
+            styleDirty = true;
+        }
+        else
+        {
+            Debug.LogError("Trying to set an uninitialized Color LUT for Passthrough");
+        }
+    }
+
+    /// <summary>
+    /// Applies the interpolation between two color LUTs to the passthrough layer.
+    /// This is an experimental feature, please see
+    /// https://developer.oculus.com/experimental/experimental-overview/ for more information.
+    /// </summary>
+    /// <param name="lutSource"></param>
+    /// <param name="lutTarget"></param>
+    /// <param name="weight">Value between 0 and 1 which defines the blend between lutSource and lutTarget</param>
+    public void SetColorLut(OVRPassthroughColorLut lutSource, OVRPassthroughColorLut lutTarget, float weight)
+    {
+        if (lutSource != null && lutSource.IsInitialized
+                              && lutTarget != null && lutTarget.IsInitialized)
+        {
+            weight = ClampWeight(weight);
+            _interpolatedColorLutHandler.Lut = lutSource;
+            _interpolatedColorLutHandler.LutTarget = lutTarget;
+            _interpolatedColorLutHandler.Weight = weight;
+            _styleHandler = _interpolatedColorLutHandler;
+            colorMapType = ColorMapType.InterpolatedColorLut;
+            colorMapEditorType = ColorMapEditorType.Custom;
+            styleDirty = true;
+        }
+        else
+        {
+            Debug.LogError("Trying to set an uninitialized Color LUT for Passthrough");
+        }
+    }
+
+    /// <summary>
     /// This method allows to generate (and apply) a color map from the set of controls which is also available in
     /// inspector.
     /// </summary>
@@ -247,7 +295,7 @@ public class OVRPassthroughLayer : MonoBehaviour
     /// <param name="brightness">The brightness value. Range from 0 (minimum) to 1 (maximum). </param>
     /// <param name="posterize">The posterize value. Range from 0 to 1, where 0 = no posterization (no effect), 1 = reduce to two colors. </param>
     /// <param name="gradient">The gradient will be evaluated from 0 (no intensity) to 1 (maximum intensity).
-    /// 	This parameter only has an effect if `colorMapType` is `GrayscaleToColor`.</param>
+    /// This parameter only has an effect if `colorMapType` is `GrayscaleToColor`.</param>
     /// <param name="colorMapType">Type of color map which should be generated. Supported values: `Grayscale` and `GrayscaleToColor`.</param>
     public void SetColorMapControls(
         float contrast,
@@ -256,7 +304,8 @@ public class OVRPassthroughLayer : MonoBehaviour
         Gradient gradient = null,
         ColorMapEditorType colorMapType = ColorMapEditorType.GrayscaleToColor)
     {
-        if (!(colorMapType == ColorMapEditorType.Grayscale || colorMapType == ColorMapEditorType.GrayscaleToColor)) {
+        if (!(colorMapType == ColorMapEditorType.Grayscale || colorMapType == ColorMapEditorType.GrayscaleToColor))
+        {
             Debug.LogError("Unsupported color map type specified");
             return;
         }
@@ -266,7 +315,8 @@ public class OVRPassthroughLayer : MonoBehaviour
         colorMapEditorBrightness = brightness;
         colorMapEditorPosterize = posterize;
 
-        if (colorMapType == ColorMapEditorType.GrayscaleToColor) {
+        if (colorMapType == ColorMapEditorType.GrayscaleToColor)
+        {
             if (gradient != null)
             {
                 colorMapEditorGradient = gradient;
@@ -276,7 +326,9 @@ public class OVRPassthroughLayer : MonoBehaviour
                 // Leave gradient untouched if it's already neutral to avoid unnecessary memory allocations.
                 colorMapEditorGradient = CreateNeutralColorMapGradient();
             }
-        } else if (gradient != null) {
+        }
+        else if (gradient != null)
+        {
             Debug.LogWarning("Gradient parameter is ignored for color map types other than GrayscaleToColor");
         }
     }
@@ -333,31 +385,44 @@ public class OVRPassthroughLayer : MonoBehaviour
 
 
     #region Editor Interface
+
     /// <summary>
     /// Unity editor enumerator to provide a dropdown in the inspector.
     /// </summary>
     public enum ColorMapEditorType
     {
-        None = 0, ///< No color map is applied
-        GrayscaleToColor = 1, ///< Map input color to an RGB color, optionally with brightness/constrast adjustment or posterization applied.
-        Controls = GrayscaleToColor, ///< Deprecated - use GrayscaleToColor instead.
-        Custom = 2, ///< Color map is specified using one of the class setters.
-        Grayscale = 3, ///< Map input color to a grayscale color, optionally with brightness/constrast adjustment or posterization applied.
-        ColorAdjustment = 4 ///< Adjust brightness and contrast
+        // No color map is applied
+        None = 0,
+
+        // Map input color to an RGB color, optionally with brightness/constrast adjustment or posterization applied.
+        GrayscaleToColor = 1,
+
+        // Deprecated - use GrayscaleToColor instead.
+        Controls = GrayscaleToColor,
+
+        // Color map is specified using one of the class setters.
+        Custom = 2,
+
+        // Map input color to a grayscale color, optionally with brightness/constrast adjustment or posterization applied.
+        Grayscale = 3,
+
+        // Adjust brightness and contrast
+        ColorAdjustment = 4,
+
+        ColorLut = 5,
+        InterpolatedColorLut = 6
     }
 
     [SerializeField]
     internal ColorMapEditorType colorMapEditorType_ = ColorMapEditorType.None;
+
     /// <summary>
     /// Editor attribute to get or set the selection in the inspector.
     /// Using this selection will update the `colorMapType` and `colorMapData` if needed.
     /// </summary>
     public ColorMapEditorType colorMapEditorType
     {
-        get
-        {
-            return colorMapEditorType_;
-        }
+        get { return colorMapEditorType_; }
         set
         {
             if (value != colorMapEditorType_)
@@ -387,6 +452,14 @@ public class OVRPassthroughLayer : MonoBehaviour
                     case ColorMapEditorType.Custom:
                         // no-op
                         break;
+                    case ColorMapEditorType.ColorLut:
+                        colorMapType = ColorMapType.ColorLut;
+                        UpdateColorMapFromControls(true);
+                        break;
+                    case ColorMapEditorType.InterpolatedColorLut:
+                        colorMapType = ColorMapType.InterpolatedColorLut;
+                        UpdateColorMapFromControls(true);
+                        break;
                 }
             }
         }
@@ -403,34 +476,63 @@ public class OVRPassthroughLayer : MonoBehaviour
     /// <summary>
     /// This field is not intended for public scripting. Use `SetBrightnessContrastSaturation()` or `SetColorMapControls()` instead.
     /// </summary>
-    [Range(-1f,1f)]
+    [Range(-1f, 1f)]
     public float colorMapEditorContrast;
+
     // Keep a private copy of the contrast value. Every frame, it is compared against the public one in UpdateColorMapFromControls() and updated if necessary.
     private float colorMapEditorContrast_ = 0;
 
     /// <summary>
     /// This field is not intended for public scripting. Use `SetBrightnessContrastSaturation()` or `SetColorMapControls()` instead.
     /// </summary>
-    [Range(-1f,1f)]
+    [Range(-1f, 1f)]
     public float colorMapEditorBrightness;
+
     // Keep a private copy of the brightness value. Every frame, it is compared against the public one in UpdateColorMapFromControls() and updated if necessary.
     private float colorMapEditorBrightness_ = 0;
 
     /// <summary>
     /// This field is not intended for public scripting. Use `SetColorMapControls()` instead.
     /// </summary>
-    [Range(0f,1f)]
+    [Range(0f, 1f)]
     public float colorMapEditorPosterize;
+
     // Keep a private copy of the posterize value. Every frame, it is compared against the public one in UpdateColorMapFromControls() and updated if necessary.
     private float colorMapEditorPosterize_ = 0;
 
     /// <summary>
     /// This field is not intended for public scripting. Use `SetBrightnessContrastSaturation()` instead.
     /// </summary>
-    [Range(-1f,1f)]
+    [Range(-1f, 1f)]
     public float colorMapEditorSaturation;
+
     // Keep a private copy of the saturation value. Every frame, it is compared against the public one in UpdateColorMapFromControls() and updated if necessary.
     private float colorMapEditorSaturation_ = 0;
+
+    [SerializeField]
+    internal Texture2D _colorLutSourceTexture;
+
+    // Store state to check for changes
+    private Texture2D _currentColorLutSourceTexture;
+
+    [SerializeField]
+    internal Texture2D _colorLutTargetTexture;
+
+    // Store state to check for changes
+    private Texture2D _currentColorLutTargetTexture;
+
+    [SerializeField]
+    [Range(0f, 1f)]
+    internal float _lutWeight = 1;
+
+    // Store state to check for changes
+    private float _currentLutWeight = 1;
+
+    [SerializeField]
+    internal bool _flipLutY = true;
+
+    // Store state to check for changes
+    private bool _currentFlipLutY;
 
     /// <summary>
     /// This method is required for internal use only.
@@ -443,6 +545,7 @@ public class OVRPassthroughLayer : MonoBehaviour
     #endregion
 
     #region Internal Methods
+
     private void AddDeferredSurfaceGeometries()
     {
         for (int i = 0; i < deferredSurfaceGameObjects.Count; ++i)
@@ -455,7 +558,8 @@ public class OVRPassthroughLayer : MonoBehaviour
             }
             else
             {
-                if (CreateAndAddMesh(entry.gameObject, out var meshHandle, out var instanceHandle, out var localToWorld))
+                if (CreateAndAddMesh(entry.gameObject, out var meshHandle, out var instanceHandle,
+                        out var localToWorld))
                 {
                     surfaceGameObjects.Add(entry.gameObject, new PassthroughMeshInstance
                     {
@@ -468,7 +572,8 @@ public class OVRPassthroughLayer : MonoBehaviour
                 }
                 else
                 {
-                    Debug.LogWarning("Failed to create internal resources for GameObject added to passthrough surface.");
+                    Debug.LogWarning(
+                        "Failed to create internal resources for GameObject added to passthrough surface.");
                 }
             }
 
@@ -489,9 +594,8 @@ public class OVRPassthroughLayer : MonoBehaviour
             cameraRigInitialized = true;
         }
 
-        Matrix4x4 trackingSpaceFromWorld = (cameraRig != null) ?
-            cameraRig.trackingSpace.worldToLocalMatrix :
-            Matrix4x4.identity;
+        Matrix4x4 trackingSpaceFromWorld =
+            (cameraRig != null) ? cameraRig.trackingSpace.worldToLocalMatrix : Matrix4x4.identity;
 
         // Use model matrix to switch from left-handed coordinate system (Unity)
         // to right-handed (Open GL/Passthrough API): reverse z-axis
@@ -531,7 +635,8 @@ public class OVRPassthroughLayer : MonoBehaviour
             return false;
         }
 
-        if (!OVRPlugin.AddInsightPassthroughSurfaceGeometry(passthroughOverlay.layerId, meshHandle, T_worldInsight_model, out instanceHandle))
+        if (!OVRPlugin.AddInsightPassthroughSurfaceGeometry(passthroughOverlay.layerId, meshHandle,
+                T_worldInsight_model, out instanceHandle))
         {
             Debug.LogWarning("Failed to add mesh to passthrough surface.");
             return false;
@@ -563,6 +668,7 @@ public class OVRPassthroughLayer : MonoBehaviour
                 }
             }
         }
+
         surfaceGameObjects.Clear();
     }
 
@@ -598,7 +704,8 @@ public class OVRPassthroughLayer : MonoBehaviour
 
     private void AllocateColorMapData(uint size = 4096)
     {
-        if (colorMapData != null && size != colorMapData.Length) {
+        if (colorMapData != null && size != colorMapData.Length)
+        {
             DeallocateColorMapData();
         }
 
@@ -607,8 +714,10 @@ public class OVRPassthroughLayer : MonoBehaviour
             colorMapData = new byte[size];
             if (colorMapDataHandle.IsAllocated)
             {
-                Debug.LogWarning("Passthrough color map data handle is not expected to be allocated at time of buffer allocation");
+                Debug.LogWarning(
+                    "Passthrough color map data handle is not expected to be allocated at time of buffer allocation");
             }
+
             colorMapDataHandle = GCHandle.Alloc(colorMapData, GCHandleType.Pinned);
 
             tmpColorMapData = new byte[256];
@@ -622,12 +731,14 @@ public class OVRPassthroughLayer : MonoBehaviour
         {
             if (!colorMapDataHandle.IsAllocated)
             {
-                Debug.LogWarning("Passthrough color map data handle is expected to be allocated at time of buffer deallocation");
+                Debug.LogWarning(
+                    "Passthrough color map data handle is expected to be allocated at time of buffer deallocation");
             }
             else
             {
                 colorMapDataHandle.Free();
             }
+
             colorMapData = null;
             tmpColorMapData = null;
         }
@@ -638,11 +749,13 @@ public class OVRPassthroughLayer : MonoBehaviour
     {
         return new Gradient()
         {
-            colorKeys = new GradientColorKey[2] {
+            colorKeys = new GradientColorKey[2]
+            {
                 new GradientColorKey(new Color(0, 0, 0), 0),
                 new GradientColorKey(new Color(1, 1, 1), 1)
             },
-            alphaKeys = new GradientAlphaKey[2] {
+            alphaKeys = new GradientAlphaKey[2]
+            {
                 new GradientAlphaKey(1, 0),
                 new GradientAlphaKey(1, 1)
             }
@@ -652,18 +765,24 @@ public class OVRPassthroughLayer : MonoBehaviour
     private bool HasControlsBasedColorMap()
     {
         return colorMapEditorType == ColorMapEditorType.Grayscale
-                || colorMapEditorType == ColorMapEditorType.ColorAdjustment
-                || colorMapEditorType == ColorMapEditorType.GrayscaleToColor;
+               || colorMapEditorType == ColorMapEditorType.ColorAdjustment
+               || colorMapEditorType == ColorMapEditorType.ColorLut
+               || colorMapEditorType == ColorMapEditorType.InterpolatedColorLut
+               || colorMapEditorType == ColorMapEditorType.GrayscaleToColor;
     }
 
     private void UpdateColorMapFromControls(bool forceUpdate = false)
     {
         bool parametersChanged = colorMapEditorBrightness_ != colorMapEditorBrightness
-                || colorMapEditorContrast_ != colorMapEditorContrast
-                || colorMapEditorPosterize_ != colorMapEditorPosterize
-                || colorMapEditorSaturation_ != colorMapEditorSaturation;
+                                 || colorMapEditorContrast_ != colorMapEditorContrast
+                                 || colorMapEditorPosterize_ != colorMapEditorPosterize
+                                 || _currentColorLutSourceTexture != _colorLutSourceTexture
+                                 || _currentColorLutTargetTexture != _colorLutTargetTexture
+                                 || _currentLutWeight != _lutWeight
+                                 || colorMapEditorSaturation_ != colorMapEditorSaturation
+                                 || _flipLutY != _currentFlipLutY;
         bool gradientNeedsUpdate = colorMapEditorType == ColorMapEditorType.GrayscaleToColor
-            && !colorMapEditorGradient.Equals(colorMapEditorGradientOld);
+                                   && !colorMapEditorGradient.Equals(colorMapEditorGradientOld);
 
         if (!(HasControlsBasedColorMap() && parametersChanged || gradientNeedsUpdate || forceUpdate))
             return;
@@ -675,30 +794,52 @@ public class OVRPassthroughLayer : MonoBehaviour
         colorMapEditorContrast_ = colorMapEditorContrast;
         colorMapEditorPosterize_ = colorMapEditorPosterize;
         colorMapEditorSaturation_ = colorMapEditorSaturation;
+        _currentLutWeight = _lutWeight;
 
         switch (colorMapEditorType)
         {
             case ColorMapEditorType.Grayscale:
-                computeBrightnessContrastPosterizeMap(colorMapData, colorMapEditorBrightness, colorMapEditorContrast, colorMapEditorPosterize);
+                computeBrightnessContrastPosterizeMap(colorMapData, colorMapEditorBrightness, colorMapEditorContrast,
+                    colorMapEditorPosterize);
                 styleDirty = true;
                 break;
             case ColorMapEditorType.GrayscaleToColor:
-                computeBrightnessContrastPosterizeMap(tmpColorMapData, colorMapEditorBrightness, colorMapEditorContrast, colorMapEditorPosterize);
+                computeBrightnessContrastPosterizeMap(tmpColorMapData, colorMapEditorBrightness, colorMapEditorContrast,
+                    colorMapEditorPosterize);
                 for (int i = 0; i < 256; i++)
                 {
-                    Color color = colorMapEditorGradient.Evaluate(tmpColorMapData[i]  / 255.0f);
+                    Color color = colorMapEditorGradient.Evaluate(tmpColorMapData[i] / 255.0f);
                     WriteColorToColorMap(i, ref color);
                 }
+
                 styleDirty = true;
                 break;
             case ColorMapEditorType.ColorAdjustment:
-                WriteBrightnessContrastSaturationColorMap(colorMapEditorBrightness_, colorMapEditorContrast_, colorMapEditorSaturation_);
+                WriteBrightnessContrastSaturationColorMap(colorMapEditorBrightness_, colorMapEditorContrast_,
+                    colorMapEditorSaturation_);
+                styleDirty = true;
+                break;
+            case ColorMapEditorType.ColorLut:
+                if (Application.isPlaying)
+                {
+                    _styleHandler = GetColorLutHandler();
+                }
+
+                styleDirty = true;
+                break;
+            case ColorMapEditorType.InterpolatedColorLut:
+                if (Application.isPlaying)
+                {
+                    _styleHandler = GetInterpolatedColorLutHandler();
+                }
+
                 styleDirty = true;
                 break;
         }
     }
 
-    static private void computeBrightnessContrastPosterizeMap(byte[] result, float brightness, float contrast, float posterize)
+    static private void computeBrightnessContrastPosterizeMap(byte[] result, float brightness, float contrast,
+        float posterize)
     {
         for (int i = 0; i < 256; i++)
         {
@@ -765,7 +906,8 @@ public class OVRPassthroughLayer : MonoBehaviour
         {
             if (passthroughOverlay.layerId > 0)
             {
-                Debug.LogWarning("Change to projectionSurfaceType won't take effect until the layer goes through a disable/enable cycle. ");
+                Debug.LogWarning("Change to projectionSurfaceType won't take effect until the layer " +
+                                 "goes through a disable/enable cycle. ");
             }
 
             if (projectionSurfaceType == ProjectionSurfaceType.Reconstructed)
@@ -783,13 +925,63 @@ public class OVRPassthroughLayer : MonoBehaviour
         // initialization state are taken into account s.t. the overlay gets disabled as soon as PT is flagged to be
         // disabled, and enabled only when PT is up and running again.
         passthroughOverlay.enabled = OVRManager.instance != null &&
-            OVRManager.instance.isInsightPassthroughEnabled &&
-            OVRManager.IsInsightPassthroughInitialized();
+                                     OVRManager.instance.isInsightPassthroughEnabled &&
+                                     OVRManager.IsInsightPassthroughInitialized();
+    }
+
+    private IStyleHandler GetInterpolatedColorLutHandler()
+    {
+        _interpolatedColorLutHandler.Lut =
+            GetColorLutForTexture(_colorLutSourceTexture, _interpolatedColorLutHandler.Lut,
+                ref _currentColorLutSourceTexture);
+        _interpolatedColorLutHandler.LutTarget =
+            GetColorLutForTexture(_colorLutTargetTexture, _interpolatedColorLutHandler.LutTarget,
+                ref _currentColorLutTargetTexture);
+        _interpolatedColorLutHandler.Weight = _lutWeight;
+        return _interpolatedColorLutHandler;
+    }
+
+    private IStyleHandler GetColorLutHandler()
+    {
+        _colorLutHandler.Lut = GetColorLutForTexture(_colorLutSourceTexture, _colorLutHandler.Lut,
+            ref _currentColorLutSourceTexture);
+        _colorLutHandler.Weight = _lutWeight;
+        return _colorLutHandler;
+    }
+
+    private OVRPassthroughColorLut GetColorLutForTexture(Texture2D newTexture, OVRPassthroughColorLut lutObject,
+        ref Texture2D lastTexture)
+    {
+        if (lastTexture != newTexture || _currentFlipLutY != _flipLutY)
+        {
+            if (lutObject != null)
+            {
+                lutObject.Dispose();
+            }
+
+            lastTexture = newTexture;
+            _currentFlipLutY = _flipLutY;
+            return new OVRPassthroughColorLut(newTexture, OVRPassthroughColorLut.ColorChannels.Rgba, _currentFlipLutY);
+        }
+
+        return lutObject;
+    }
+
+    private static float ClampWeight(float weight)
+    {
+        if (weight < 0 || weight > 1)
+        {
+            Debug.LogWarning("Color lut weight should be between in [0, 1] range. Setting it to closest value.");
+            weight = Mathf.Clamp01(weight);
+        }
+
+        return weight;
     }
 
     #endregion
 
     #region Internal Fields/Properties
+
     private OVRCameraRig cameraRig;
     private bool cameraRigInitialized = false;
     private GameObject auxGameObject;
@@ -821,11 +1013,11 @@ public class OVRPassthroughLayer : MonoBehaviour
 
     // GameObjects which are in use as Insight Passthrough projection surface.
     private Dictionary<GameObject, PassthroughMeshInstance> surfaceGameObjects =
-            new Dictionary<GameObject, PassthroughMeshInstance>();
+        new Dictionary<GameObject, PassthroughMeshInstance>();
 
     // GameObjects which are pending addition to the Insight Passthrough projection surfaces.
     private List<DeferredPassthroughMeshAddition> deferredSurfaceGameObjects =
-            new List<DeferredPassthroughMeshAddition>();
+        new List<DeferredPassthroughMeshAddition>();
 
     [SerializeField, HideInInspector]
     internal List<SerializedSurfaceGeometry> serializedSurfaceGeometry =
@@ -859,6 +1051,11 @@ public class OVRPassthroughLayer : MonoBehaviour
     // It is set to `true` initially to ensure that the local default values are applied in the Passthrough API.
     private bool styleDirty = true;
 
+    private ColorLutHandler _colorLutHandler = new ColorLutHandler();
+    private InterpolatedColorLutHandler _interpolatedColorLutHandler = new InterpolatedColorLutHandler();
+
+    private IStyleHandler _styleHandler;
+
     // Keep a copy of a neutral gradient ready for comparison.
     static readonly private Gradient colorMapNeutralGradient = CreateNeutralColorMapGradient();
 
@@ -867,11 +1064,12 @@ public class OVRPassthroughLayer : MonoBehaviour
     {
         get
         {
-            return projectionSurfaceType == ProjectionSurfaceType.UserDefined ?
-                OVROverlay.OverlayShape.SurfaceProjectedPassthrough :
-                OVROverlay.OverlayShape.ReconstructionPassthrough;
+            return projectionSurfaceType == ProjectionSurfaceType.UserDefined
+                ? OVROverlay.OverlayShape.SurfaceProjectedPassthrough
+                : OVROverlay.OverlayShape.ReconstructionPassthrough;
         }
     }
+
     #endregion
 
     #region Unity Messages
@@ -926,19 +1124,36 @@ public class OVRPassthroughLayer : MonoBehaviour
         // Passthrough style updates are buffered and committed to the API atomically here.
         if (styleDirty)
         {
-            OVRPlugin.InsightPassthroughStyle style;
-            style.Flags = OVRPlugin.InsightPassthroughStyleFlags.HasTextureOpacityFactor |
-                OVRPlugin.InsightPassthroughStyleFlags.HasEdgeColor |
-                OVRPlugin.InsightPassthroughStyleFlags.HasTextureColorMap;
+            OVRPlugin.SetInsightPassthroughStyle(passthroughOverlay.layerId, CreatePassthroughStyle());
+            styleDirty = false;
+        }
+    }
 
-            style.TextureOpacityFactor = textureOpacity;
+    private
+        OVRPlugin.InsightPassthroughStyle2 CreatePassthroughStyle()
+    {
+        OVRPlugin.InsightPassthroughStyle2 style = default;
+        style.Flags = OVRPlugin.InsightPassthroughStyleFlags.HasTextureOpacityFactor |
+                      OVRPlugin.InsightPassthroughStyleFlags.HasEdgeColor |
+                      OVRPlugin.InsightPassthroughStyleFlags.HasTextureColorMap;
 
-            style.EdgeColor = edgeRenderingEnabled ? edgeColor.ToColorf() : new OVRPlugin.Colorf { r = 0, g = 0, b = 0, a = 0 };
+        style.TextureOpacityFactor = textureOpacity;
 
-            style.TextureColorMapType = colorMapType;
-            style.TextureColorMapData = IntPtr.Zero;
-            style.TextureColorMapDataSize = 0;
+        style.EdgeColor = edgeRenderingEnabled
+            ? edgeColor.ToColorf()
+            : new OVRPlugin.Colorf { r = 0, g = 0, b = 0, a = 0 };
 
+        style.TextureColorMapType = colorMapType;
+        style.TextureColorMapData = IntPtr.Zero;
+        style.TextureColorMapDataSize = 0;
+
+        if (style.TextureColorMapType == ColorMapType.ColorLut
+            || style.TextureColorMapType == ColorMapType.InterpolatedColorLut)
+        {
+            _styleHandler.ApplyStyleSettings(ref style);
+        }
+        else
+        {
             if (style.TextureColorMapType != ColorMapType.None && colorMapData == null)
             {
                 Debug.LogError("Color map not allocated");
@@ -971,11 +1186,9 @@ public class OVRPassthroughLayer : MonoBehaviour
                     }
                 }
             }
-
-            OVRPlugin.SetInsightPassthroughStyle(passthroughOverlay.layerId, style);
-
-            styleDirty = false;
         }
+
+        return style;
     }
 
     void OnEnable()
@@ -1029,5 +1242,34 @@ public class OVRPassthroughLayer : MonoBehaviour
     {
         DestroySurfaceGeometries();
     }
-#endregion
+
+    #endregion
+
+    private interface IStyleHandler
+    {
+        void ApplyStyleSettings(ref OVRPlugin.InsightPassthroughStyle2 style);
+    }
+
+    private class ColorLutHandler : IStyleHandler
+    {
+        public OVRPassthroughColorLut Lut { get; set; }
+        public float Weight { get; set; }
+
+        public virtual void ApplyStyleSettings(ref OVRPlugin.InsightPassthroughStyle2 style)
+        {
+            style.LutSource = Lut._colorLutHandle;
+            style.LutWeight = Weight;
+        }
+    }
+
+    private class InterpolatedColorLutHandler : ColorLutHandler
+    {
+        public OVRPassthroughColorLut LutTarget { get; set; }
+
+        public override void ApplyStyleSettings(ref OVRPlugin.InsightPassthroughStyle2 style)
+        {
+            base.ApplyStyleSettings(ref style);
+            style.LutTarget = LutTarget._colorLutHandle;
+        }
+    }
 }

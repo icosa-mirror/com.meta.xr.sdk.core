@@ -33,54 +33,54 @@ using UnityEngine;
 [RequireComponent(typeof(OVRSceneAnchor))]
 public class OVRSemanticClassification : MonoBehaviour, IOVRSceneComponent
 {
-	private readonly List<string> _labels = new List<string>();
+    private readonly List<string> _labels = new List<string>();
 
-	/// <summary>
-	/// A list of labels associated with an <see cref="OVRSceneAnchor"/>.
-	/// </summary>
-	/// <exception cref="ArgumentNullException"></exception>
-	public IReadOnlyList<string> Labels => _labels;
+    /// <summary>
+    /// A list of labels associated with an <see cref="OVRSceneAnchor"/>.
+    /// </summary>
+    /// <exception cref="ArgumentNullException"></exception>
+    public IReadOnlyList<string> Labels => _labels;
 
-	/// <summary>
-	/// Searches <see cref="Labels"/> for the given <paramref name="label"/>.
-	/// </summary>
-	/// <remarks>
-	/// This method performs a linear search over the <see cref="Labels"/>.
-	/// </remarks>
-	/// <param name="label">The label to find</param>
-	/// <returns>Returns true if <paramref name="label"/> exists in <see cref="Labels"/>.</returns>
-	public bool Contains(string label)
-	{
-		foreach (var item in _labels)
-		{
-			if (item == label)
-			{
-				return true;
-			}
-		}
+    /// <summary>
+    /// Searches <see cref="Labels"/> for the given <paramref name="label"/>.
+    /// </summary>
+    /// <remarks>
+    /// This method performs a linear search over the <see cref="Labels"/>.
+    /// </remarks>
+    /// <param name="label">The label to find</param>
+    /// <returns>Returns true if <paramref name="label"/> exists in <see cref="Labels"/>.</returns>
+    public bool Contains(string label)
+    {
+        foreach (var item in _labels)
+        {
+            if (item == label)
+            {
+                return true;
+            }
+        }
 
-		return false;
-	}
+        return false;
+    }
 
-	private void Awake()
-	{
-		if (GetComponent<OVRSceneAnchor>().Space.Valid)
-		{
-			((IOVRSceneComponent)this).Initialize();
-		}
-	}
+    private void Awake()
+    {
+        if (GetComponent<OVRSceneAnchor>().Space.Valid)
+        {
+            ((IOVRSceneComponent)this).Initialize();
+        }
+    }
 
-	void IOVRSceneComponent.Initialize()
-	{
-		if (OVRPlugin.GetSpaceSemanticLabels(GetComponent<OVRSceneAnchor>().Space, out var labels))
-		{
-			_labels.Clear();
-			_labels.AddRange(labels.Split(','));
-		}
-		else
-		{
-			OVRSceneManager.Development.LogWarning(nameof(OVRSemanticClassification),
-				$"[{GetComponent<OVRSceneAnchor>().Uuid}] {nameof(OVRSceneAnchor)} has no semantic labels.");
-		}
-	}
+    void IOVRSceneComponent.Initialize()
+    {
+        if (OVRPlugin.GetSpaceSemanticLabels(GetComponent<OVRSceneAnchor>().Space, out var labels))
+        {
+            _labels.Clear();
+            _labels.AddRange(labels.Split(','));
+        }
+        else
+        {
+            OVRSceneManager.Development.LogWarning(nameof(OVRSemanticClassification),
+                $"[{GetComponent<OVRSceneAnchor>().Uuid}] {nameof(OVRSceneAnchor)} has no semantic labels.");
+        }
+    }
 }
