@@ -23,11 +23,11 @@ using UnityEditor;
 using UnityEngine;
 
 [InitializeOnLoad]
-internal static class OVRProjectSetupMovementSDK
+internal static class OVRProjectSetupMovementSDKTasks
 {
     private const OVRProjectSetup.TaskGroup Group = OVRProjectSetup.TaskGroup.Features;
 
-    static OVRProjectSetupMovementSDK()
+    static OVRProjectSetupMovementSDKTasks()
     {
         AddMovementTrackingTasks<OVRBody>(
             "Body Tracking",
@@ -60,7 +60,7 @@ internal static class OVRProjectSetupMovementSDK
             group: Group,
             isDone: buildTargetGroup => OVRProjectSetupUtils.FindComponentInScene<T>() == null ||
                                         supportLevel() != OVRProjectConfig.FeatureSupport.None,
-            message: $"When using {featureName} in your project it's required to enable it's capability " +
+            message: $"When using {featureName} in your project it's required to enable its capability " +
                      $"in the project config",
             fix: buildTargetGroup =>
             {
