@@ -164,6 +164,7 @@ public class OVRManagerEditor : Editor
 #if UNITY_ANDROID
         EditorGUI.EndDisabledGroup();
 #endif
+
 #endif
 
         #region PermissionRequests
@@ -209,5 +210,19 @@ public class OVRManagerEditor : Editor
         }
 
         serializedObject.ApplyModifiedProperties();
+
+#if UNITY_EDITOR_WIN || UNITY_STANDALONE_WIN || UNITY_ANDROID
+#if !OCULUS_XR_VULKAN_DYNAMIC_RESOLUTION || UNITY_2020
+        if (manager.enableDynamicResolution && !PlayerSettings.GetUseDefaultGraphicsAPIs(BuildTarget.Android))
+        {
+            UnityEngine.Rendering.GraphicsDeviceType[] apis = PlayerSettings.GetGraphicsAPIs(BuildTarget.Android);
+            if (apis.Length >= 1 && apis[0] == UnityEngine.Rendering.GraphicsDeviceType.Vulkan)
+            {
+                Debug.LogError("Vulkan Dynamic Resolution is not supported on your current build version. Ensure you are on Unity 2021 + with Oculus XR plugin v3.3.0+");
+                manager.enableDynamicResolution = false;
+            }
+        }
+#endif
+#endif
     }
 }

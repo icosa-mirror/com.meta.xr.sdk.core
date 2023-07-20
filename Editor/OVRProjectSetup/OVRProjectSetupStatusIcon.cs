@@ -46,6 +46,8 @@ internal static class OVRProjectSetupStatusIcon
 
     static OVRProjectSetupStatusIcon()
     {
+        if (!OVREditorUtils.IsMainEditor()) return;
+
         var editorAssembly = typeof(UnityEditor.Editor).Assembly;
         var bindingFlags = BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance;
 

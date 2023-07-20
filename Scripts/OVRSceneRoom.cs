@@ -146,7 +146,7 @@ public class OVRSceneRoom : MonoBehaviour, IOVRSceneComponent
         if (!success)
         {
             _sceneManager.Verbose?.LogWarning(nameof(OVRSceneRoom),
-                $"Failed to enable the {nameof(OVRLocatable)} component for anchor {nameof(anchor.Uuid)}");
+                $"Failed to enable the {nameof(OVRLocatable)} component for anchor {anchor.Uuid}");
             return;
         }
 
@@ -162,7 +162,7 @@ public class OVRSceneRoom : MonoBehaviour, IOVRSceneComponent
         var prefab = isStrictly2D ? _sceneManager.PlanePrefab :
             (bounded3dEnabled ? _sceneManager.VolumePrefab : null);
 
-        var sceneAnchor = _sceneManager.InstantiateSceneAnchor(anchor.Handle, anchor.Uuid, prefab);
+        var sceneAnchor = _sceneManager.InstantiateSceneAnchor(anchor, prefab);
         if (sceneAnchor != null)
         {
             sceneAnchor.transform.parent = transform;
@@ -207,40 +207,45 @@ public class OVRSceneRoom : MonoBehaviour, IOVRSceneComponent
     {
         _uuidToQuery.Clear();
 
-        if (!OVRPlugin.GetSpaceContainer(_sceneAnchor.Space, out var spaceContainerUuids))
+        if (!_sceneAnchor.Anchor.TryGetComponent<OVRAnchorContainer>(out var container))
         {
             return;
         }
 
-        foreach (var uuid in spaceContainerUuids)
+        foreach (var uuid in container.Uuids)
         {
             _uuidToQuery.Add(uuid);
         }
 
         _sceneManager.Verbose?.Log(nameof(OVRSceneRoom),
-            $"{nameof(OVRPlugin.GetSpaceContainer)}: success [{true}], count [{_uuidToQuery.Count}]");
+            $"{nameof(_sceneAnchor.Anchor.TryGetComponent)}<{nameof(OVRAnchorContainer)}>: success [{true}], count [{_uuidToQuery.Count}]");
 
-
-        if (!OVRPlugin.GetSpaceRoomLayout(_sceneAnchor.Space, out var roomLayout))
+        if(!_sceneAnchor.Anchor.TryGetComponent<OVRRoomLayout>(out var roomLayout))
         {
             _sceneManager.Verbose?.LogWarning(nameof(OVRSceneRoom),
                 $"[{_sceneAnchor.Uuid}] has component {nameof(OVRPlugin.SpaceComponentType.RoomLayout)} " +
-                $"but {nameof(OVRPlugin.GetSpaceRoomLayout)} failed. Ignoring room.");
+                $"but {nameof(_sceneAnchor.Anchor.TryGetComponent)}<{nameof(OVRRoomLayout)}> failed. Ignoring room.");
+        }
+
+        if (!roomLayout.TryGetRoomLayout(out var ceilingUuid, out var floorUuid, out var wallUuids))
+        {
+            _sceneManager.Verbose?.LogWarning(nameof(OVRSceneRoom),
+                $"Failed to get the ceiling, floor and walls unique identifiers.");
             return;
         }
 
         // save room ids and add to queryables (duplicates are filtered)
-        if (!roomLayout.ceilingUuid.Equals(Guid.Empty))
-            _uuidToQuery.Add(roomLayout.ceilingUuid);
-        if (!roomLayout.floorUuid.Equals(Guid.Empty))
-            _uuidToQuery.Add(roomLayout.floorUuid);
+        if (!ceilingUuid.Equals(Guid.Empty))
+            _uuidToQuery.Add(ceilingUuid);
+        if (!floorUuid.Equals(Guid.Empty))
+            _uuidToQuery.Add(floorUuid);
 
         _orderedRoomGuids.Clear();
         int validWallsCount = 0;
-        foreach (var wallUuid in roomLayout.wallUuids)
+        foreach (var wallUuid in wallUuids)
         {
             _sceneManager.Verbose?.Log(nameof(OVRSceneManager),
-                $"{nameof(OVRPlugin.GetSpaceRoomLayout)}: wall [{wallUuid}]");
+                $"{nameof(roomLayout.TryGetRoomLayout)}: wall [{wallUuid}]");
             _orderedRoomGuids[wallUuid] = validWallsCount++;
             if (!wallUuid.Equals(Guid.Empty)) _uuidToQuery.Add(wallUuid);
         }

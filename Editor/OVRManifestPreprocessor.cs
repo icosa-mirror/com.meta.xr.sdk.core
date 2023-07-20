@@ -381,8 +381,17 @@ public class OVRManifestPreprocessor
                 "com.oculus.ossplash",
                 true,
                 modifyIfFound,
-                "value", "true");
-
+                "value",
+                "true");
+            AddOrRemoveTag(doc,
+                androidNamespaceURI,
+                "/manifest/application",
+                "meta-data",
+                "com.oculus.ossplash.type",
+                true,
+                modifyIfFound,
+                "value",
+                projectConfig.systemSplashScreenType.ToManifestTag());
             AddOrRemoveTag(doc,
                 androidNamespaceURI,
                 "/manifest/application",
@@ -390,7 +399,8 @@ public class OVRManifestPreprocessor
                 "com.oculus.ossplash.colorspace",
                 true,
                 modifyIfFound,
-                "value", ColorSpaceToManifestTag(runtimeSettings.colorSpace));
+                "value",
+                ColorSpaceToManifestTag(runtimeSettings.colorSpace));
         }
 
         //============================================================================
@@ -584,9 +594,9 @@ public class OVRManifestPreprocessor
             if (OVRDeviceSelector.isTargetDeviceQuestPro)
             {
                 if (string.IsNullOrEmpty(targetDeviceValue))
-                    targetDeviceValue = "cambria";
+                    targetDeviceValue = "questpro";
                 else
-                    targetDeviceValue += "|cambria";
+                    targetDeviceValue += "|questpro";
             }
             if (string.IsNullOrEmpty(targetDeviceValue))
             {

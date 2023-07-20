@@ -51,7 +51,6 @@ public class OVRPluginUpdater : IOVRPluginInfoSupplier
         Win,
         Win64,
         Win64OpenXR,
-        MetaXRSimulator,
     }
 
     class PluginPackage
@@ -281,10 +280,6 @@ public class OVRPluginUpdater : IOVRPluginInfoSupplier
                 { PluginPlatform.Win, rootPath + GetPluginBuildTargetSubPath(PluginPlatform.Win) },
                 { PluginPlatform.Win64, rootPath + GetPluginBuildTargetSubPath(PluginPlatform.Win64) },
                 { PluginPlatform.Win64OpenXR, rootPath + GetPluginBuildTargetSubPath(PluginPlatform.Win64OpenXR) },
-                {
-                    PluginPlatform.MetaXRSimulator,
-                    rootPath + GetPluginBuildTargetSubPath(PluginPlatform.MetaXRSimulator)
-                },
             }
         };
     }
@@ -356,9 +351,6 @@ public class OVRPluginUpdater : IOVRPluginInfoSupplier
                 break;
             case PluginPlatform.Win64OpenXR:
                 path = @"/Win64OpenXR/OVRPlugin.dll";
-                break;
-            case PluginPlatform.MetaXRSimulator:
-                path = @"/MetaXRSimulator/SIMULATOR.dll";
                 break;
             default:
                 throw new ArgumentException("Attempted GetPluginBuildTargetSubPath() for unsupported BuildTarget: " +
@@ -532,9 +524,6 @@ public class OVRPluginUpdater : IOVRPluginInfoSupplier
                         pi.SetEditorData("OS", "Windows");
                         pi.SetPlatformData("Editor", "CPU", "X86_64");
                         pi.SetPlatformData("Editor", "OS", "Windows");
-                        break;
-                    case PluginPlatform.MetaXRSimulator:
-                        // not enable for any platform
                         break;
                     default:
                         throw new ArgumentException("Attempted EnablePluginPackage() for unsupported BuildTarget: " +

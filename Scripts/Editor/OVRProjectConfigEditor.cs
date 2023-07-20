@@ -184,27 +184,31 @@ public class OVRProjectConfigEditor : Editor
 
                 // Tracked Keyboard Support
                 bool trackedKeyboardSupportAvailable = OVRPluginInfo.IsOVRPluginOpenXRActivated();
-                EditorGUI.BeginDisabledGroup(!trackedKeyboardSupportAvailable);
-                if (!trackedKeyboardSupportAvailable)
+                using (new EditorGUI.DisabledGroupScope(!trackedKeyboardSupportAvailable))
                 {
-                    projectConfig.trackedKeyboardSupport = OVRProjectConfig.TrackedKeyboardSupport.None;
-                }
+                    if (!trackedKeyboardSupportAvailable)
+                    {
+                        projectConfig.trackedKeyboardSupport = OVRProjectConfig.TrackedKeyboardSupport.None;
+                    }
 
-                OVREditorUtil.SetupEnumField(projectConfig, new GUIContent("Tracked Keyboard Support",
-                        "Show user's physical keyboard in correct position in VR."),
-                    ref projectConfig.trackedKeyboardSupport, ref hasModified);
+                    OVREditorUtil.SetupEnumField(projectConfig, new GUIContent("Tracked Keyboard Support",
+                            "Show user's physical keyboard in correct position in VR."),
+                        ref projectConfig.trackedKeyboardSupport, ref hasModified);
+                }
 
                 // Virtual Keyboard Support
                 bool virtualKeyboardSupportAvailable = OVRPluginInfo.IsOVRPluginOpenXRActivated();
-                EditorGUI.BeginDisabledGroup(!virtualKeyboardSupportAvailable);
-                if (!virtualKeyboardSupportAvailable)
+                using (new EditorGUI.DisabledGroupScope(!virtualKeyboardSupportAvailable))
                 {
-                    projectConfig.virtualKeyboardSupport = OVRProjectConfig.FeatureSupport.None;
-                }
+                    if (!virtualKeyboardSupportAvailable)
+                    {
+                        projectConfig.virtualKeyboardSupport = OVRProjectConfig.FeatureSupport.None;
+                    }
 
-                OVREditorUtil.SetupEnumField(projectConfig, new GUIContent("Virtual Keyboard Support",
-                        "Provides a consistent typing experience across Meta Quest VR applications."),
-                    ref projectConfig.virtualKeyboardSupport, ref hasModified);
+                    OVREditorUtil.SetupEnumField(projectConfig, new GUIContent("Virtual Keyboard Support",
+                            "Provides a consistent typing experience across Meta Quest VR applications."),
+                        ref projectConfig.virtualKeyboardSupport, ref hasModified);
+                }
 
                 // Anchor Support - linked to Shared Spatial Anchors and Scene
                 var anchorSupportRequired = projectConfig.sharedAnchorSupport != OVRProjectConfig.FeatureSupport.None;
@@ -275,13 +279,33 @@ public class OVRProjectConfigEditor : Editor
                         MessageType.Error);
                 }
 
-                EditorGUI.EndDisabledGroup();
-
                 // System Splash Screen
+                bool splashScreenTextureModified = false;
                 OVREditorUtil.SetupTexture2DField(projectConfig, new GUIContent("System Splash Screen",
                         "If set, the Splash Screen will be presented by the Operating System as a high quality composition layer at launch time."),
-                    ref projectConfig.systemSplashScreen, ref hasModified,
+                    ref projectConfig.systemSplashScreen, ref splashScreenTextureModified,
                     "https://developer.oculus.com/documentation/unity/unity-splash-screen/");
+                if (splashScreenTextureModified)
+                {
+                    projectConfig.systemSplashScreen = OVRSystemSplashScreenEditor.ProcessTexture(projectConfig.systemSplashScreen);
+                    hasModified = true;
+                }
+
+                // System Splash Screen: "Mono", "Stereo"
+                OVREditorUtil.SetupEnumField(
+                    projectConfig,
+                    new GUIContent("System Splash Screen Type", "\"Mono\": Texture will be rendered to both eyes.\n\"Stereo\": Texture will be split and rendered to each eye."),
+                    ref projectConfig.systemSplashScreenType,
+                    ref hasModified
+                );
+
+                if (projectConfig.systemSplashScreenType ==
+                    OVRProjectConfig.SystemSplashScreenType.Stereo)
+                {
+                    EditorGUILayout.HelpBox(
+                        "For stereoscopic splash screen, the image needs to be double-wide with left-to-right texture pair.",
+                        MessageType.Info);
+                }
 
                 // Allow optional 3-dof head-tracking
                 OVREditorUtil.SetupBoolField(projectConfig, new GUIContent("Allow Optional 3DoF Head Tracking",

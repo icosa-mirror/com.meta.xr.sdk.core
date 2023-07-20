@@ -55,7 +55,7 @@ public static partial class OVRPlugin
 #if OVRPLUGIN_UNSUPPORTED_PLATFORM
     public static readonly System.Version wrapperVersion = _versionZero;
 #else
-    public static readonly System.Version wrapperVersion = OVRP_1_86_0.version;
+    public static readonly System.Version wrapperVersion = OVRP_1_87_0.version;
 #endif
 
 #if !OVRPLUGIN_UNSUPPORTED_PLATFORM
@@ -421,6 +421,20 @@ public static partial class OVRPlugin
         KeyboardMaskedHandsPassthrough = 11,
     }
 
+    public enum LayerSuperSamplingType
+    {
+        None = 0,
+        Normal = 1 << 12,
+        Quality = 1 << 8,
+    }
+
+    public enum LayerSharpenType
+    {
+        None = 0,
+        Normal = 1 << 13,
+        Quality = 1 << 16,
+    }
+
     public static bool IsPassthroughShape(OverlayShape shape)
     {
         return shape == OverlayShape.ReconstructionPassthrough
@@ -615,6 +629,7 @@ public static partial class OVRPlugin
 
         Hidden = unchecked((int)0x000000200),
 
+        AutoFiltering = unchecked((int)0x00000400),
     }
 
     [StructLayout(LayoutKind.Sequential)]
@@ -3520,7 +3535,7 @@ public static partial class OVRPlugin
         bool overridePerLayerColorScaleAndOffset = false, Vector4 colorScale = default(Vector4),
         Vector4 colorOffset = default(Vector4), bool expensiveSuperSample = false, bool bicubic = false,
         bool efficientSuperSample = false, bool efficientSharpen = false, bool expensiveSharpen = false,
-        bool hidden = false, bool secureContent = false
+        bool hidden = false, bool secureContent = false, bool automaticFiltering = false
     )
     {
 #if OVRPLUGIN_UNSUPPORTED_PLATFORM
@@ -3552,7 +3567,8 @@ public static partial class OVRPlugin
                 flags |= (uint)OverlayFlag.BicubicFiltering;
             if (secureContent)
                 flags |= (uint)OverlayFlag.SecureContent;
-
+            if (automaticFiltering)
+                flags |= (uint) OverlayFlag.AutoFiltering;
             if (shape == OverlayShape.Cylinder || shape == OverlayShape.Cubemap)
             {
 #if UNITY_ANDROID && !UNITY_EDITOR
@@ -9221,6 +9237,25 @@ public static partial class OVRPlugin
 
 
 
+    [Flags]
+    public enum PassthroughPreferenceFields
+    {
+        Flags = 1 << 0
+    }
+
+    [Flags]
+    public enum PassthroughPreferenceFlags : long
+    {
+        DefaultToActive = 1 << 0
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    public struct PassthroughPreferences
+    {
+        public PassthroughPreferenceFields Fields;
+        public PassthroughPreferenceFlags Flags;
+    }
+
     public static bool GetLayerRecommendedResolution(int layerId, out Sizei recommendedSize)
     {
         recommendedSize = new Sizei();
@@ -9657,6 +9692,33 @@ public static partial class OVRPlugin
 
         OVRP_1_85_0.ovrp_OnEditorShutdown();
 #endif
+    }
+
+    internal static Result GetPassthroughPreferences(out PassthroughPreferences preferences)
+    {
+        preferences = default;
+#if OVRPLUGIN_UNSUPPORTED_PLATFORM
+        return Result.Failure_Unsupported;
+#else
+        if (version < OVRP_1_87_0.version) return Result.Failure_NotYetImplemented;
+        return OVRP_1_87_0.ovrp_GetPassthroughPreferences(out preferences);
+#endif // OVRPLUGIN_UNSUPPORTED_PLATFORM
+    }
+
+    public static bool SetEyeBufferSharpenType(LayerSharpenType sharpenType)
+    {
+#if OVRPLUGIN_UNSUPPORTED_PLATFORM
+        return false;
+#else
+        if (version >= OVRP_1_87_0.version)
+        {
+            return OVRP_1_87_0.ovrp_SetEyeBufferSharpenType(sharpenType) == Result.Success;
+        }
+        else
+        {
+            return false;
+        }
+#endif // OVRPLUGIN_UNSUPPORTED_PLATFORM
     }
 
     public static class Qpl
@@ -11356,6 +11418,19 @@ public static partial class OVRPlugin
 
 
 
+
+    }
+
+    private static class OVRP_1_87_0
+    {
+        public static readonly System.Version version = new System.Version(1, 87, 0);
+
+        [DllImport(pluginName, CallingConvention = CallingConvention.Cdecl)]
+
+        public static extern Result ovrp_GetPassthroughPreferences(out PassthroughPreferences preferences);
+
+        [DllImport(pluginName, CallingConvention = CallingConvention.Cdecl)]
+        public static extern Result ovrp_SetEyeBufferSharpenType(LayerSharpenType sharpenType);
 
     }
     /* INSERT NEW OVRP CLASS ABOVE THIS LINE */

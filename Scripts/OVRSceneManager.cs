@@ -210,6 +210,12 @@ public class OVRSceneManager : MonoBehaviour
         /// </summary>
         public const string Table = "TABLE";
 
+        /// <summary>
+        /// Represents an <see cref="OVRSceneAnchor"/> that is classified as wall art.
+        /// </summary>
+        public const string WallArt = "WALL_ART";
+
+
 
 
         /// <summary>
@@ -234,6 +240,7 @@ public class OVRSceneManager : MonoBehaviour
             Lamp,
             Plant,
             Table,
+            WallArt,
         };
     }
 
@@ -277,9 +284,9 @@ public class OVRSceneManager : MonoBehaviour
 
     private OVRCameraRig _cameraRig;
     private int _sceneAnchorUpdateIndex;
-    private List<OVRAnchor> _roomLayoutAnchors = new List<OVRAnchor>();
     private int _roomCounter;
     private Action<bool, List<OVRAnchor>> _onAnchorsFetchCompleted;
+    private bool _hasLoadedScene = false;
 
     #endregion
 
@@ -323,24 +330,28 @@ public class OVRSceneManager : MonoBehaviour
 
     internal async void OnApplicationPause(bool isPaused)
     {
-        if (isPaused) return;
+        // if we haven't loaded scene, we won't check anchor status
+        if (isPaused || !_hasLoadedScene) return;
 
-        _roomLayoutAnchors.Clear();
-        var success = await OVRAnchor.FetchAnchorsAsync<OVRRoomLayout>(_roomLayoutAnchors);
-        if (!success)
+        using (new OVRObjectPool.ListScope<OVRAnchor>(out var anchors))
         {
-            Verbose?.Log(nameof(OVRSceneManager), "Failed to retrieve scene model information on resume.");
-            return;
-        }
-
-        foreach (var anchor in _roomLayoutAnchors)
-        {
-            if (!OVRSceneAnchor.SceneAnchors.ContainsKey(anchor.Uuid))
+            var success = await OVRAnchor.FetchAnchorsAsync<OVRRoomLayout>(anchors);
+            if (!success)
             {
-                Verbose?.Log(nameof(OVRSceneManager),
-                    $"Scene model changed. Invoking {nameof(NewSceneModelAvailable)} event.");
-                NewSceneModelAvailable?.Invoke();
-                break;
+                Verbose?.Log(nameof(OVRSceneManager), "Failed to retrieve scene model information on resume.");
+                return;
+            }
+
+            // check whether room anchors have changed
+            foreach (var anchor in anchors)
+            {
+                if (!OVRSceneAnchor.SceneAnchors.ContainsKey(anchor.Uuid))
+                {
+                    Verbose?.Log(nameof(OVRSceneManager),
+                        $"Scene model changed. Invoking {nameof(NewSceneModelAvailable)} event.");
+                    NewSceneModelAvailable?.Invoke();
+                    break;
+                }
             }
         }
 
@@ -375,57 +386,62 @@ public class OVRSceneManager : MonoBehaviour
     /// <returns>Returns true if the query was successfully registered</returns>
     public bool LoadSceneModel()
     {
-        _roomLayoutAnchors.Clear();
+        _hasLoadedScene = true;
+
         DestroyExistingAnchors();
 
-        var task = OVRAnchor.FetchAnchorsAsync<OVRRoomLayout>(_roomLayoutAnchors);
-        task.ContinueWith(_onAnchorsFetchCompleted, _roomLayoutAnchors);
+        var anchors = OVRObjectPool.List<OVRAnchor>();
+        var task = OVRAnchor.FetchAnchorsAsync<OVRRoomLayout>(anchors);
+        task.ContinueWith(_onAnchorsFetchCompleted, anchors);
 
         return task.IsPending;
     }
 
     private void OnAnchorsFetchCompleted(bool success, List<OVRAnchor> roomLayoutAnchors)
     {
-        if (!success) return;
-
-        if (!roomLayoutAnchors.Any())
+        if (success)
         {
-            Development.LogWarning(nameof(OVRSceneManager),
-                "Loading the Scene definition yielded no result. "
-                + "Typically, this means the user has not captured the room they are in yet. "
-                + "Alternatively, an internal error may be preventing this app from accessing scene. "
-                + $"Invoking {nameof(NoSceneModelToLoad)}.");
+            if (roomLayoutAnchors.Any())
+            {
+                InstantiateSceneRooms(roomLayoutAnchors);
+            }
+            else
+            {
+                Development.LogWarning(nameof(OVRSceneManager),
+                    "Loading the Scene definition yielded no result. "
+                    + "Typically, this means the user has not captured the room they are in yet. "
+                    + "Alternatively, an internal error may be preventing this app from accessing scene. "
+                    + $"Invoking {nameof(NoSceneModelToLoad)}.");
 
-            NoSceneModelToLoad?.Invoke();
-            return;
+                NoSceneModelToLoad?.Invoke();
+            }
         }
-
-        InstantiateSceneRooms(roomLayoutAnchors);
+        OVRObjectPool.Return(roomLayoutAnchors);
     }
 
     private void InstantiateSceneRooms(List<OVRAnchor> roomLayoutAnchors)
     {
         _roomCounter = roomLayoutAnchors.Count;
-        foreach (var anchor in roomLayoutAnchors)
+        foreach (var roomAnchor in roomLayoutAnchors)
         {
             // Check if anchor already exists
-            if (OVRSceneAnchor.SceneAnchors.TryGetValue(anchor.Uuid, out var sceneAnchor))
+            if (OVRSceneAnchor.SceneAnchors.TryGetValue(roomAnchor.Uuid, out var sceneAnchor))
             {
                 sceneAnchor.IsTracked = true;
-                return;
+                continue;
             }
 
-            if (!(anchor.TryGetComponent(out OVRRoomLayout roomLayoutComponent) &&
+            if (!(roomAnchor.TryGetComponent(out OVRRoomLayout roomLayoutComponent) &&
                   roomLayoutComponent.IsEnabled))
             {
                 continue;
             }
 
-            var roomGO = new GameObject("Room " + anchor.Uuid);
+            var roomGO = new GameObject("Room " + roomAnchor.Uuid);
             roomGO.transform.parent = _initialAnchorParent;
 
             sceneAnchor = roomGO.AddComponent<OVRSceneAnchor>();
-            sceneAnchor.Initialize(anchor.Handle, anchor.Uuid);
+            sceneAnchor.Initialize(roomAnchor);
 
             var sceneRoom = roomGO.AddComponent<OVRSceneRoom>();
             sceneRoom.LoadRoom();
@@ -436,11 +452,14 @@ public class OVRSceneManager : MonoBehaviour
     {
         if (--_roomCounter > 0) return;
 
+#pragma warning disable CS0618 // Type or member is obsolete
+        // room layout needs to be defined before invoking the
+        // event else we may have access to a null property
+        RoomLayout = GetRoomLayoutInformation();
+#pragma warning restore CS0618 // Type or member is obsolete
+
         SceneModelLoadedSuccessfully?.Invoke();
         Verbose?.Log(nameof(OVRSceneManager), "Scene model loading completed.");
-
-#pragma warning disable CS0618
-        RoomLayout = GetRoomLayoutInformation();
     }
 
     private void DestroyExistingAnchors()
@@ -525,10 +544,11 @@ public class OVRSceneManager : MonoBehaviour
         }
     }
 
-#pragma warning disable CS0618
+#pragma warning disable CS0618 // Type or member is obsolete
     private RoomLayoutInformation GetRoomLayoutInformation()
     {
         var roomLayout = new RoomLayoutInformation();
+#pragma warning restore CS0618 // Type or member is obsolete
         if (OVRSceneRoom.SceneRoomsList.Any())
         {
             roomLayout.Floor = OVRSceneRoom.SceneRoomsList[0].Floor;
@@ -618,8 +638,11 @@ public class OVRSceneManager : MonoBehaviour
         }
     }
 
-    internal OVRSceneAnchor InstantiateSceneAnchor(OVRSpace space, Guid uuid, OVRSceneAnchor prefab)
+    internal OVRSceneAnchor InstantiateSceneAnchor(OVRAnchor anchor, OVRSceneAnchor prefab)
     {
+        var space = (OVRSpace)anchor.Handle;
+        var uuid = anchor.Uuid;
+
         // Query for the semantic classification of the object
         var hasSemanticLabels = OVRPlugin.GetSpaceSemanticLabels(space, out var labelString);
         var labels = hasSemanticLabels
@@ -657,7 +680,8 @@ public class OVRSceneManager : MonoBehaviour
         }
 
         var sceneAnchor = Instantiate(prefab, Vector3.zero, Quaternion.identity, _initialAnchorParent);
-        sceneAnchor.Initialize(space, uuid);
+        sceneAnchor.gameObject.SetActive(true);
+        sceneAnchor.Initialize(anchor);
 
         return sceneAnchor;
     }

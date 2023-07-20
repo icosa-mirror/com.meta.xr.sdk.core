@@ -28,13 +28,17 @@ internal static partial class OVRTelemetry
         get
         {
 
+#if OVRPLUGIN_UNSUPPORTED_PLATFORM
+            return false;
+#endif
+
 
             return OVRRuntimeSettings.Instance.TelemetryEnabled;
         }
     }
 
     private static readonly TelemetryClient InactiveClient = new NullTelemetryClient();
-    private static readonly TelemetryClient ActiveClient = new QPLTelemetryClient();
+    public static readonly TelemetryClient ActiveClient = new QPLTelemetryClient();
     public static TelemetryClient Client => IsActive ? ActiveClient : InactiveClient;
 
     public readonly struct MarkerPoint : IDisposable

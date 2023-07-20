@@ -46,6 +46,11 @@ public sealed class OVRSceneAnchor : MonoBehaviour
     public Guid Uuid { get; private set; }
 
     /// <summary>
+    /// Associated OVRAnchor
+    /// </summary>
+    public OVRAnchor Anchor { get; private set; }
+
+    /// <summary>
     /// Indicates whether this anchor is tracked by the system.
     /// </summary>
     public bool IsTracked { get; internal set; }
@@ -80,8 +85,11 @@ public sealed class OVRSceneAnchor : MonoBehaviour
         _pose = null;
     }
 
-    internal void Initialize(OVRSpace space, Guid uuid)
+    internal void Initialize(OVRAnchor anchor)
     {
+        var space = (OVRSpace)anchor.Handle;
+        var uuid = anchor.Uuid;
+
         if (Space.Valid)
             throw new InvalidOperationException($"[{uuid}] {nameof(OVRSceneAnchor)} has already been initialized.");
 
@@ -90,6 +98,7 @@ public sealed class OVRSceneAnchor : MonoBehaviour
 
         Space = space;
         Uuid = uuid;
+        Anchor = anchor;
 
         ClearPoseCache();
 
@@ -134,7 +143,7 @@ public sealed class OVRSceneAnchor : MonoBehaviour
         if (other == null)
             throw new ArgumentNullException(nameof(other));
 
-        Initialize(other.Space, other.Uuid);
+        Initialize(other.Anchor);
     }
 
     /// <summary>

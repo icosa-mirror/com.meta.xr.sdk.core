@@ -47,7 +47,7 @@ internal class OVRProjectSettingsProvider : SettingsProvider
 
             if (check.changed)
             {
-                OVRRuntimeSettings.Instance.TelemetryEnabled = telemetryEnabled;
+                OVRRuntimeSettings.Instance.SetTelemetryEnabled(telemetryEnabled, OVRTelemetryConstants.OVRManager.ConsentOrigins.Settings);
             }
         }
     }

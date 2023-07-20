@@ -18,6 +18,7 @@
  * limitations under the License.
  */
 
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Threading;
@@ -58,6 +59,37 @@ internal static class OVRProjectSetupUtils
         var scene = SceneManager.GetActiveScene();
         var rootGameObjects = scene.GetRootGameObjects();
         return rootGameObjects.FirstOrDefault(go => go.GetComponentInChildren<T>())?.GetComponentInChildren<T>();
+    }
+
+    public static List<T> FindComponentsInScene<T>() where T : Component
+    {
+        var activeScene = SceneManager.GetActiveScene();
+        var foundComponents = new List<T>();
+
+        var rootObjects = activeScene.GetRootGameObjects();
+        foreach (var rootObject in rootObjects)
+        {
+            var components = rootObject.GetComponentsInChildren<T>(true);
+            foundComponents.AddRange(components);
+        }
+
+        return foundComponents;
+    }
+
+    public static bool HasComponentInParents<T>(GameObject obj) where T : Component
+    {
+        var currentTransform = obj.transform;
+
+        while (currentTransform != null)
+        {
+            if (currentTransform.GetComponent<T>() != null)
+            {
+                return true;
+            }
+            currentTransform = currentTransform.parent;
+        }
+
+        return false;
     }
 
     public static T FindScriptableObjectInProject<T>() where T : ScriptableObject

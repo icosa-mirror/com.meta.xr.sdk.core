@@ -183,6 +183,7 @@ public class OVRManager : MonoBehaviour, OVRMixedRealityCaptureConfiguration
     }
 
 
+
     public interface EventListener
     {
         void OnEvent(OVRPlugin.EventDataBuffer eventData);
@@ -506,6 +507,23 @@ public class OVRManager : MonoBehaviour, OVRMixedRealityCaptureConfiguration
 
             OVRPlugin.monoscopic = value;
             _monoscopic = value;
+        }
+    }
+
+    [SerializeField]
+    [Tooltip("The sharpen filter of the eye buffer. This amplifies contrast and fine details.")]
+    private OVRPlugin.LayerSharpenType _sharpenType = OVRPlugin.LayerSharpenType.None;
+
+    /// <summary>
+    /// The sharpen type for the eye buffer
+    /// </summary>
+    public OVRPlugin.LayerSharpenType sharpenType
+    {
+        get { return _sharpenType; }
+        set
+        {
+            _sharpenType = value;
+            OVRPlugin.SetEyeBufferSharpenType(_sharpenType);
         }
     }
 
@@ -2125,6 +2143,9 @@ public class OVRManager : MonoBehaviour, OVRMixedRealityCaptureConfiguration
         OVRManager.ColorSpace clientColorSpace = runtimeSettings.colorSpace;
         colorGamut = clientColorSpace;
 
+        // Set the eyebuffer sharpen type at the start
+        OVRPlugin.SetEyeBufferSharpenType(_sharpenType);
+
 #if UNITY_EDITOR_WIN || UNITY_STANDALONE_WIN
         // Force OcculusionMesh on all the time, you can change the value to false if you really need it be off for some reasons,
         // be aware there are performance drops if you don't use occlusionMesh.
@@ -2149,6 +2170,7 @@ public class OVRManager : MonoBehaviour, OVRMixedRealityCaptureConfiguration
         {
             OVRPlugin.localDimming = _localDimming;
         }
+
 
 #if USING_XR_SDK
         if (enableDynamicResolution)
@@ -2282,7 +2304,6 @@ public class OVRManager : MonoBehaviour, OVRMixedRealityCaptureConfiguration
             boundary = new OVRBoundary();
 
         SetCurrentXRDevice();
-
     }
 
     private void Update()
@@ -2301,8 +2322,17 @@ public class OVRManager : MonoBehaviour, OVRMixedRealityCaptureConfiguration
         }
 #endif
 
+#if !OCULUS_XR_VULKAN_DYNAMIC_RESOLUTION || UNITY_2020
+        if (enableDynamicResolution && SystemInfo.graphicsDeviceType == GraphicsDeviceType.Vulkan)
+        {
+            Debug.LogError("Vulkan Dynamic Resolution is not supported on your current build version. Ensure you are on Unity 2021 + with Oculus XR plugin v3.3.0+");
+            enableDynamicResolution = false;
+        }
+#endif
+
+
 #if UNITY_EDITOR
-        if (_scriptsReloaded)
+            if (_scriptsReloaded)
         {
             _scriptsReloaded = false;
             instance = this;
@@ -2609,6 +2639,7 @@ public class OVRManager : MonoBehaviour, OVRMixedRealityCaptureConfiguration
             OVRPlugin.UpdateInBatchMode();
         }
 #endif
+
 
         OVRInput.Update();
 
@@ -3248,5 +3279,18 @@ public class OVRManager : MonoBehaviour, OVRMixedRealityCaptureConfiguration
     public static bool IsInsightPassthroughInitPending()
     {
         return _passthroughInitializationState == PassthroughInitializationState.Pending;
+    }
+
+    /// <summary>
+    /// Get a system recommendation on whether Passthrough should be active.
+    /// When set, it is recommended for apps which optionally support an MR experience with Passthrough to default to that mode.
+    /// Currently, this is determined based on whether the user has Passthrough active in the home environment.
+    /// </summary>
+    /// <returns>Flag indicating whether Passthrough is recommended.</returns>
+    public static bool IsPassthroughRecommended()
+    {
+        OVRPlugin.GetPassthroughPreferences(out var preferences);
+        return (preferences.Flags & OVRPlugin.PassthroughPreferenceFlags.DefaultToActive) ==
+            OVRPlugin.PassthroughPreferenceFlags.DefaultToActive;
     }
 }

@@ -113,13 +113,15 @@ public class OVRScenePlane : MonoBehaviour, IOVRSceneComponent
         }
     }
 
-    [Tooltip("When enabled, scales the child transforms according to the dimensions of this plane")]
+    [Tooltip("When enabled, scales the child transforms according to the dimensions of this plane. " +
+        "If both Volume and Plane components exist on the game object, the volume takes precedence.")]
     [SerializeField]
-    private bool _scaleChildren = true;
+    internal bool _scaleChildren = true;
 
-    [Tooltip("When enabled, offsets the child transforms according to the offset of this plane")]
+    [Tooltip("When enabled, offsets the child transforms according to the offset of this plane. " +
+        "If both Volume and Plane components exist on the game object, the volume takes precedence.")]
     [SerializeField]
-    private bool _offsetChildren = true;
+    internal bool _offsetChildren = true;
 
     internal JobHandle? _jobHandle;
 
@@ -194,9 +196,8 @@ public class OVRScenePlane : MonoBehaviour, IOVRSceneComponent
             Width = rect.Size.w;
             Height = rect.Size.h;
 
-            var planePivot = Vector2.Lerp(
-                transform.TransformPoint(rect.Pos.FromVector2f()),
-                transform.TransformPoint(rect.Pos.FromVector2f() + rect.Size.FromSizef()), 0.5f);
+            Vector2 planePivot = transform.TransformPoint(
+                rect.Pos.FromVector2f() + (rect.Size.FromSizef() / 2));
             var anchorPivot = new Vector2(transform.position.x, transform.position.y);
             Offset = planePivot - anchorPivot;
 

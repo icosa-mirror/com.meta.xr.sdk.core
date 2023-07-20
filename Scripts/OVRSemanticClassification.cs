@@ -76,6 +76,9 @@ public class OVRSemanticClassification : MonoBehaviour, IOVRSceneComponent
         {
             _labels.Clear();
             _labels.AddRange(ValidateAndUpgradeLabels(labels).Split(','));
+
+            OVRSceneManager.Development.Log(nameof(OVRSemanticClassification),
+                $"[{GetComponent<OVRSceneAnchor>().Uuid}] {nameof(OVRSceneAnchor)} has labels: {labels}.");
         }
         else
         {
@@ -114,6 +117,7 @@ public class OVRSemanticClassification : MonoBehaviour, IOVRSceneComponent
             else if (hasDesk && !hasTable)
                 newLabels.Add(OVRSceneManager.Classification.Table);
 #pragma warning restore CS0618 // Type or member is obsolete
+
 
             return string.Join(",", newLabels);
         }

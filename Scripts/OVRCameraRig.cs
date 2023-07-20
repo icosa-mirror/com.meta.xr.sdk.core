@@ -298,8 +298,10 @@ public class OVRCameraRig : MonoBehaviour
             }
             else
             {
-                OVRInput.Controller leftActiveController = OVRInput.GetActiveControllerForHand(OVRInput.Handedness.LeftHanded);
-                OVRInput.Controller rightActiveController = OVRInput.GetActiveControllerForHand(OVRInput.Handedness.RightHanded);
+                OVRInput.Controller leftActiveController =
+                    OVRInput.GetActiveControllerForHand(OVRInput.Handedness.LeftHanded);
+                OVRInput.Controller rightActiveController =
+                    OVRInput.GetActiveControllerForHand(OVRInput.Handedness.RightHanded);
 
                 leftHandAnchor.localPosition = OVRInput.GetLocalControllerPosition(leftActiveController);
                 rightHandAnchor.localPosition = OVRInput.GetLocalControllerPosition(rightActiveController);

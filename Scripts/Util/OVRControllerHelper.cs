@@ -274,13 +274,15 @@ public class OVRControllerHelper : MonoBehaviour
                     : m_modelMetaTouchProRightController;
             }
 
-            bool shouldSetControllerActive = m_hasInputFocus && controllerConnected;
-
-            m_activeController.SetActive(shouldSetControllerActive);
-
             m_prevControllerConnected = controllerConnected;
             m_prevControllerConnectedCached = true;
             m_hasInputFocusPrev = m_hasInputFocus;
+        }
+
+        bool shouldSetControllerActive = m_hasInputFocus && controllerConnected;
+        if (m_activeController != null)
+        {
+            m_activeController.SetActive(shouldSetControllerActive);
         }
 
         if (m_animator != null)
