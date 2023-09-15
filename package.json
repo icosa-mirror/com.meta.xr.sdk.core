@@ -1,9 +1,14 @@
 {
   "name": "com.meta.xr.sdk.utilities",
   "displayName": "Meta XR Utilities",
-  "version": "55.0.0-preview",
+  "version": "56.0.0-preview",
   "description": "Meta XR Utilities package provides the latest features to create immersive experiences for Meta XR devices.",
-  "samples": [],
+  "samples": [
+    {
+      "displayName": "Sample Scenes",
+      "path": "Samples~/Scenes"
+    }
+  ],
   "unity": "2020.3",
   "author": {
     "name": "Meta Platforms, Inc.",
@@ -11,5 +16,13 @@
   },
   "documentationUrl": "https://developer.oculus.com/documentation/unity/",
   "changelogUrl": "https://developer.oculus.com/downloads/package/unity-integration/",
-  "licensesUrl": "https://developer.oculus.com/licenses/oculussdk"
+  "licensesUrl": "https://developer.oculus.com/licenses/oculussdk",
+  "keywords": [
+    "Meta",
+    "Oculus",
+    "Quest",
+    "XR",
+    "SDK",
+    "Utilities"
+  ]
 }
