@@ -109,8 +109,17 @@ internal static class OVRPassthroughHelper
 
     private static void SaveScene()
     {
+        if (!IsCurrentSceneSaved())
+            return;
+
         var activeScene = SceneManager.GetActiveScene();
         EditorSceneManager.MarkSceneDirty(activeScene);
         EditorSceneManager.SaveScene(activeScene);
+    }
+
+    private static bool IsCurrentSceneSaved()
+    {
+        var scenePath = SceneManager.GetActiveScene().path;
+        return !string.IsNullOrEmpty(scenePath);
     }
 }

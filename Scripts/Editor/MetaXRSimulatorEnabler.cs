@@ -44,7 +44,7 @@ public class MetaXRSimulatorEnabler : MonoBehaviour
     {
         if (EditorUtility.DisplayDialog("Meta XR Simulator", "Download Meta XR Simulator from Oculus server as an UPM tarball, which can be installed through Package Manager.", "Download", "Cancel"))
         {
-            string downloadUrl = "https://npm.developer.oculus.com/-/web/detail/com.meta.xr.simulator";
+            string downloadUrl = "https://developer.oculus.com/downloads/package/meta-xr-simulator/";
             UnityEngine.Debug.LogFormat("Open Meta XR Simulator URL: {0}", downloadUrl);
             Application.OpenURL(downloadUrl);
         }

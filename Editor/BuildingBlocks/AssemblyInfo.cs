@@ -21,4 +21,5 @@
 using System.Runtime.CompilerServices;
 
 [assembly: InternalsVisibleTo("EditModeTests")]
+[assembly: InternalsVisibleTo("PlayModeTests")]
 [assembly: InternalsVisibleTo("Oculus.Interaction.OVR.Editor")]

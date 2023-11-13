@@ -315,6 +315,8 @@ public class OVROverlay : MonoBehaviour
     private Renderer rend;
 
 
+    public bool isOverlayVisible { get; private set; }
+
     private int texturesPerStage
     {
         get { return (layout == OVRPlugin.LayerLayout.Stereo) ? 2 : 1; }
@@ -830,7 +832,7 @@ public class OVROverlay : MonoBehaviour
                 if (currentOverlayShape != OverlayShape.Cubemap && currentOverlayShape != OverlayShape.OffcenterCubemap)
                 {
                     blitMat.SetInt("_flip", OVRPlugin.nativeXrApi == OVRPlugin.XrApi.OpenXR ? 1 : 0);
-                    if (overrideTextureRectMatrix)
+                    if (overrideTextureRectMatrix && isDynamic)
                     {
                         BlitSubImage(textures[eyeId], tempRTDst, tex2DMaterial, GetBlitRect(eyeId), invertTextureRects);
                     }
@@ -1075,7 +1077,7 @@ public class OVROverlay : MonoBehaviour
 #endif
     }
 
-    void ComputePoseAndScale(ref OVRPose pose, ref Vector3 scale, ref bool overlay, ref bool headLocked)
+    void ComputePoseAndScale(out OVRPose pose, out Vector3 scale, out bool overlay, out bool headLocked)
     {
         Camera headCamera = Camera.main;
 
@@ -1108,9 +1110,9 @@ public class OVROverlay : MonoBehaviour
         }
     }
 
-    bool ComputeSubmit(ref OVRPose pose, ref Vector3 scale, ref bool overlay, ref bool headLocked)
+    bool ComputeSubmit(out OVRPose pose, out Vector3 scale, out bool overlay, out bool headLocked)
     {
-        ComputePoseAndScale(ref pose, ref scale, ref overlay, ref headLocked);
+        ComputePoseAndScale(out pose, out scale, out overlay, out headLocked);
 
         // Pack the offsetCenter directly into pose.position for offcenterCubemap
         if (currentOverlayShape == OverlayShape.OffcenterCubemap)
@@ -1145,54 +1147,56 @@ public class OVROverlay : MonoBehaviour
         return true;
     }
 
-    void OpenVROverlayUpdate(Vector3 scale, OVRPose pose)
+    bool OpenVROverlayUpdate(Vector3 scale, OVRPose pose)
     {
         OVR.OpenVR.CVROverlay overlayRef = OVR.OpenVR.OpenVR.Overlay;
         if (overlayRef == null)
-            return;
+            return false;
 
         Texture overlayTex = textures[0];
 
-        if (overlayTex != null)
+        if (overlayTex == null)
+            return false;
+
+        OVR.OpenVR.EVROverlayError error = overlayRef.ShowOverlay(OpenVROverlayHandle);
+        if (error == OVR.OpenVR.EVROverlayError.InvalidHandle || error == OVR.OpenVR.EVROverlayError.UnknownOverlay)
         {
-            OVR.OpenVR.EVROverlayError error = overlayRef.ShowOverlay(OpenVROverlayHandle);
-            if (error == OVR.OpenVR.EVROverlayError.InvalidHandle || error == OVR.OpenVR.EVROverlayError.UnknownOverlay)
-            {
-                if (overlayRef.FindOverlay(OpenVROverlayKey + transform.name, ref OpenVROverlayHandle) !=
-                    OVR.OpenVR.EVROverlayError.None)
-                    return;
-            }
-
-            OVR.OpenVR.Texture_t tex = new OVR.OpenVR.Texture_t();
-            tex.handle = overlayTex.GetNativeTexturePtr();
-            tex.eType = SystemInfo.graphicsDeviceVersion.StartsWith("OpenGL")
-                ? OVR.OpenVR.ETextureType.OpenGL
-                : OVR.OpenVR.ETextureType.DirectX;
-            tex.eColorSpace = OVR.OpenVR.EColorSpace.Auto;
-            overlayRef.SetOverlayTexture(OpenVROverlayHandle, ref tex);
-
-            OVR.OpenVR.VRTextureBounds_t textureBounds = new OVR.OpenVR.VRTextureBounds_t();
-            textureBounds.uMin = (0 + OpenVRUVOffsetAndScale.x) * OpenVRUVOffsetAndScale.z;
-            textureBounds.vMin = (1 + OpenVRUVOffsetAndScale.y) * OpenVRUVOffsetAndScale.w;
-            textureBounds.uMax = (1 + OpenVRUVOffsetAndScale.x) * OpenVRUVOffsetAndScale.z;
-            textureBounds.vMax = (0 + OpenVRUVOffsetAndScale.y) * OpenVRUVOffsetAndScale.w;
-
-            overlayRef.SetOverlayTextureBounds(OpenVROverlayHandle, ref textureBounds);
-
-            OVR.OpenVR.HmdVector2_t vecMouseScale = new OVR.OpenVR.HmdVector2_t();
-            vecMouseScale.v0 = OpenVRMouseScale.x;
-            vecMouseScale.v1 = OpenVRMouseScale.y;
-            overlayRef.SetOverlayMouseScale(OpenVROverlayHandle, ref vecMouseScale);
-
-            overlayRef.SetOverlayWidthInMeters(OpenVROverlayHandle, scale.x);
-
-            Matrix4x4 mat44 = Matrix4x4.TRS(pose.position, pose.orientation, Vector3.one);
-
-            OVR.OpenVR.HmdMatrix34_t pose34 = mat44.ConvertToHMDMatrix34();
-
-            overlayRef.SetOverlayTransformAbsolute(OpenVROverlayHandle,
-                OVR.OpenVR.ETrackingUniverseOrigin.TrackingUniverseStanding, ref pose34);
+            if (overlayRef.FindOverlay(OpenVROverlayKey + transform.name, ref OpenVROverlayHandle) !=
+                OVR.OpenVR.EVROverlayError.None)
+                return false;
         }
+
+        OVR.OpenVR.Texture_t tex = new OVR.OpenVR.Texture_t();
+        tex.handle = overlayTex.GetNativeTexturePtr();
+        tex.eType = SystemInfo.graphicsDeviceVersion.StartsWith("OpenGL")
+            ? OVR.OpenVR.ETextureType.OpenGL
+            : OVR.OpenVR.ETextureType.DirectX;
+        tex.eColorSpace = OVR.OpenVR.EColorSpace.Auto;
+        overlayRef.SetOverlayTexture(OpenVROverlayHandle, ref tex);
+
+        OVR.OpenVR.VRTextureBounds_t textureBounds = new OVR.OpenVR.VRTextureBounds_t();
+        textureBounds.uMin = (0 + OpenVRUVOffsetAndScale.x) * OpenVRUVOffsetAndScale.z;
+        textureBounds.vMin = (1 + OpenVRUVOffsetAndScale.y) * OpenVRUVOffsetAndScale.w;
+        textureBounds.uMax = (1 + OpenVRUVOffsetAndScale.x) * OpenVRUVOffsetAndScale.z;
+        textureBounds.vMax = (0 + OpenVRUVOffsetAndScale.y) * OpenVRUVOffsetAndScale.w;
+
+        overlayRef.SetOverlayTextureBounds(OpenVROverlayHandle, ref textureBounds);
+
+        OVR.OpenVR.HmdVector2_t vecMouseScale = new OVR.OpenVR.HmdVector2_t();
+        vecMouseScale.v0 = OpenVRMouseScale.x;
+        vecMouseScale.v1 = OpenVRMouseScale.y;
+        overlayRef.SetOverlayMouseScale(OpenVROverlayHandle, ref vecMouseScale);
+
+        overlayRef.SetOverlayWidthInMeters(OpenVROverlayHandle, scale.x);
+
+        Matrix4x4 mat44 = Matrix4x4.TRS(pose.position, pose.orientation, Vector3.one);
+
+        OVR.OpenVR.HmdMatrix34_t pose34 = mat44.ConvertToHMDMatrix34();
+
+        overlayRef.SetOverlayTransformAbsolute(OpenVROverlayHandle,
+            OVR.OpenVR.ETrackingUniverseOrigin.TrackingUniverseStanding, ref pose34);
+
+        return true;
     }
 
     private Vector4 OpenVRUVOffsetAndScale = new Vector4(0, 0, 1.0f, 1.0f);
@@ -1202,8 +1206,14 @@ public class OVROverlay : MonoBehaviour
 
     void LateUpdate()
     {
+        isOverlayVisible = TrySubmitLayer();
+    }
+
+    bool TrySubmitLayer()
+    {
         if (!OVRManager.OVRManagerinitialized || !OVRPlugin.userPresent)
-            return;
+            return false;
+
         if (!xrDeviceConstructed)
         {
             InitOVROverlay();
@@ -1213,7 +1223,7 @@ public class OVROverlay : MonoBehaviour
         {
             Debug.LogError("Warning-XR Device was switched during runtime with overlays still enabled. " +
                            "When doing so, all overlays constructed with the previous XR device must first be disabled.");
-            return;
+            return false;
         }
 
         // The overlay must be specified every eye frame, because it is positioned relative to the
@@ -1223,22 +1233,19 @@ public class OVROverlay : MonoBehaviour
         if (currentOverlayType == OverlayType.None ||
             (requiresTextures && (textures.Length < texturesPerStage || textures[0] == null)))
         {
-            return;
+            return false;
         }
 
-        OVRPose pose = OVRPose.identity;
-        Vector3 scale = Vector3.one;
-        bool overlay = false;
-        bool headLocked = false;
-        if (!ComputeSubmit(ref pose, ref scale, ref overlay, ref headLocked))
-            return;
+        if (!ComputeSubmit(out OVRPose pose, out Vector3 scale, out bool overlay, out bool headLocked))
+            return false;
 
         if (OVRManager.loadedXRDevice == OVRManager.XRDevice.OpenVR)
         {
             if (currentOverlayShape == OverlayShape.Quad)
-                OpenVROverlayUpdate(scale, pose);
+                return OpenVROverlayUpdate(scale, pose);
+
             //No more Overlay processing is required if we're on OpenVR
-            return;
+            return false;
         }
 
         OVRPlugin.LayerDesc newDesc = GetCurrentLayerDesc();
@@ -1266,7 +1273,7 @@ public class OVROverlay : MonoBehaviour
                 prevOverlayShape = currentOverlayShape;
             }
 
-            return;
+            return false;
         }
 
         if (needsTextures)
@@ -1279,14 +1286,14 @@ public class OVROverlay : MonoBehaviour
                 isDynamic = true;
 
             if (!LatchLayerTextures())
-                return;
+                return false;
 
             // Don't populate the same frame image twice.
             if (frameIndex > prevFrameIndex)
             {
                 int stage = frameIndex % stageCount;
                 if (!PopulateLayer(newDesc.MipLevels, isHdr, newDesc.TextureSize, newDesc.SampleCount, stage))
-                    return;
+                    return false;
             }
         }
 
@@ -1299,6 +1306,8 @@ public class OVROverlay : MonoBehaviour
         // Backward compatibility: show regular renderer if overlay isn't visible.
         if (rend)
             rend.enabled = !isOverlayVisible;
+
+        return isOverlayVisible;
     }
     #endregion
 }

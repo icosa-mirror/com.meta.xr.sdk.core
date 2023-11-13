@@ -98,6 +98,8 @@ internal class OVRStatusMenu : EditorWindow
     private static readonly List<Item> Items = new List<Item>();
     private static OVRStatusMenu _instance;
 
+    public static List<Item> RegisteredItems => Items;
+
     public static void RegisterItem(Item item)
     {
         Items.Add(item);

@@ -69,6 +69,14 @@ namespace Oculus.VR.Editor
             return ovrDir.FullName;
         }
 
+        public static UnityEditor.PackageManager.PackageInfo GetUtilitiesPackageInfo()
+        {
+            var so = ScriptableObject.CreateInstance(typeof(OVRPluginInfo));
+            var script = MonoScript.FromScriptableObject(so);
+            string assetPath = AssetDatabase.GetAssetPath(script);
+            return UnityEditor.PackageManager.PackageInfo.FindForAssetPath(assetPath);
+        }
+
         public static bool IsInsidePackageDistribution()
         {
             var so = CreateInstance(typeof(OVRPluginInfo));

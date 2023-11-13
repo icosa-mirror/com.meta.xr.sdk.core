@@ -11,17 +11,18 @@ MonoBehaviour:
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 35c4ad19f06c67e44a2d7ba8d05f31b7, type: 3}
   m_Name: CameraRig
-  m_EditorClassIdentifier:
+  m_EditorClassIdentifier: 
   id: e47682b9-c270-40b1-b16d-90b627a5ce1b
   version: 1
   blockName: Camera Rig
   description: Camera Rig for Oculus Development
-  sdk: 5
+  tags:
+    array:
+    - name: Core
+    - name: Tracking
   thumbnail: {fileID: 2800000, guid: e9abd002809cb87438c59a0934dc4c41, type: 3}
-  displayOnContentTab: 1
-  experimental: 0
   order: -10
   prefab: {fileID: 100004, guid: 4b650a383c3760f449b65ff48bccdd5f, type: 3}
   dependencies: []
   isSingleton: 1
-  usageInstructions:
+  usageInstructions: 

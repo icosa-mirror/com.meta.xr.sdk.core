@@ -84,6 +84,8 @@ internal class OVRGUIContent
     private readonly bool _builtIn;
     private string _tooltip;
 
+    public string Name => _name;
+
     public string Tooltip
     {
         set
@@ -91,6 +93,7 @@ internal class OVRGUIContent
             _tooltip = value;
             _content.tooltip = value;
         }
+        get => _tooltip;
     }
 
     public OVRGUIContent(string name, Source source, string tooltip = null)

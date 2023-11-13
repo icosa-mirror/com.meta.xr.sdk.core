@@ -39,7 +39,7 @@ internal abstract class OVRProjectSetupSettingItem<T>
         Key = OVRProjectSetup.KeyPrefix + "." + Uid;
     }
 
-    public abstract void AppendToMenu(GenericMenu menu);
+    public abstract void AppendToMenu(GenericMenu menu, Action callback = null);
 
     public void Reset()
     {
@@ -62,9 +62,13 @@ internal abstract class OVRProjectSetupSettingBool : OVRProjectSetupSettingItem<
     {
     }
 
-    public override void AppendToMenu(GenericMenu menu)
+    public override void AppendToMenu(GenericMenu menu, Action callback = null)
     {
-        menu.AddItem(new GUIContent(Label), Value, () => Value = !Value);
+        menu.AddItem(new GUIContent(Label), Value, () =>
+        {
+            Value = !Value;
+            callback?.Invoke();
+        });
     }
 }
 
@@ -75,7 +79,7 @@ internal abstract class OVRProjectSetupSettingFloat : OVRProjectSetupSettingItem
     {
     }
 
-    public override void AppendToMenu(GenericMenu menu)
+    public override void AppendToMenu(GenericMenu menu, Action callback = null)
     {
         // Do not Append to a GenericMenu
     }
@@ -277,7 +281,7 @@ internal class OVRProjectSetupConstSettingBool : OVRProjectSetupSettingBool
         set { }
     }
 
-    public override void AppendToMenu(GenericMenu menu)
+    public override void AppendToMenu(GenericMenu menu, Action callback = null)
     {
     }
 }

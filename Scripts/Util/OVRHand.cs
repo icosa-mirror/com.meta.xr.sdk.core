@@ -250,6 +250,7 @@ public class OVRHand : MonoBehaviour,
     }
 
 
+
     OVRMesh.MeshType OVRMesh.IOVRMeshDataProvider.GetMeshType()
     {
         switch (HandType)
@@ -277,5 +278,27 @@ public class OVRHand : MonoBehaviour,
         }
 
         return data;
+    }
+
+    public void OnValidate()
+    {
+        // Verify that all hand side based components on this object are using the same hand side.
+        var skeleton = GetComponent<OVRSkeleton>();
+        if( skeleton != null )
+        {
+            if( skeleton.GetSkeletonType().AsHandType() != HandType )
+            {
+                skeleton.SetSkeletonType(HandType.AsSkeletonType());
+            }
+        }
+
+        var mesh = GetComponent<OVRMesh>();
+        if( mesh != null )
+        {
+            if( mesh.GetMeshType().AsHandType() != HandType )
+            {
+                mesh.SetMeshType(HandType.AsMeshType());
+            }
+        }
     }
 }

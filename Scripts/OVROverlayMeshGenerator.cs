@@ -18,6 +18,7 @@
  * limitations under the License.
  */
 
+using System;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using UnityEngine;
@@ -29,7 +30,7 @@ using UnityEngine.Rendering;
 /// </summary>
 [RequireComponent(typeof(MeshFilter))]
 [RequireComponent(typeof(MeshRenderer))]
-[ExecuteInEditMode]
+[ExecuteAlways]
 [HelpURL("https://developer.oculus.com/reference/unity/latest/class_o_v_r_overlay_mesh_generator")]
 public class OVROverlayMeshGenerator : MonoBehaviour
 {
@@ -40,11 +41,10 @@ public class OVROverlayMeshGenerator : MonoBehaviour
     private readonly List<Vector3> _Verts = new List<Vector3>();
     private Transform _CameraRoot;
     private Rect _LastDestRectLeft;
-    private Rect _LastDestRectRight;
     private Vector3 _LastPosition;
     private Quaternion _LastRotation;
     private Vector3 _LastScale;
-    private TextureDimension _LastTextureDimension;
+    private TextureDimension _LastTextureDimension = TextureDimension.Tex2D;
 
     private OVROverlay.OverlayShape _LastShape;
     private Rect _LastSrcRectLeft;
@@ -55,40 +55,80 @@ public class OVROverlayMeshGenerator : MonoBehaviour
     private MeshRenderer _MeshRenderer;
     private OVROverlay _Overlay;
     private Transform _Transform;
+    private Material _PreviewMaterial;
 
     protected void OnEnable()
     {
         Initialize();
-#if UNITY_EDITOR
-        UnityEditor.EditorApplication.update += Update;
-#endif
-    }
-
-    protected void OnDisable()
-    {
-#if UNITY_EDITOR
-        UnityEditor.EditorApplication.update -= Update;
-#endif
     }
 
     protected void OnDestroy()
     {
-#if UNITY_EDITOR
-        UnityEditor.EditorApplication.update -= Update;
-#endif
-
         if (_Mesh != null)
         {
-            DestroyImmediate(_Mesh);
+            if (Application.isPlaying)
+            {
+                Destroy(_Mesh);
+            }
+            else
+            {
+                DestroyImmediate(_Mesh);
+            }
+        }
+
+        if (_PreviewMaterial != null)
+        {
+            if (Application.isPlaying)
+            {
+                Destroy(_PreviewMaterial);
+            }
+            else
+            {
+                DestroyImmediate(_PreviewMaterial);
+            }
         }
     }
 
 #if UNITY_EDITOR
     protected void Update()
     {
-        if (!_Overlay)
+        TryUpdateMesh();
+    }
+#endif
+
+    private void Initialize()
+    {
+        _MeshFilter = GetComponent<MeshFilter>();
+        _MeshRenderer = GetComponent<MeshRenderer>();
+        _MeshCollider = GetComponent<MeshCollider>();
+
+        _Transform = transform;
+
+        if (Camera.main && Camera.main.transform.parent)
+        {
+            _CameraRoot = Camera.main.transform.parent;
+        }
+
+        TryUpdateMesh();
+    }
+
+    public void SetOverlay(OVROverlay overlay)
+    {
+        _Overlay = overlay;
+        Initialize();
+    }
+
+    private void TryUpdateMesh()
+    {
+        if (_Overlay == null)
         {
             return;
+        }
+
+        if (_Mesh == null)
+        {
+            _Mesh = new Mesh { name = "Overlay" };
+            _Mesh.hideFlags = HideFlags.DontSaveInBuild | HideFlags.DontSaveInEditor;
         }
 
         if (_Transform == null)
@@ -101,10 +141,9 @@ public class OVROverlayMeshGenerator : MonoBehaviour
         Quaternion rotation = _Transform.rotation;
         Vector3 scale = _Transform.lossyScale;
         Rect destRectLeft = _Overlay.overrideTextureRectMatrix ? _Overlay.destRectLeft : new Rect(0, 0, 1, 1);
-        Rect destRectRight = _Overlay.overrideTextureRectMatrix ? _Overlay.destRectRight : new Rect(0, 0, 1, 1);
         Rect srcRectLeft = _Overlay.overrideTextureRectMatrix ? _Overlay.srcRectLeft : new Rect(0, 0, 1, 1);
         Texture texture = _Overlay.textures[0];
-        TextureDimension dimension = texture != null ? texture.dimension : TextureDimension.None;
+        TextureDimension dimension = texture != null ? texture.dimension : TextureDimension.Tex2D;
 
         // Re-generate the mesh if necessary
         if (_LastShape != shape ||
@@ -112,10 +151,9 @@ public class OVROverlayMeshGenerator : MonoBehaviour
             _LastRotation != rotation ||
             _LastScale != scale ||
             _LastDestRectLeft != destRectLeft ||
-            _LastDestRectRight != destRectRight ||
             _LastTextureDimension != dimension)
         {
-            UpdateMesh(shape, position, rotation, scale, GetBoundingRect(destRectLeft, destRectRight), dimension == TextureDimension.Cube);
+            UpdateMesh(shape, position, rotation, scale, destRectLeft, dimension == TextureDimension.Cube);
         }
 
         // Generate the material and update textures if necessary
@@ -123,30 +161,36 @@ public class OVROverlayMeshGenerator : MonoBehaviour
         {
             if (_MeshRenderer.sharedMaterial == null || dimension != _LastTextureDimension)
             {
-                if (_MeshRenderer.sharedMaterial != null)
+                if (_PreviewMaterial != null)
                 {
-                    DestroyImmediate(_MeshRenderer.sharedMaterial);
+                    if (Application.isPlaying)
+                    {
+                        Destroy(_PreviewMaterial);
+                    }
+                    else
+                    {
+                        DestroyImmediate(_PreviewMaterial);
+                    }
                 }
 
-                Material previewMat = null;
-
+                _PreviewMaterial = null;
                 switch (dimension)
                 {
                     case TextureDimension.Tex2D:
-                        previewMat = new Material(Shader.Find("Unlit/Transparent"));
+                        _PreviewMaterial = new Material(Shader.Find("Unlit/Transparent"));
 
                         break;
                     case TextureDimension.Cube:
-                        previewMat = new Material(Shader.Find("Hidden/CubeCopy"));
+                        _PreviewMaterial = new Material(Shader.Find("Hidden/CubeCopy"));
 
                         break;
                 }
 
-                if (previewMat != null)
+                if (_PreviewMaterial != null)
                 {
-                    previewMat.mainTexture = texture;
+                    _PreviewMaterial.mainTexture = texture;
                 }
-                _MeshRenderer.sharedMaterial = previewMat;
+                _MeshRenderer.sharedMaterial = _PreviewMaterial;
             }
 
             if (_LastSrcRectLeft != srcRectLeft)
@@ -154,61 +198,12 @@ public class OVROverlayMeshGenerator : MonoBehaviour
                 _MeshRenderer.sharedMaterial.mainTextureOffset = srcRectLeft.position;
                 _MeshRenderer.sharedMaterial.mainTextureScale = srcRectLeft.size;
             }
+
+            if (_MeshRenderer.sharedMaterial.mainTexture != texture)
+            {
+                _MeshRenderer.sharedMaterial.mainTexture = texture;
+            }
         }
-        _LastShape = shape;
-        _LastPosition = position;
-        _LastRotation = rotation;
-        _LastScale = scale;
-        _LastDestRectLeft = destRectLeft;
-        _LastDestRectRight = destRectRight;
-        _LastSrcRectLeft = srcRectLeft;
-        _LastTextureDimension = dimension;
-    }
-#endif
-
-    private void Initialize()
-    {
-        _MeshFilter = GetComponent<MeshFilter>();
-        _MeshRenderer = GetComponent<MeshRenderer>();
-
-        _Transform = transform;
-
-        if (Camera.main && Camera.main.transform.parent)
-        {
-            _CameraRoot = Camera.main.transform.parent;
-        }
-
-        if (_Overlay)
-        {
-            CreateMesh();
-        }
-    }
-
-    public void SetOverlay(OVROverlay overlay)
-    {
-        _Overlay = overlay;
-        CreateMesh();
-    }
-
-    public static Rect GetBoundingRect(Rect a, Rect b)
-    {
-        float xMin = Mathf.Min(a.x, b.x);
-        float xMax = Mathf.Max(a.x + a.width, b.x + b.width);
-        float yMin = Mathf.Min(a.y, b.y);
-        float yMax = Mathf.Max(a.y + a.height, b.y + b.height);
-
-        return new Rect(xMin, yMin, xMax - xMin, yMax - yMin);
-    }
-
-    private void CreateMesh()
-    {
-        if (_Mesh != null)
-        {
-            DestroyImmediate(_Mesh);
-        }
-
-        _Mesh = new Mesh { name = "Overlay" };
-        _Mesh.hideFlags = HideFlags.DontSaveInBuild | HideFlags.DontSaveInEditor;
 
         if (_MeshFilter)
         {
@@ -219,6 +214,14 @@ public class OVROverlayMeshGenerator : MonoBehaviour
         {
             _MeshCollider.sharedMesh = _Mesh;
         }
+
+        _LastShape = shape;
+        _LastPosition = position;
+        _LastRotation = rotation;
+        _LastScale = scale;
+        _LastDestRectLeft = destRectLeft;
+        _LastSrcRectLeft = srcRectLeft;
+        _LastTextureDimension = dimension;
     }
 
     private void UpdateMesh(OVROverlay.OverlayShape shape, Vector3 position, Quaternion rotation, Vector3 scale,
@@ -245,7 +248,6 @@ public class OVROverlayMeshGenerator : MonoBehaviour
         _Mesh.SetTriangles(_Tris, 0);
         _Mesh.UploadMeshData(false);
     }
-
 
     public static void GenerateMesh(List<Vector3> verts, List<Vector2> uvs, List<Vector4> cubeUVs, List<int> tris,
         OVROverlay.OverlayShape shape, Vector3 position, Quaternion rotation, Vector3 scale, Rect rect)

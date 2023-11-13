@@ -26,6 +26,7 @@ using UnityEditor.PackageManager;
 using UnityEditor.PackageManager.Requests;
 using UnityEngine;
 using UnityEngine.SceneManagement;
+using PackageInfo = UnityEditor.PackageManager.PackageInfo;
 
 internal static class OVRProjectSetupUtils
 {
@@ -92,9 +93,17 @@ internal static class OVRProjectSetupUtils
 
     public static bool PackageManagerListAvailable => _packageManagerListRequest.Status == StatusCode.Success;
 
-    public static bool IsPackageInstalled(string packageName) =>
-        PackageManagerListAvailable &&
-        (_packageManagerListRequest.Result?.Any(package => package.name == packageName) ?? false);
+    public static PackageInfo GetPackage(string packageName)
+    {
+        if (!PackageManagerListAvailable || _packageManagerListRequest.Result == null)
+        {
+            return null;
+        }
+
+        return _packageManagerListRequest.Result.FirstOrDefault(package => package.name == packageName);
+    }
+
+    public static bool IsPackageInstalled(string packageName) => GetPackage(packageName) != null;
 
     public static bool RefreshPackageList(bool blocking)
     {

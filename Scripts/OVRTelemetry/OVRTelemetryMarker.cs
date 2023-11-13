@@ -37,6 +37,7 @@ internal struct OVRTelemetryMarker : IDisposable
     }
 
 
+
     private OVRTelemetryMarkerState State { get; set; }
 
     public bool Sent => State.Sent;
@@ -90,10 +91,14 @@ internal struct OVRTelemetryMarker : IDisposable
         return string.IsNullOrEmpty(annotationValue) ? this : AddAnnotation(annotationKey, annotationValue);
     }
 
+
+    private static string _unityVersion;
+    private static string UnityVersion => _unityVersion ??= Application.unityVersion;
+
     public OVRTelemetryMarker Send()
     {
 
-        AddAnnotation(OVRTelemetryConstants.OVRManager.AnnotationTypes.EngineVersion, Application.unityVersion);
+        AddAnnotation(OVRTelemetryConstants.OVRManager.AnnotationTypes.EngineVersion, UnityVersion);
 
         State = new OVRTelemetryMarkerState(true, Result);
         _client.MarkerEnd(MarkerId, Result, InstanceKey);

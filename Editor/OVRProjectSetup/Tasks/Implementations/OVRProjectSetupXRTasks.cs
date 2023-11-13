@@ -123,10 +123,12 @@ internal static class OVRProjectSetupXRTasks
                 else
                 {
                     oculusLoader = ScriptableObject.CreateInstance<OculusLoader>();
+                    EnsureIsValidFolder("Assets/XR/Loaders");
                     AssetDatabase.CreateAsset(oculusLoader, "Assets/XR/Loaders/Oculus Loader.asset");
                 }
 
                 settings.Manager.TryAddLoader(oculusLoader);
+                EditorUtility.SetDirty(settings);
             },
             fixMessage: "Add Oculus to the XR Plugin active loaders"
         );
@@ -134,6 +136,19 @@ internal static class OVRProjectSetupXRTasks
     }
 
 #if USING_XR_MANAGEMENT && USING_XR_SDK_OCULUS
+    private static void EnsureIsValidFolder(string path)
+    {
+        var folders = path.Split('/');
+        string fullPath = null;
+        foreach (var folder in folders)
+        {
+            var newPath = string.IsNullOrEmpty(fullPath) ? folder : fullPath + "/" + folder;
+            if (!AssetDatabase.IsValidFolder(newPath))
+                AssetDatabase.CreateFolder(fullPath, folder);
+            fullPath = newPath;
+        }
+    }
+
     private static UnityEngine.XR.Management.XRGeneralSettings GetXRGeneralSettingsForBuildTarget(
         BuildTargetGroup buildTargetGroup, bool create)
     {
@@ -153,8 +168,7 @@ internal static class OVRProjectSetupXRTasks
         if (settingsPerBuildTarget == null)
         {
             settingsPerBuildTarget = ScriptableObject.CreateInstance<XRGeneralSettingsPerBuildTarget>();
-            if (!AssetDatabase.IsValidFolder("Assets/XR"))
-                AssetDatabase.CreateFolder("Assets", "XR");
+            EnsureIsValidFolder("Assets/XR");
             const string assetPath = "Assets/XR/XRGeneralSettingsPerBuildTarget.asset";
             AssetDatabase.CreateAsset(settingsPerBuildTarget, assetPath);
             AssetDatabase.SaveAssets();

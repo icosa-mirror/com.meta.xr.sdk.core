@@ -284,10 +284,38 @@ internal static class OVRProjectSetupRenderingTasks
             level: OVRProjectSetup.TaskLevel.Recommended,
             group: targetGroup,
             isDone: buildTargetGroup =>
-                PlayerSettings.stereoRenderingPath == StereoRenderingPath.Instancing,
+            {
+#if USING_XR_SDK_OCULUS
+                if (OculusSettings != null)
+                {
+                    return OculusSettings.m_StereoRenderingModeAndroid ==
+                        Unity.XR.Oculus.OculusSettings.StereoRenderingModeAndroid.Multiview &&
+                        OculusSettings.m_StereoRenderingModeDesktop ==
+                        Unity.XR.Oculus.OculusSettings.StereoRenderingModeDesktop.SinglePassInstanced &&
+                        PlayerSettings.stereoRenderingPath == StereoRenderingPath.Instancing;
+                }
+#endif
+                return PlayerSettings.stereoRenderingPath == StereoRenderingPath.Instancing;
+            },
             message: "Use Stereo Rendering Instancing",
-            fix: buildTargetGroup => PlayerSettings.stereoRenderingPath = StereoRenderingPath.Instancing,
+            fix: buildTargetGroup =>
+            {
+                PlayerSettings.stereoRenderingPath = StereoRenderingPath.Instancing;
+#if USING_XR_SDK_OCULUS
+                if (OculusSettings != null)
+                {
+                    OculusSettings.m_StereoRenderingModeAndroid =
+                        Unity.XR.Oculus.OculusSettings.StereoRenderingModeAndroid.Multiview;
+                    OculusSettings.m_StereoRenderingModeDesktop =
+                        Unity.XR.Oculus.OculusSettings.StereoRenderingModeDesktop.SinglePassInstanced;
+                }
+#endif
+            },
             fixMessage: "PlayerSettings.stereoRenderingPath = StereoRenderingPath.Instancing"
+#if USING_XR_SDK_OCULUS
+                + ", OculusSettings.m_StereoRenderingModeAndroid = Multiview"
+                + ", OculusSettings.m_StereoRenderingModeDesktop = Single Pass Instanced"
+#endif
         );
 
 #if USING_URP && UNITY_2022_2_OR_NEWER

@@ -85,7 +85,7 @@ public static class OVRProjectSetup
         var statusItem = new OVRStatusMenu.Item()
         {
             Name = "Project Setup Tool",
-            Color = OVREditorUtils.HexToColor("#4e4e4e"),
+            Color = OVREditorUtils.HexToColor("#c4c4c4"),
             Icon = OVREditorUtils.CreateContent("ovr_icon_upst.png", OVRGUIContent.Source.ProjectSetupToolIcons),
             InfoTextDelegate = GetMenuSubText,
             OnClickDelegate = OnStatusMenuClick,

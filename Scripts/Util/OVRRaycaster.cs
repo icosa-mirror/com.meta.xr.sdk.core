@@ -47,6 +47,9 @@ public class OVRRaycaster : GraphicRaycaster, IPointerEnterHandler
     [NonSerialized]
     private Canvas m_Canvas;
 
+    [NonSerialized]
+    private OVRRayTransformer m_RayTransformer;
+
     private Canvas canvas
     {
         get
@@ -55,8 +58,15 @@ public class OVRRaycaster : GraphicRaycaster, IPointerEnterHandler
                 return m_Canvas;
 
             m_Canvas = GetComponent<Canvas>();
+            // Also populate RayTransformer if it exists
+            m_RayTransformer = GetComponent<OVRRayTransformer>();
             return m_Canvas;
         }
+    }
+
+    private OVRRayTransformer rayTransformer
+    {
+        get { return m_RayTransformer; }
     }
 
     public override Camera eventCamera
@@ -125,7 +135,7 @@ public class OVRRaycaster : GraphicRaycaster, IPointerEnterHandler
 
         m_RaycastResults.Clear();
 
-        GraphicRaycast(canvas, ray, m_RaycastResults);
+        GraphicRaycast(canvas, rayTransformer, ray, m_RaycastResults);
 
         for (var index = 0; index < m_RaycastResults.Count; index++)
         {
@@ -205,12 +215,16 @@ public class OVRRaycaster : GraphicRaycaster, IPointerEnterHandler
     [NonSerialized]
     static readonly List<RaycastHit> s_SortedGraphics = new List<RaycastHit>();
 
-    private void GraphicRaycast(Canvas canvas, Ray ray, List<RaycastHit> results)
+    private void GraphicRaycast(Canvas canvas, OVRRayTransformer rayTransformer, Ray ray, List<RaycastHit> results)
     {
         //This function is based closely on :
         // void GraphicRaycaster.Raycast(Canvas canvas, Camera eventCamera, Vector2 pointerPosition, List<Graphic> results)
         // But modified to take a Ray instead of a canvas pointer, and also to explicitly ignore
         // the graphic associated with the pointer
+        if (rayTransformer != null)
+        {
+            ray = rayTransformer.TransformRay(ray);
+        }
 
         // Necessary for the event system
         var foundGraphics = GraphicRegistry.GetGraphicsForCanvas(canvas);

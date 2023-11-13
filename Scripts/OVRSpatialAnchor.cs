@@ -278,12 +278,6 @@ public class OVRSpatialAnchor : MonoBehaviour
                 Anchors = CopyAnchorListIntoListFromPool(anchors),
                 Delegate = onComplete
             };
-
-            if (onComplete != null)
-            {
-                OVRTelemetry.Client.MarkerStart(OVRTelemetryConstants.Scene.MarkerId.SpatialAnchorSave,
-                    requestId.GetHashCode());
-            }
         }
         else
         {
@@ -798,9 +792,6 @@ public class OVRSpatialAnchor : MonoBehaviour
             Time = OVRPlugin.GetTimeInSeconds(),
         }, out _requestId);
 
-        OVRTelemetry.Client.MarkerStart(OVRTelemetryConstants.Scene.MarkerId.SpatialAnchorCreate,
-            _requestId.GetHashCode());
-
         if (created)
         {
             Development.LogRequest(_requestId, $"Creating spatial anchor...");
@@ -808,8 +799,6 @@ public class OVRSpatialAnchor : MonoBehaviour
         }
         else
         {
-            OVRTelemetry.Client.MarkerEnd(OVRTelemetryConstants.Scene.MarkerId.SpatialAnchorCreate,
-                OVRPlugin.Qpl.ResultType.Fail, _requestId.GetHashCode());
             Development.LogError(
                 $"{nameof(OVRPlugin)}.{nameof(OVRPlugin.CreateSpatialAnchor)} failed. Destroying {nameof(OVRSpatialAnchor)} component.");
             Destroy(this);
@@ -906,13 +895,6 @@ public class OVRSpatialAnchor : MonoBehaviour
             return;
         }
 
-        if (actionType == MultiAnchorActionType.Save)
-        {
-            OVRTelemetry.Client.MarkerEnd(OVRTelemetryConstants.Scene.MarkerId.SpatialAnchorSave,
-                result == OperationResult.Success ? OVRPlugin.Qpl.ResultType.Success : OVRPlugin.Qpl.ResultType.Fail,
-                requestId.GetHashCode());
-        }
-
         value.Delegate?.Invoke(value.Anchors, result);
 
         try
@@ -971,10 +953,6 @@ public class OVRSpatialAnchor : MonoBehaviour
             $"Failed to create spatial anchor. Destroying {nameof(OVRSpatialAnchor)} component.");
 
         if (!TryExtractValue(CreationRequests, requestId, out var anchor)) return;
-
-        OVRTelemetry.Client.MarkerEnd(OVRTelemetryConstants.Scene.MarkerId.SpatialAnchorCreate,
-            success ? OVRPlugin.Qpl.ResultType.Success : OVRPlugin.Qpl.ResultType.Fail,
-            requestId.GetHashCode());
 
         if (success && anchor)
         {
@@ -1365,10 +1343,6 @@ public class OVRSpatialAnchor : MonoBehaviour
         {
             return;
         }
-
-        OVRTelemetry.Client.MarkerEnd(OVRTelemetryConstants.Scene.MarkerId.SpatialAnchorQuery,
-            queryResult ? OVRPlugin.Qpl.ResultType.Success : OVRPlugin.Qpl.ResultType.Fail,
-            requestId.GetHashCode());
 
         if (!queryResult)
         {

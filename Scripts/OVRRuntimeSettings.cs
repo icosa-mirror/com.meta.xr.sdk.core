@@ -74,6 +74,9 @@ public class OVRRuntimeSettings : ScriptableObject
         }
     }
 
+
+    internal Action<bool> OnTelemetrySet;
+
 #if UNITY_EDITOR
     internal void SetTelemetryEnabled(bool enabled, OVRTelemetryConstants.OVRManager.ConsentOrigins origin)
     {
@@ -81,6 +84,7 @@ public class OVRRuntimeSettings : ScriptableObject
         hasSetTelemetryEnabled = true;
         SendConsentEvent(origin);
         CommitRuntimeSettings(this);
+        OnTelemetrySet?.Invoke(enabled);
     }
 
     internal void SendConsentEvent(OVRTelemetryConstants.OVRManager.ConsentOrigins origin)

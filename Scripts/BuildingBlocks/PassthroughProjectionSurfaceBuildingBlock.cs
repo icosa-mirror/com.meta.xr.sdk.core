@@ -53,7 +53,7 @@ namespace Meta.XR.BuildingBlocks
             }
             else
             {
-                throw new InvalidOperationException("A BB with the passthrough overlay layer was not found");
+                throw new InvalidOperationException("A Building Block with the passthrough overlay layer was not found");
             }
         }
     }

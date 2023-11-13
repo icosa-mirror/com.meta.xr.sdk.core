@@ -52,6 +52,11 @@ public class OVRMesh : MonoBehaviour
         get => _mesh;
     }
 
+    internal MeshType GetMeshType()
+    {
+        return _meshType;
+    }
+
     internal void SetMeshType(MeshType type)
     {
         _meshType = type;

@@ -33,6 +33,7 @@ public class OVRBody : MonoBehaviour,
     OVRSkeleton.IOVRSkeletonDataProvider,
     OVRSkeletonRenderer.IOVRSkeletonRendererDataProvider
 {
+
     private OVRPlugin.BodyState _bodyState;
 
     private OVRPlugin.Quatf[] _boneRotations;
@@ -125,6 +126,7 @@ public class OVRBody : MonoBehaviour,
     }
 
     private void Update() => GetBodyState(OVRPlugin.Step.Render);
+
 
 
     private void GetBodyState(OVRPlugin.Step step)

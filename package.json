@@ -1,11 +1,12 @@
 {
-  "name": "com.meta.xr.sdk.utilities",
-  "displayName": "Meta XR Utilities",
-  "version": "57.0.0-preview",
-  "description": "Meta XR Utilities package provides the latest features to create immersive experiences for Meta XR devices.",
+  "name": "com.meta.xr.sdk.core",
+  "displayName": "Meta XR Core SDK",
+  "version": "59.0.0",
+  "description": "Meta XR Core SDK package provides the latest features to create immersive experiences for Meta XR devices.",
   "samples": [
     {
       "displayName": "Sample Scenes",
+      "description": "Simple samples demonstrating core VR features",
       "path": "Samples~/Scenes"
     }
   ],
@@ -21,10 +22,10 @@
   "licenseMessage": "By adding or using this package you agree to the terms and conditions of the Meta Platforms Technologies SDK License Agreement: https://developer.oculus.com/licenses/oculussdk",
   "keywords": [
     "Oculus",
-    "XR",
-    "Meta",
     "Quest",
-    "SDK",
-    "Utilities"
+    "XR",
+    "Utilities",
+    "Meta",
+    "SDK"
   ]
 }

@@ -20,6 +20,8 @@
 
 using System;
 using System.Collections.Generic;
+using System.Linq;
+using UnityEditor;
 using UnityEngine;
 
 namespace Meta.XR.BuildingBlocks.Editor
@@ -28,26 +30,23 @@ namespace Meta.XR.BuildingBlocks.Editor
     {
         protected override List<GameObject> InstallRoutine()
         {
-            var cameraRig = OVRProjectSetupUtils.FindComponentInScene<OVRCameraRig>();
-            if (cameraRig == null)
-            {
-                throw new InvalidOperationException(
-                    "The Controller Tracking Building Block cannot be installed without a camera rig present in the scene.");
-            }
+            var cameraRigBB = Utils.GetBlocksWithType<OVRCameraRig>().First();
 
             var leftController = Instantiate(Prefab, Vector3.zero, Quaternion.identity);
             leftController.SetActive(true);
-            leftController.name = $"[BB] {BlockName} left";
-            leftController.transform.parent = cameraRig.leftControllerAnchor;
+            leftController.name = $"{Utils.BlockPublicTag} {BlockName} left";
+            Undo.RegisterCreatedObjectUndo(leftController, "Create left controller.");
+            Undo.SetTransformParent(leftController.transform, cameraRigBB.leftControllerAnchor, true, "Parent to camera rig.");
             leftController.GetComponent<OVRControllerHelper>().m_controller = OVRInput.Controller.LTouch;
 
             var rightController = Instantiate(Prefab, Vector3.zero, Quaternion.identity);
             rightController.SetActive(true);
-            rightController.name = $"[BB] {BlockName} right";
-            rightController.transform.parent = cameraRig.rightControllerAnchor;
+            rightController.name = $"{Utils.BlockPublicTag}  {BlockName} right";
+            Undo.RegisterCreatedObjectUndo(rightController, "Create right controller.");
+            Undo.SetTransformParent(rightController.transform, cameraRigBB.rightControllerAnchor, true, "Parent to camera rig.");
             rightController.GetComponent<OVRControllerHelper>().m_controller = OVRInput.Controller.RTouch;
 
-            return new List<GameObject> {leftController, rightController};
+            return new List<GameObject> { leftController, rightController };
         }
     }
 }

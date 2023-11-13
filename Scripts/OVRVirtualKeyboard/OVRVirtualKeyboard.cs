@@ -21,6 +21,7 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.IO;
 using System.Runtime.InteropServices;
 using System.Text;
 using UnityEngine;
@@ -28,6 +29,7 @@ using UnityEngine.UI;
 using Quaternion = UnityEngine.Quaternion;
 using Vector3 = UnityEngine.Vector3;
 using System.Linq;
+using System.Threading.Tasks;
 using UnityEngine.Events;
 using UnityEngine.EventSystems;
 using UnityEngine.Serialization;
@@ -49,6 +51,21 @@ public class OVRVirtualKeyboard : MonoBehaviour
         [Obsolete]
         Direct = 1,
         Custom = 2,
+    }
+
+    /// <summary>
+    /// Keyboard initialization is async so this yield instruction is available for use in coroutines that an action
+    /// performed once the keyboard is visible
+    /// </summary>
+    public class WaitUntilKeyboardVisible : CustomYieldInstruction
+    {
+        private readonly OVRVirtualKeyboard _keyboard;
+        public override bool keepWaiting => !_keyboard.modelAvailable_ || !_keyboard.keyboardVisible_;
+
+        public WaitUntilKeyboardVisible(OVRVirtualKeyboard keyboard)
+        {
+            _keyboard = keyboard;
+        }
     }
 
     public class InteractorRootTransformOverride
@@ -136,15 +153,16 @@ public class OVRVirtualKeyboard : MonoBehaviour
         HandRight
     }
 
-    private interface IInputSource
+    private interface IInputSource : IDisposable
     {
         void Update();
     }
 
-    private abstract class BaseInputSource : IInputSource, IDisposable
+    private abstract class BaseInputSource : IInputSource
     {
         protected readonly bool _operatingWithoutOVRCameraRig;
         private readonly OVRCameraRig _rig;
+        private bool _disposed = false;
 
         protected BaseInputSource()
         {
@@ -156,12 +174,17 @@ public class OVRVirtualKeyboard : MonoBehaviour
 
         private void OnUpdatedAnchors(OVRCameraRig obj)
         {
+            if (_disposed)
+            {
+                // if the ovrCameraRig reference is in an unexpected state
+                throw new Exception("Virtual Keyboard Input Source Disposed");
+            }
             UpdateInput();
         }
 
         public void Update()
         {
-            if (_operatingWithoutOVRCameraRig)
+            if (_operatingWithoutOVRCameraRig && !_disposed)
             {
                 UpdateInput();
             }
@@ -171,6 +194,7 @@ public class OVRVirtualKeyboard : MonoBehaviour
 
         public void Dispose()
         {
+            _disposed = true;
             if (_rig != null)
             {
                 _rig.UpdatedAnchors -= OnUpdatedAnchors;
@@ -491,6 +515,8 @@ public class OVRVirtualKeyboard : MonoBehaviour
     private bool ignoreTextCommmitFieldOnValueChanged_;
     private InputField runtimeInputField_;
     private KeyboardEventListener keyboardEventListener_;
+    private Coroutine gltfModelCoroutine_;
+    private OVRGLTFLoader _gltfLoader;
 
     // ensures runtime updates to the TextCommitField keep text context in sync
     public InputField TextCommitField
@@ -764,68 +790,85 @@ public class OVRVirtualKeyboard : MonoBehaviour
     }
 
     // Private methods
-    private bool LoadRuntimeVirtualKeyboardMesh()
+    private void LoadRuntimeVirtualKeyboardMesh()
     {
         modelAvailable_ = false;
-        Debug.Log("LoadRuntimeVirtualKeyboardMesh");
-        string[] modelPaths = OVRPlugin.GetRenderModelPaths();
+        gltfModelCoroutine_ = StartCoroutine(InitializeGlTFModel());
+    }
 
-        var keyboardPath = modelPaths?.FirstOrDefault(p => p.Equals("/model_fb/virtual_keyboard")
-                                                           || p.Equals("/model_meta/keyboard/virtual"));
-
-        if (String.IsNullOrEmpty(keyboardPath))
+    private IEnumerator InitializeGlTFModel()
+    {
+        Func<MemoryStream> loadMeshData = () =>
         {
-            Debug.LogError("Failed to find keyboard model.  Check Render Model support.");
-            return false;
-        }
+            Debug.Log("LoadRuntimeVirtualKeyboardMesh");
+            string[] modelPaths = OVRPlugin.GetRenderModelPaths();
 
-        OVRPlugin.RenderModelProperties modelProps = new OVRPlugin.RenderModelProperties();
-        if (OVRPlugin.GetRenderModelProperties(keyboardPath, ref modelProps))
-        {
-            if (modelProps.ModelKey != OVRPlugin.RENDER_MODEL_NULL_KEY)
+            var keyboardPath = modelPaths?.FirstOrDefault(p => p.Equals("/model_fb/virtual_keyboard")
+                                                               || p.Equals("/model_meta/keyboard/virtual"));
+
+            if (String.IsNullOrEmpty(keyboardPath))
             {
-                virtualKeyboardModelKey_ = modelProps.ModelKey;
-                byte[] data = OVRPlugin.LoadRenderModel(modelProps.ModelKey);
-                if (data != null)
-                {
-                    OVRGLTFLoader gltfLoader = new OVRGLTFLoader(data);
-                    gltfLoader.textureUriHandler = (string rawUri, Material mat) =>
-                    {
-                        var uri = new Uri(rawUri);
-                        // metaVirtualKeyboard://texture/{id}?w={width}&h={height}&ft=RGBA32
-                        if (uri.Scheme != "metaVirtualKeyboard" && uri.Host != "texture")
-                        {
-                            return null;
-                        }
-
-                        var textureId = ulong.Parse(uri.LocalPath.Substring(1));
-                        if (virtualKeyboardTextures_.ContainsKey(textureId) == false)
-                        {
-                            virtualKeyboardTextures_[textureId] = new List<Material>();
-                        }
-
-                        virtualKeyboardTextures_[textureId].Add(mat);
-                        return null; // defer texture data loading
-                    };
-                    gltfLoader.SetModelShader(keyboardModelShader);
-                    gltfLoader.SetModelAlphaBlendShader(keyboardModelAlphaBlendShader);
-                    virtualKeyboardScene_ = gltfLoader.LoadGLB(supportAnimation: true, loadMips: true);
-
-                    modelAvailable_ = virtualKeyboardScene_.root != null;
-                    if (modelAvailable_)
-                    {
-                        virtualKeyboardScene_.root.transform.SetParent(transform, false);
-                        virtualKeyboardScene_.root.gameObject.name = "OVRVirtualKeyboardModel";
-                        // keyboard is not intended for modification
-                        ApplyHideFlags(virtualKeyboardScene_.root.transform);
-                        UseSuggestedLocation(InitialPosition);
-                        PopulateCollision();
-                    }
-                }
+                Debug.LogError("Failed to find keyboard model.  Check Render Model support.");
+                return null;
             }
-        }
 
-        return modelAvailable_;
+            OVRPlugin.RenderModelProperties modelProps = new OVRPlugin.RenderModelProperties();
+            if (!OVRPlugin.GetRenderModelProperties(keyboardPath, ref modelProps))
+            {
+                Debug.LogError("Failed to find keyboard model properties.  Check Render Model support.");
+                return null;
+            }
+
+            if (modelProps.ModelKey == OVRPlugin.RENDER_MODEL_NULL_KEY)
+            {
+                Debug.LogError("Failed to find keyboard model key.  Check Render Model support.");
+                return null;
+            }
+            virtualKeyboardModelKey_ = modelProps.ModelKey;
+            return new MemoryStream(OVRPlugin.LoadRenderModel(modelProps.ModelKey));
+        };
+
+        _gltfLoader = new OVRGLTFLoader(loadMeshData);
+
+        _gltfLoader.textureUriHandler = (string rawUri, Material mat) =>
+        {
+            var uri = new Uri(rawUri);
+            // metaVirtualKeyboard://texture/{id}?w={width}&h={height}&ft=RGBA32
+            if (!uri.Scheme.Equals("metaVirtualKeyboard", StringComparison.OrdinalIgnoreCase) || uri.Host != "texture")
+            {
+                return null;
+            }
+            var textureId = ulong.Parse(uri.LocalPath.Substring(1));
+            if (virtualKeyboardTextures_.ContainsKey(textureId) == false)
+            {
+                virtualKeyboardTextures_[textureId] = new List<Material>();
+            }
+            virtualKeyboardTextures_[textureId].Add(mat);
+            return null; // defer texture data loading
+        };
+        _gltfLoader.SetModelShader(keyboardModelShader);
+        _gltfLoader.SetModelAlphaBlendShader(keyboardModelAlphaBlendShader);
+
+        var loadGlbCoroutine = _gltfLoader.LoadGLBCoroutine(supportAnimation: true, loadMips: true);
+        while (loadGlbCoroutine.MoveNext())
+        {
+            yield return loadGlbCoroutine.Current;
+        }
+        virtualKeyboardScene_ = _gltfLoader.scene;
+        _gltfLoader = null;
+        gltfModelCoroutine_ = null;
+        modelAvailable_ = virtualKeyboardScene_.root != null;
+        if (modelAvailable_)
+        {
+            virtualKeyboardScene_.root.transform.SetParent(transform, false);
+            virtualKeyboardScene_.root.gameObject.name = "OVRVirtualKeyboardModel";
+            // keyboard is not intended for modification
+            ApplyHideFlags(virtualKeyboardScene_.root.transform);
+            SetKeyboardVisibility(true);
+            UseSuggestedLocation(InitialPosition);
+            UpdateAnimationState();
+            PopulateCollision();
+        }
     }
 
     private static void ApplyHideFlags(Transform t)
@@ -851,6 +894,13 @@ public class OVRVirtualKeyboard : MonoBehaviour
             var meshCollider = collisionMesh.gameObject.AddComponent<MeshCollider>();
             meshCollider.convex = true;
             Collider = meshCollider;
+
+            // collision mesh shouldn't need to be rendered
+            var renderer = collisionMesh.gameObject.GetComponent<MeshRenderer>();
+            if (renderer != null)
+            {
+                renderer.enabled = false;
+            }
         }
     }
 
@@ -859,7 +909,6 @@ public class OVRVirtualKeyboard : MonoBehaviour
         if (!isKeyboardCreated_)
         {
             var createInfo = new OVRPlugin.VirtualKeyboardCreateInfo();
-
             var result = OVRPlugin.CreateVirtualKeyboard(createInfo);
             if (result != OVRPlugin.Result.Success)
             {
@@ -876,12 +925,15 @@ public class OVRVirtualKeyboard : MonoBehaviour
                 return;
             }
 
+            isKeyboardCreated_ = true;
+
             var createSpaceInfo = new OVRPlugin.VirtualKeyboardSpaceCreateInfo();
             createSpaceInfo.pose = OVRPlugin.Posef.identity;
             result = OVRPlugin.CreateVirtualKeyboardSpace(createSpaceInfo, out keyboardSpace_);
             if (result != OVRPlugin.Result.Success)
             {
                 Debug.LogError("Create failed to create keyboard space: " + result);
+                DestroyKeyboard();
                 return;
             }
 
@@ -891,13 +943,7 @@ public class OVRVirtualKeyboard : MonoBehaviour
             if (modelInitialized_ != true)
             {
                 modelInitialized_ = true;
-                if (!LoadRuntimeVirtualKeyboardMesh())
-                {
-                    DestroyKeyboard();
-                    return;
-                }
-
-                UpdateVisibleState();
+                LoadRuntimeVirtualKeyboardMesh();
             }
 
             // Should call this whenever the keyboard is created or when the text focus changes
@@ -906,30 +952,17 @@ public class OVRVirtualKeyboard : MonoBehaviour
                 ChangeTextContextInternal(TextCommitField.text);
             }
         }
-
-        try
+        else
         {
             SetKeyboardVisibility(true);
-            isKeyboardCreated_ = true;
-        }
-        catch
-        {
-            DestroyKeyboard();
-            throw;
         }
     }
 
     private void SetKeyboardVisibility(bool visible)
     {
-        if (!modelInitialized_)
-        {
-            // Set active was called before the model was even attempted to be loaded
-            return;
-        }
-
         if (!modelAvailable_)
         {
-            Debug.LogError("Failed to set visibility. Keyboard model unavailable.");
+            // Set active was called before the model was loaded
             return;
         }
 
@@ -956,6 +989,17 @@ public class OVRVirtualKeyboard : MonoBehaviour
 
     private void DestroyKeyboard()
     {
+        if (gltfModelCoroutine_ != null)
+        {
+            StopCoroutine(gltfModelCoroutine_);
+            gltfModelCoroutine_ = null;
+        }
+        if (_gltfLoader != null && _gltfLoader.scene.root != null)
+        {
+            Destroy(_gltfLoader.scene.root);
+            _gltfLoader = null;
+        }
+        InputEnabled = false;
         if (isKeyboardCreated_)
         {
             if (modelAvailable_)
@@ -964,20 +1008,25 @@ public class OVRVirtualKeyboard : MonoBehaviour
                 modelAvailable_ = false;
                 modelInitialized_ = false;
             }
-
             var result = OVRPlugin.DestroyVirtualKeyboard();
             if (result != OVRPlugin.Result.Success)
             {
                 Debug.LogError("Destroy failed");
-                return;
             }
-
-            Debug.Log("Destroy success");
+            else
+            {
+                Debug.Log("Destroy success");
+            }
+            isKeyboardCreated_ = false;
         }
-        _inputSources?.Clear();
+        if (_inputSources != null)
+        {
+            foreach (var inputSource in _inputSources)
+            {
+                inputSource.Dispose();
+            }
+        }
         _inputSources = null;
-
-        isKeyboardCreated_ = false;
     }
 
     private float MaxElement(Vector3 vec)
@@ -1000,14 +1049,18 @@ public class OVRVirtualKeyboard : MonoBehaviour
 
     void Update()
     {
-        if (!isKeyboardCreated_)
+        if (modelAvailable_)
         {
-            return;
+            UpdateInputs();
         }
-
-        UpdateInputs();
-        SyncKeyboardLocation();
-        UpdateAnimationState();
+        if (isKeyboardCreated_)
+        {
+            SyncKeyboardLocation();
+        }
+        if (modelAvailable_)
+        {
+            UpdateAnimationState();
+        }
     }
 
     private void LateUpdate()

@@ -1001,6 +1001,8 @@ namespace Assets.Oculus.VR.Editor
                 command += " --notes \"" + sanatizedReleaseNote + "\"";
             }
 
+            command += " --upload-from-engine UNITY";
+
             return success;
         }
 

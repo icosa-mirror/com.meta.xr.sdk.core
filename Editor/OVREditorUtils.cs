@@ -19,24 +19,40 @@
  */
 
 using System;
+using System.Collections.Generic;
+using UnityEditor;
 using UnityEngine;
 
+[InitializeOnLoad]
 internal static class OVREditorUtils
 {
+    internal static double LastUpdateTime;
+    internal static float DeltaTime { get; private set; }
+
     static OVREditorUtils()
     {
+        EditorApplication.update -= UpdateEditor;
+        EditorApplication.update += UpdateEditor;
+
         OVRGUIContent.RegisterContentPath(OVRGUIContent.Source.GenericIcons, "Icons");
 
         var statusItem = new OVRStatusMenu.Item()
         {
             Name = "Oculus Settings",
-            Color = OVREditorUtils.HexToColor("#4e4e4e"),
+            Color = OVREditorUtils.HexToColor("#c4c4c4"),
             Icon = CreateContent("ovr_icon_settings.png", OVRGUIContent.Source.GenericIcons),
             InfoTextDelegate = ComputeMenuSubText,
             OnClickDelegate = OnStatusMenuClick,
             Order = 2
         };
         OVRStatusMenu.RegisterItem(statusItem);
+    }
+
+    internal static void UpdateEditor()
+    {
+        var timeSinceStartup = EditorApplication.timeSinceStartup;
+        DeltaTime = (float)(timeSinceStartup - LastUpdateTime);
+        LastUpdateTime = timeSinceStartup;
     }
 
     public static string ComputeMenuSubText()
@@ -59,6 +75,7 @@ internal static class OVREditorUtils
         }
 
         Texture2D result = new Texture2D(width, height);
+        result.hideFlags = HideFlags.DontSave;
         result.SetPixels(pixels);
         result.Apply();
 
@@ -90,6 +107,17 @@ internal static class OVREditorUtils
     {
         return new OVRGUIContent(name, source, tooltip);
     }
+
+    public static bool IsUnityVersionCompatible()
+    {
+#if UNITY_2021_3_OR_NEWER
+        return true;
+#else
+        return false;
+#endif
+    }
+
+    public static string VersionCompatible => "2021.3";
 
     public static bool IsMainEditor()
     {
@@ -148,6 +176,104 @@ internal static class OVREditorUtils
                     GUI.contentColor = _previousColor;
                     break;
             }
+        }
+    }
+
+    public static class HoverHelper
+    {
+        private static readonly Dictionary<string, bool> Hovers = new Dictionary<string, bool>();
+
+        public static void Reset()
+        {
+            Hovers.Clear();
+        }
+
+        public static bool IsHover(string id, Event ev = null, Rect? area = null)
+        {
+            if (area.HasValue && ev?.type == EventType.Repaint)
+            {
+                Hovers[id] = area?.Contains(ev.mousePosition) ?? false;
+            }
+
+            Hovers.TryGetValue(id, out var hover);
+            return hover;
+        }
+
+        public static bool Button(string id, GUIContent content, GUIStyle style, out bool hover)
+        {
+            var isClicked = GUILayout.Button(content, style);
+            hover = IsHover(id, Event.current, GUILayoutUtility.GetLastRect());
+            return isClicked;
+        }
+
+        public static bool Button(string id, Rect rect, GUIContent content, GUIStyle style, out bool hover)
+        {
+            var isClicked = GUI.Button(rect, content, style);
+            hover = IsHover(id, Event.current, GUILayoutUtility.GetLastRect());
+            return isClicked;
+        }
+    }
+
+    public static class TweenHelper
+    {
+        private static readonly Dictionary<string, float> Tweens = new Dictionary<string, float>();
+
+        public static void Reset()
+        {
+            Tweens.Clear();
+        }
+
+        public static float GetTweenValue(string id, float target, float? start)
+        {
+            if (!Tweens.TryGetValue(id, out var current))
+            {
+                current = start ?? target;
+                Tweens[id] = current;
+            }
+
+            return current;
+        }
+
+        public static float Smooth(string id,
+            float target,
+            out bool completed,
+            float? start = null,
+            float speed = 10.0f,
+            float epsilon = 5.0f)
+        {
+            var current = GetTweenValue(id, target, start);
+
+            if (Math.Abs(target - current) <= epsilon)
+            {
+                current = target;
+                Tweens[id] = current;
+                completed = true;
+            }
+            else
+            {
+                current = Mathf.Lerp(current, target, 1f - Mathf.Exp(-speed * DeltaTime));
+                Tweens[id] = current;
+                completed = false;
+            }
+
+            return current;
+        }
+
+        public static float GUISmooth(string id, float target, float? start = null,
+            float speed = 10.0f, float epsilon = 5.0f, Action ifNotCompletedDelegate = null)
+        {
+            var shouldUpdate = Event.current.type == EventType.Layout;
+            var completed = true;
+            var current = shouldUpdate
+                ? Smooth(id, target, out completed, start, speed, epsilon)
+                : GetTweenValue(id, target, start);
+
+            if (!completed)
+            {
+                ifNotCompletedDelegate?.Invoke();
+            }
+
+            return current;
         }
     }
 }

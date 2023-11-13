@@ -66,8 +66,13 @@
             "define": "UNITY_OPENXR_BOOT_CONFIG"
         },
         {
+            "name": "com.unity.xr.openxr",
+            "expression": "1.9.0",
+            "define": "UNITY_OPENXR_1_9_0"
+        },
+        {
             "define": "OVR_UNITY_PACKAGE_MANAGER",
-            "name": "com.meta.xr.sdk.utilities",
+            "name": "com.meta.xr.sdk.core",
             "expression": ""
         }
     ],

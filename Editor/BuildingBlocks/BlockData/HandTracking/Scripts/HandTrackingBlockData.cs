@@ -20,6 +20,8 @@
 
 using System;
 using System.Collections.Generic;
+using System.Linq;
+using UnityEditor;
 using UnityEngine;
 
 namespace Meta.XR.BuildingBlocks.Editor
@@ -28,17 +30,13 @@ namespace Meta.XR.BuildingBlocks.Editor
     {
         protected override List<GameObject> InstallRoutine()
         {
-            var cameraRig = OVRProjectSetupUtils.FindComponentInScene<OVRCameraRig>();
-            if (cameraRig == null)
-            {
-                throw new InvalidOperationException(
-                    "The Hand Tracking BB cannot be installed without a camera rig present in the scene.");
-            }
+            var cameraRigBB = Utils.GetBlocksWithType<OVRCameraRig>().First();
 
             var leftHand = Instantiate(Prefab, Vector3.zero, Quaternion.identity);
             leftHand.SetActive(true);
-            leftHand.name = $"[BB] {BlockName} left";
-            leftHand.transform.parent = cameraRig.leftHandAnchor;
+            leftHand.name = $"{Utils.BlockPublicTag} {BlockName} left";
+            Undo.RegisterCreatedObjectUndo(leftHand, "Create left hand.");
+            Undo.SetTransformParent(leftHand.transform, cameraRigBB.leftHandAnchor, true, "Parent to camera rig.");
 
             leftHand.GetComponent<OVRHand>().HandType = OVRHand.Hand.HandLeft;
             leftHand.GetComponent<OVRSkeleton>().SetSkeletonType(OVRSkeleton.SkeletonType.HandLeft);
@@ -46,14 +44,15 @@ namespace Meta.XR.BuildingBlocks.Editor
 
             var rightHand = Instantiate(Prefab, Vector3.zero, Quaternion.identity);
             rightHand.SetActive(true);
-            rightHand.name = $"[BB] {BlockName} right";
-            rightHand.transform.parent = cameraRig.rightHandAnchor;
+            rightHand.name = $"{Utils.BlockPublicTag} {BlockName} right";
+            Undo.RegisterCreatedObjectUndo(rightHand, "Create right hand.");
+            Undo.SetTransformParent(rightHand.transform, cameraRigBB.rightHandAnchor, true, "Parent to camera rig.");
 
             rightHand.GetComponent<OVRHand>().HandType = OVRHand.Hand.HandRight;
             rightHand.GetComponent<OVRSkeleton>().SetSkeletonType(OVRSkeleton.SkeletonType.HandRight);
             rightHand.GetComponent<OVRMesh>().SetMeshType(OVRMesh.MeshType.HandRight);
 
-            return new List<GameObject> {leftHand, rightHand};
+            return new List<GameObject> { leftHand, rightHand };
         }
     }
 }

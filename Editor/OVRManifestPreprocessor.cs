@@ -25,6 +25,12 @@ using System.IO;
 using System.Xml;
 using Oculus.VR.Editor;
 
+#if USING_XR_SDK_OPENXR
+using UnityEngine.XR.OpenXR;
+using Meta.XR;
+using UnityEditor.XR.Management;
+#endif
+
 public class OVRManifestPreprocessor
 {
     private static readonly string ManifestFileName = "AndroidManifest.xml";
@@ -528,8 +534,22 @@ public class OVRManifestPreprocessor
         //============================================================================
         // Eye Tracking
         var targetEyeTrackingSupport = OVRProjectConfig.GetProjectConfig().eyeTrackingSupport;
+#if USING_XR_SDK_OPENXR
+        if (IsOpenXRLoaderActive())
+        {
+            var settings = OpenXRSettings.GetSettingsForBuildTargetGroup(BuildPipeline.GetBuildTargetGroup(EditorUserBuildSettings.activeBuildTarget));
+            if (settings != null)
+            {
+                var foveationFeature = settings.GetFeature<MetaXREyeTrackedFoveationFeature>();
+                if (foveationFeature.enabled && targetEyeTrackingSupport == OVRProjectConfig.FeatureSupport.None)
+                {
+                    targetEyeTrackingSupport = OVRProjectConfig.FeatureSupport.Supported;
+                }
+            }
+        }
+#endif
         bool eyeTrackingEntryNeeded = OVRDeviceSelector.isTargetDeviceQuestFamily &&
-                                      (targetEyeTrackingSupport != OVRProjectConfig.FeatureSupport.None);
+                                    (targetEyeTrackingSupport != OVRProjectConfig.FeatureSupport.None);
 
         AddOrRemoveTag(doc,
             androidNamespaceURI,
@@ -677,6 +697,19 @@ public class OVRManifestPreprocessor
                 "com.oculus.supportedDevices");
 #endif
         }
+    }
+
+    private static bool IsOpenXRLoaderActive()
+    {
+#if USING_XR_SDK_OPENXR
+        var settings = XRGeneralSettingsPerBuildTarget.XRGeneralSettingsForBuildTarget(BuildPipeline.GetBuildTargetGroup(EditorUserBuildSettings.activeBuildTarget));
+        if (settings.Manager.activeLoaders.Count > 0)
+        {
+            var openXRLoader = settings.Manager.activeLoaders[0] as OpenXRLoader;
+            return openXRLoader != null;
+        }
+#endif
+        return false;
     }
 
     private static string ColorSpaceToManifestTag(OVRManager.ColorSpace colorSpace)

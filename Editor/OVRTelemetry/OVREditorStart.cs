@@ -32,7 +32,7 @@ internal class OVREditorStart
 
         if (InitSession.Value)
         {
-            OVRTelemetry.SendEvent(OVRTelemetryConstants.Editor.Start);
+            OVRTelemetry.SendEvent(OVRTelemetryConstants.Editor.MarkerId.Start);
         }
     }
 }

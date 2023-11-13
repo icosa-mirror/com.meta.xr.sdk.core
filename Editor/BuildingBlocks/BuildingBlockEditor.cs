@@ -19,6 +19,7 @@
  */
 
 using System.Collections.Generic;
+using Meta.XR.Editor.Tags;
 using UnityEditor;
 using UnityEngine;
 
@@ -27,117 +28,10 @@ namespace Meta.XR.BuildingBlocks.Editor
     [CustomEditor(typeof(BuildingBlock))]
     public class BuildingBlockEditor : UnityEditor.Editor
     {
-        private class Styles
-        {
-            internal const float ThumbnailRatio = 1.8f;
-            internal const int Border = 1;
-            internal const float SmallIconSize = 16.0f;
-            internal const float ItemHeight = 48.0f;
-            internal const int Padding = 4;
-            internal const int TightPadding = 2;
-
-            internal readonly GUIStyle GridItemStyle = new GUIStyle()
-            {
-                margin = new RectOffset(0, 0, 0, 0),
-                padding = new RectOffset(Border, Border, Border, Border),
-                stretchWidth = false,
-                stretchHeight = false,
-                normal =
-                {
-                    background = OVREditorUtils.MakeTexture(1, 1, OVREditorUtils.HexToColor("#1d1d1d"))
-                }
-            };
-
-            internal readonly GUIStyle DescriptionAreaStyle = new GUIStyle()
-            {
-                stretchHeight = false,
-                padding = new RectOffset(Padding, Padding, Padding, Padding),
-                margin = new RectOffset(0, 0, 0, Border),
-                fixedHeight = ItemHeight,
-                normal =
-                {
-                    background = OVREditorUtils.MakeTexture(1, 1, OVREditorUtils.HexToColor("#3e3e3e"))
-                }
-            };
-
-            internal readonly GUIStyle IconStyle = new GUIStyle(EditorStyles.label)
-            {
-                margin = new RectOffset(0, 0, 0, 0),
-                padding = new RectOffset(0, 0, 0, 0),
-                fixedWidth = SmallIconSize,
-                stretchWidth = false
-            };
-
-            internal readonly GUIStyle LargeButton = new GUIStyle(EditorStyles.miniButton)
-            {
-                clipping = TextClipping.Overflow,
-                fixedHeight = ItemHeight - Padding * 2,
-                fixedWidth = ItemHeight - Padding * 2,
-                margin = new RectOffset(2, 2, 2, 2),
-                padding = new RectOffset(Padding, Padding, Padding, Padding)
-            };
-
-            internal readonly GUIStyle LabelStyle = new GUIStyle(EditorStyles.boldLabel);
-
-            internal readonly GUIStyle LabelHoverStyle = new GUIStyle(EditorStyles.boldLabel)
-            {
-                normal = { textColor = Color.white }
-            };
-
-            internal readonly GUIStyle SubtitleStyle = new GUIStyle(EditorStyles.label)
-            {
-                fontStyle = FontStyle.Italic,
-                normal =
-                {
-                    textColor = Color.gray
-                }
-            };
-
-            internal readonly GUIStyle InfoStyle = new GUIStyle(EditorStyles.label)
-            {
-                fontSize = 10,
-                normal =
-                {
-                    textColor = Color.gray
-                }
-            };
-
-            internal readonly GUIStyle ExperimentalAreaStyle = new GUIStyle()
-            {
-                margin = new RectOffset(Padding, Padding, Padding, Padding),
-                padding = new RectOffset(Padding, TightPadding, TightPadding, Padding),
-                fixedHeight = 18,
-                normal =
-                {
-                    background = OVREditorUtils.MakeTexture(1, 1, OVREditorUtils.HexToColor("#3e3e3eAA"))
-                }
-            };
-
-            internal readonly GUIStyle ExperimentalTextStyle = new GUIStyle(EditorStyles.boldLabel)
-            {
-                fontSize = 10,
-                normal = { textColor = ExperimentalColor },
-                wordWrap = true
-            };
-
-            internal static readonly OVRGUIContent ErrorIcon =
-                OVREditorUtils.CreateContent("ovr_error_greybg.png", OVRGUIContent.Source.BuildingBlocksIcons);
-
-            internal static readonly OVRGUIContent SuccessIcon =
-                OVREditorUtils.CreateContent("ovr_success_greybg.png", OVRGUIContent.Source.BuildingBlocksIcons);
-
-            internal static readonly OVRGUIContent ExperimentalIcon =
-                OVREditorUtils.CreateContent("ovr_icon_experimental.png", OVRGUIContent.Source.BuildingBlocksIcons, "Experimental");
-
-            internal static readonly Color AccentColor = OVREditorUtils.HexToColor("#a29de5");
-            internal static readonly Color ExperimentalColor = OVREditorUtils.HexToColor("#eba333");
-        }
-
-        private static Styles _styles;
-        private static Styles styles => _styles ??= new Styles();
-
         private BuildingBlock _block;
         private BlockData _blockData;
+
+        private bool _foldoutInstruction = true;
 
         public override void OnInspectorGUI()
         {
@@ -160,42 +54,94 @@ namespace Meta.XR.BuildingBlocks.Editor
             rect.y -= 4;
             GUI.DrawTexture(rect, _blockData.Thumbnail, ScaleMode.ScaleAndCrop);
 
-            // Experimental tag
-            if (_blockData.Experimental)
-            {
-                GUILayout.BeginArea(new Rect(styles.ExperimentalAreaStyle.margin.left, styles.ExperimentalAreaStyle.margin.top, currentWidth, expectedHeight));
-                const string experimentalStr = "Experimental";
-                var width = styles.ExperimentalTextStyle.CalcSize(new GUIContent(experimentalStr)).x;
-                var height = styles.ExperimentalAreaStyle.fixedHeight - Styles.TightPadding * 2.0f;
-                GUILayout.BeginHorizontal(styles.ExperimentalAreaStyle, GUILayout.Width(height + width), GUILayout.Height(height));
-                EditorGUILayout.LabelField(Styles.ExperimentalIcon, styles.ExperimentalTextStyle, GUILayout.Width(height), GUILayout.Height(height));
-                EditorGUILayout.LabelField(experimentalStr, styles.ExperimentalTextStyle, GUILayout.Width(width), GUILayout.Height(height));
-                EditorGUILayout.EndHorizontal();
-                GUILayout.EndArea();
-            }
+            GUILayout.BeginArea(new Rect(Styles.TagStyle.margin.left,
+                Styles.TagStyle.margin.top, currentWidth, expectedHeight));
+            ShowTagList(_blockData.Tags, Tag.TagListType.Overlays);
+            GUILayout.EndArea();
 
             // Separator
             rect = GUILayoutUtility.GetRect(currentWidth, 1);
             rect.x -= 20;
             rect.width += 40;
             rect.y -= 4;
-            GUI.DrawTexture(rect, OVREditorUtils.MakeTexture(1, 1, Styles.AccentColor),
+            GUI.DrawTexture(rect, OVREditorUtils.MakeTexture(1, 1, Styles.Colors.AccentColor),
                 ScaleMode.ScaleAndCrop);
 
             ShowBlock(_blockData, _block, false, false, true);
-
+            ShowTagList(_blockData.Tags, Tag.TagListType.Filters);
             ShowBlockDataList("Dependencies", _blockData.GetAllDependencyDatas());
             ShowBlockList("Used by", _blockData.GetUsingBlocksInScene());
 
+            // Instructions
+            if (!string.IsNullOrEmpty(_blockData.UsageInstructions))
+            {
+                EditorGUILayout.Space();
+                _foldoutInstruction =
+                    EditorGUILayout.Foldout(_foldoutInstruction, "Block instructions", Styles.FoldoutBoldLabel);
+                if (_foldoutInstruction)
+                {
+                    EditorGUILayout.LabelField(_blockData.UsageInstructions, EditorStyles.helpBox);
+                }
+            }
+
         }
 
+        private void ShowTagList(IEnumerable<Tag> tagArray, Tag.TagListType listType)
+        {
+            EditorGUILayout.BeginHorizontal();
+            foreach (var tag in tagArray)
+            {
+                ShowTag(tag, listType);
+            }
+            EditorGUILayout.EndHorizontal();
+        }
 
+        private void ShowTag(Tag tag, Tag.TagListType listType)
+        {
+            var tagBehavior = tag.Behavior;
+            if (!tagBehavior.Show)
+            {
+                return;
+            }
+
+            switch (listType)
+            {
+                case Tag.TagListType.Filters when !tagBehavior.CanFilterBy:
+                case Tag.TagListType.Overlays when !tagBehavior.ShowOverlay:
+                    return;
+            }
+
+            var style = tagBehavior.Icon != null ? Styles.TagStyleWithIcon : Styles.TagStyle;
+            var backgroundColors = listType == Tag.TagListType.Overlays ? Styles.TagOverlayBackgroundColors : Styles.TagBackgroundColors;
+
+            var tagContent = new GUIContent(tag.Name);
+            var tagSize = style.CalcSize(tagContent);
+            var rect = GUILayoutUtility.GetRect(tagContent, style, GUILayout.MinWidth(tagSize.x + 1));
+            Vector2 mousePosition = Event.current.mousePosition;
+            var color = backgroundColors.GetColor(false, false);
+            using (new OVREditorUtils.OVRGUIColorScope(OVREditorUtils.OVRGUIColorScope.Scope.Background, color))
+            {
+                using (new OVREditorUtils.OVRGUIColorScope(OVREditorUtils.OVRGUIColorScope.Scope.Content, tagBehavior.Color))
+
+                {
+                    if (GUI.Button(rect, tagContent, style))
+                    {
+
+                    }
+
+                    if (tagBehavior.Icon != null)
+                    {
+                        GUI.Label(rect, tagBehavior.Icon, Styles.TagIcon);
+                    }
+                }
+            }
+        }
 
         private bool ShowLargeButton(GUIContent icon)
         {
             var previousColor = GUI.color;
             GUI.color = Color.white;
-            var hit = GUILayout.Button(icon, styles.LargeButton);
+            var hit = GUILayout.Button(icon, Styles.LargeButton);
             GUI.color = previousColor;
             EditorGUIUtility.AddCursorRect(GUILayoutUtility.GetLastRect(), MouseCursor.Link);
             return hit;
@@ -236,7 +182,7 @@ namespace Meta.XR.BuildingBlocks.Editor
         }
 
         private void ShowBlock(BlockData data, BuildingBlock block, bool asGridItem,
-            bool showAction, bool showBb)
+            bool showAction, bool showBuildingBlock)
         {
             var previousIndent = EditorGUI.indentLevel;
             EditorGUI.indentLevel = 0;
@@ -247,8 +193,10 @@ namespace Meta.XR.BuildingBlocks.Editor
             // Thumbnail
             if (asGridItem)
             {
-                EditorGUILayout.BeginHorizontal(styles.GridItemStyle);
-                EditorGUILayout.BeginHorizontal(styles.DescriptionAreaStyle);
+                var gridStyle = new GUIStyle(Styles.GridItemStyle);
+                gridStyle.margin = new RectOffset(0, 0, 0, 0);
+                EditorGUILayout.BeginHorizontal(gridStyle);
+                EditorGUILayout.BeginHorizontal(Styles.DescriptionAreaStyle);
 
                 var expectedSize = Styles.ItemHeight;
                 var rect = GUILayoutUtility.GetRect(0, expectedSize);
@@ -259,7 +207,7 @@ namespace Meta.XR.BuildingBlocks.Editor
 
                 EditorGUILayout.Space(Styles.ItemHeight - Styles.Padding - Styles.SmallIconSize * 0.5f - 2);
 
-                EditorGUILayout.LabelField(block != null ? Styles.SuccessIcon : Styles.ErrorIcon, styles.IconStyle,
+                EditorGUILayout.LabelField(block != null ? Styles.SuccessIcon : Styles.ErrorIcon, Styles.IconStyle,
                     GUILayout.Width(Styles.SmallIconSize), GUILayout.Height(Styles.ItemHeight - Styles.Padding * 2));
             }
             else
@@ -271,16 +219,11 @@ namespace Meta.XR.BuildingBlocks.Editor
             // Label
             EditorGUILayout.BeginVertical();
             EditorGUILayout.BeginHorizontal();
-            var labelStyle = styles.LabelStyle;
-            var labelContent = new GUIContent(data.BlockName);
-            EditorGUILayout.LabelField(labelContent, labelStyle, GUILayout.Width(labelStyle.CalcSize(labelContent).x));
-            labelStyle = styles.SubtitleStyle;
-            labelContent = new GUIContent(data.Sdk.ToString());
-            EditorGUILayout.LabelField(labelContent, styles.SubtitleStyle,
-                GUILayout.Width(labelStyle.CalcSize(labelContent).x));
+            var labelStyle = Styles.LabelStyle;
+            EditorGUILayout.LabelField(data.BlockName, labelStyle);
+            labelStyle = Styles.SubtitleStyle;
             EditorGUILayout.EndHorizontal();
-            labelContent = new GUIContent(block ? block.name : "Not Installed");
-            EditorGUILayout.LabelField(labelContent, styles.InfoStyle);
+            EditorGUILayout.LabelField(block ? block.name : "Not Installed", Styles.InfoStyle);
             EditorGUILayout.EndVertical();
 
             GUILayout.FlexibleSpace();
@@ -291,7 +234,7 @@ namespace Meta.XR.BuildingBlocks.Editor
                 {
                     if (ShowLargeButton(Utils.GotoIcon))
                     {
-                        block.SelectBlockInScene();
+                        data.SelectBlocksInScene();
                     }
                 }
                 else
@@ -303,7 +246,7 @@ namespace Meta.XR.BuildingBlocks.Editor
                 }
             }
 
-            if (showBb && ShowLargeButton(Utils.StatusIcon))
+            if (showBuildingBlock && ShowLargeButton(Utils.StatusIcon))
             {
                 BuildingBlocksWindow.ShowWindow("BuildingBlockEditor");
             }
@@ -311,7 +254,30 @@ namespace Meta.XR.BuildingBlocks.Editor
             EditorGUILayout.EndHorizontal();
             EditorGUILayout.EndHorizontal();
 
+            // Only for dependency block(s)
+            if (!showBuildingBlock)
+            {
+                AddBlockHighlightListeners(block);
+            }
+
             EditorGUI.indentLevel = previousIndent;
+        }
+
+        private static void AddBlockHighlightListeners(BuildingBlock buildingBlock)
+        {
+            Rect rect = GUILayoutUtility.GetLastRect();
+            EditorGUIUtility.AddCursorRect(rect, MouseCursor.Link);
+
+            Event currentEvent = Event.current;
+            if (currentEvent.type == EventType.MouseDown && currentEvent.button == 0 &&
+                rect.Contains(currentEvent.mousePosition))
+            {
+                buildingBlock.HighlightBlockInScene();
+                if (currentEvent.clickCount == 2)
+                    buildingBlock.SelectBlockInScene();
+
+                currentEvent.Use();
+            }
         }
     }
 }

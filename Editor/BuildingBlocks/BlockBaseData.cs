@@ -19,28 +19,22 @@
  */
 
 using System;
+using System.Collections.Generic;
+using System.Linq;
+using Meta.XR.Editor.Tags;
 using UnityEngine;
 using NUnit.Framework;
+using UnityEditor;
 
 namespace Meta.XR.BuildingBlocks.Editor
 {
-    public abstract class BlockBaseData : ScriptableObject
+    public abstract class BlockBaseData : ScriptableObject, ITaggable
     {
-        [SerializeField, OVRReadOnly] protected string id = Guid.NewGuid().ToString();
+        [SerializeField, OVRReadOnly] internal string id = Guid.NewGuid().ToString();
         public string Id => id;
 
         [SerializeField, OVRReadOnly] internal int version = 1;
         public int Version => version;
-
-        public enum SDKType
-        {
-            Interaction,
-            Movement,
-            Passthrough,
-            Voice,
-            Scene,
-            VR
-        }
 
         private static readonly OVRGUIContent DefaultThumbnailTexture = OVREditorUtils.CreateContent("bb_thumb_default.png",
             OVRGUIContent.Source.BuildingBlocksThumbnails);
@@ -51,13 +45,65 @@ namespace Meta.XR.BuildingBlocks.Editor
         [SerializeField] internal string blockName;
         public string BlockName => blockName;
 
-        [SerializeField] private string description;
+        [SerializeField] internal string description;
         public string Description => description;
 
-        [SerializeField] private SDKType sdk;
-        public SDKType Sdk => sdk;
+        [SerializeField] internal TagArray tags;
 
-        [SerializeField] private Texture2D thumbnail;
+        #region Tags
+        public TagArray Tags => tags ??= new TagArray();
+        public bool HasTag(Tag tag) => Tags.Contains(tag);
+        public bool HasAnyTag(IEnumerable<Tag> tagArray) => Tags.Intersect(tagArray).Any();
+
+        public void OnAwake()
+        {
+            ValidateTags();
+        }
+
+        public void OnValidate()
+        {
+            ValidateTags();
+        }
+
+        private void ValidateTags()
+        {
+            {
+                Tags.Remove(Utils.InternalTag);
+            }
+
+            if (IsNew())
+            {
+                Tags.Add(Utils.NewTag);
+            }
+            else
+            {
+                Tags.Remove(Utils.NewTag);
+            }
+
+            Tags.OnValidate();
+        }
+
+        private OVRProjectSetupSettingBool _hasSeenBefore;
+
+        private bool IsNew()
+        {
+            _hasSeenBefore ??= new OVRProjectSetupUserSettingBool($"HasSeenBeforeKey_{Id}", false);
+            return !_hasSeenBefore.Value;
+        }
+
+        internal void MarkAsSeen()
+        {
+            if (_hasSeenBefore == null || _hasSeenBefore.Value)
+            {
+                return;
+            }
+
+            _hasSeenBefore.Value = true;
+            ValidateTags();
+        }
+        #endregion
+
+        [SerializeField] internal Texture2D thumbnail;
 
         public Texture2D Thumbnail
         {
@@ -68,7 +114,7 @@ namespace Meta.XR.BuildingBlocks.Editor
                     return thumbnail;
                 }
 
-                if (DisplayOnContentTab)
+                if (!Hidden)
                 {
                     return DefaultThumbnailTexture.Content.image as Texture2D;
                 }
@@ -77,15 +123,12 @@ namespace Meta.XR.BuildingBlocks.Editor
             }
         }
 
-        [Tooltip("Indicates whether this blocks is displayed in the Building Blocks window and is installable by BB users or is an internal block that's meant to be a dependency of other blocks and not directly accessible.")]
-        [SerializeField] private bool displayOnContentTab = true;
-        public virtual bool DisplayOnContentTab => displayOnContentTab;
+        public virtual bool Hidden => HasTag(Utils.HiddenTag);
 
-        [Tooltip("Indicates whether this blocks is still in an experimental phase and may go through significant changes in the upcoming SDK versions.")]
-        [SerializeField] private bool experimental;
-        public bool Experimental => experimental;
+        public bool Experimental => HasTag(Utils.ExperimentalTag);
 
-        [SerializeField] private int order;
+
+        [SerializeField] internal int order;
         public int Order => order;
 
         [ContextMenu("Assign ID")]
@@ -106,17 +149,10 @@ namespace Meta.XR.BuildingBlocks.Editor
             version++;
         }
 
-        [ContextMenu("Validate")]
-        internal virtual void Validate()
-        {
-            Assert.IsFalse(string.IsNullOrEmpty(Id), $"{nameof(Id)} cannot be null or empty");
-            Assert.IsFalse(string.IsNullOrEmpty(BlockName), $"{nameof(BlockName)} cannot be null or empty");
-            Assert.IsFalse(string.IsNullOrEmpty(Description), $"{nameof(Description)} cannot be null or empty");
-        }
 
         internal abstract bool CanBeAdded { get; }
 
-        internal abstract void AddToProject(Action onInstall = null);
+        internal abstract void AddToProject(GameObject selectedGameObject = null, Action onInstall = null);
 
         internal virtual bool RequireListRefreshAfterInstall => false;
     }

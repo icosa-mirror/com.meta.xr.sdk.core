@@ -18,10 +18,13 @@
  * limitations under the License.
  */
 
+using System;
 using System.Collections.Generic;
 using System.Linq;
+using Meta.XR.Editor.Tags;
 using UnityEditor;
 using UnityEngine;
+using Object = UnityEngine.Object;
 
 namespace Meta.XR.BuildingBlocks.Editor
 {
@@ -30,6 +33,7 @@ namespace Meta.XR.BuildingBlocks.Editor
     {
         internal const string BlocksPublicName = "Building Blocks";
         internal const string BlockPublicName = "Building Block";
+        internal const string BlockPublicTag = "[BuildingBlock]";
 
         internal static readonly OVRGUIContent StatusIcon = OVREditorUtils.CreateContent("ovr_icon_bbw.png", OVRGUIContent.Source.BuildingBlocksIcons, $"Open {BlocksPublicName}");
 
@@ -37,12 +41,66 @@ namespace Meta.XR.BuildingBlocks.Editor
 
         internal static readonly OVRGUIContent AddIcon = OVREditorUtils.CreateContent("ovr_icon_addblock.png", OVRGUIContent.Source.BuildingBlocksIcons, "Add Block to current scene");
 
-        internal static readonly Color AccentColor = OVREditorUtils.HexToColor("#a29de5");
+        internal const string ExperimentalTagName = "Experimental";
+        internal static readonly OVRGUIContent ExperimentalIcon =
+            OVREditorUtils.CreateContent("ovr_icon_experimental.png", OVRGUIContent.Source.BuildingBlocksIcons, ExperimentalTagName);
+        internal static Tag ExperimentalTag = new Tag(ExperimentalTagName)
+        {
+            Behavior =
+            {
+                Color = Styles.Colors.ExperimentalColor,
+                Icon = ExperimentalIcon,
+                Order = 100,
+                ShowOverlay = true,
+            }
+        };
 
-        private static readonly Dictionary<string, BlockData> _idToBlockDataDictionary =
+        private const string InternalTagName = "Internal";
+        internal static Tag InternalTag = new Tag(InternalTagName)
+        {
+            Behavior =
+            {
+                Order = 101,
+                Automated = true,
+                Show = false,
+                DefaultVisibility = false
+            }
+        };
+
+        private const string HiddenTagName = "Hidden";
+        internal static Tag HiddenTag = new Tag(HiddenTagName)
+        {
+            Behavior =
+            {
+                Order = 102,
+                Show = false,
+                DefaultVisibility = false,
+            }
+        };
+
+        private const string NewTagName = "New";
+        internal static Tag NewTag = new Tag(NewTagName)
+        {
+            Behavior =
+            {
+                Automated = true,
+                Order = 103,
+                Color = Styles.Colors.NewColor,
+                Icon = OVREditorUtils.CreateContent("ovr_icon_new.png", OVRGUIContent.Source.BuildingBlocksIcons, NewTagName),
+                Show = true,
+                CanFilterBy = false,
+                ShowOverlay = true,
+            }
+        };
+
+        private static readonly Dictionary<string, BlockData> IDToBlockDataDictionary =
             new Dictionary<string, BlockData>();
 
         private static bool _dirty = true;
+
+
+
+
 
 
         static Utils()
@@ -54,7 +112,7 @@ namespace Meta.XR.BuildingBlocks.Editor
             var statusItem = new OVRStatusMenu.Item()
             {
                 Name = BlocksPublicName,
-                Color = AccentColor,
+                Color = Styles.Colors.AccentColor,
                 Icon = StatusIcon,
                 InfoTextDelegate = ComputeMenuSubText,
                 OnClickDelegate = OnStatusMenuClick,
@@ -89,15 +147,15 @@ namespace Meta.XR.BuildingBlocks.Editor
                 return;
             }
 
-            var blockGuids = AssetDatabase.FindAssets($"t:{nameof(BlockData)}");
+            var blockGuids = AssetDatabase.FindAssets($"t:{nameof(BlockBaseData)}");
             var blockDataList = blockGuids.Select(id =>
-                    AssetDatabase.LoadAssetAtPath<BlockData>(AssetDatabase.GUIDToAssetPath(id)))
+                    AssetDatabase.LoadAssetAtPath<BlockData>(AssetDatabase.GUIDToAssetPath(id))).Where(t => t != null)
                 .ToList();
 
-            _idToBlockDataDictionary.Clear();
+            IDToBlockDataDictionary.Clear();
             foreach (var blockData in blockDataList)
             {
-                _idToBlockDataDictionary[blockData.Id] = blockData;
+                IDToBlockDataDictionary[blockData.Id] = blockData;
             }
 
 
@@ -112,8 +170,14 @@ namespace Meta.XR.BuildingBlocks.Editor
         public static BlockData GetBlockData(string blockId)
         {
             RefreshList();
-            _idToBlockDataDictionary.TryGetValue(blockId, out var blockData);
+            IDToBlockDataDictionary.TryGetValue(blockId, out var blockData);
             return blockData;
+        }
+
+        public static BlockData[] GetAllBlockDatas()
+        {
+            RefreshList();
+            return IDToBlockDataDictionary.Values.ToArray();
         }
 
         public static BuildingBlock GetBlock(this BlockData data)
@@ -196,14 +260,35 @@ namespace Meta.XR.BuildingBlocks.Editor
             Selection.activeGameObject = block.gameObject;
         }
 
-        public static void SelectBlockInScene(this BlockData blockData)
+        public static void SelectBlocksInScene(IEnumerable<GameObject> blockList)
         {
-            blockData.GetBlock()?.SelectBlockInScene();
+            Selection.objects = blockList.Cast<Object>().ToArray();
+        }
+
+        public static void SelectBlocksInScene(this BlockData blockData)
+        {
+            var blocksInScene = blockData.GetBlocks();
+
+            if (blocksInScene.Count == 1)
+            {
+                SelectBlockInScene(blocksInScene[0]);
+            }
+            else if (blocksInScene.Count > 1)
+            {
+                SelectBlocksInScene(blocksInScene.Select(block => block.gameObject));
+            }
+        }
+
+        public static void HighlightBlockInScene(this BuildingBlock block)
+        {
+            EditorGUIUtility.PingObject(block.gameObject);
         }
 
         public static int ComputeNumberOfBlocksInScene(this BlockData blockData)
         {
             return Object.FindObjectsOfType<BuildingBlock>().Count(x => x.BlockId == blockData.Id);
         }
+
+
     }
 }

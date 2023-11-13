@@ -32,7 +32,7 @@ namespace Oculus.VR.Editor
     [InitializeOnLoad]
     public class OVRPluginInfoOpenXR : IOVRPluginInfoSupplier
     {
-        private const string PackageName = "com.meta.xr.sdk.utilities";
+        private const string PackageName = "com.meta.xr.sdk.core";
 
         private static readonly string PluginsRelPath =
             Path.Combine("Packages", PackageName, "Plugins");

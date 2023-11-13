@@ -75,7 +75,7 @@ using Node = UnityEngine.XR.XRNode;
 /// Configuration data for Oculus virtual reality.
 /// </summary>
 [HelpURL("https://developer.oculus.com/reference/unity/latest/class_o_v_r_manager")]
-public class OVRManager : MonoBehaviour, OVRMixedRealityCaptureConfiguration
+public partial class OVRManager : MonoBehaviour, OVRMixedRealityCaptureConfiguration
 {
     public enum XrApi
     {
@@ -1430,7 +1430,10 @@ public class OVRManager : MonoBehaviour, OVRMixedRealityCaptureConfiguration
     /// </summary>
     public static bool eyeTrackedFoveatedRenderingSupported
     {
-        get { return OVRPlugin.eyeTrackedFoveatedRenderingSupported; }
+        get
+        {
+            return GetEyeTrackedFoveatedRenderingSupported();
+        }
     }
 
     /// <summary>
@@ -1438,7 +1441,10 @@ public class OVRManager : MonoBehaviour, OVRMixedRealityCaptureConfiguration
     /// </summary>
     public static bool eyeTrackedFoveatedRenderingEnabled
     {
-        get { return OVRPlugin.eyeTrackedFoveatedRenderingEnabled; }
+        get
+        {
+            return GetEyeTrackedFoveatedRenderingEnabled();
+        }
         set
         {
             if (eyeTrackedFoveatedRenderingSupported)
@@ -1447,7 +1453,7 @@ public class OVRManager : MonoBehaviour, OVRMixedRealityCaptureConfiguration
                 {
                     if (OVRPermissionsRequester.IsPermissionGranted(OVRPermissionsRequester.Permission.EyeTracking))
                     {
-                        OVRPlugin.eyeTrackedFoveatedRenderingEnabled = value;
+                        SetEyeTrackedFoveatedRenderingEnabled(value);
                     }
 #if OCULUS_XR_ETFR_DELAYED_PERMISSION_REQUEST
                     else
@@ -1459,7 +1465,7 @@ public class OVRManager : MonoBehaviour, OVRMixedRealityCaptureConfiguration
                 }
                 else
                 {
-                    OVRPlugin.eyeTrackedFoveatedRenderingEnabled = value;
+                    SetEyeTrackedFoveatedRenderingEnabled(value);
                 }
             }
         }
@@ -1470,7 +1476,7 @@ public class OVRManager : MonoBehaviour, OVRMixedRealityCaptureConfiguration
         if (permissionId == OVRPermissionsRequester.GetPermissionId(OVRPermissionsRequester.Permission.EyeTracking))
         {
             OVRPermissionsRequester.PermissionGranted -= OnPermissionGranted;
-            OVRPlugin.eyeTrackedFoveatedRenderingEnabled = true;
+            SetEyeTrackedFoveatedRenderingEnabled(true);
         }
     }
 
@@ -1483,21 +1489,11 @@ public class OVRManager : MonoBehaviour, OVRMixedRealityCaptureConfiguration
     {
         get
         {
-#if USING_XR_SDK_OPENXR
-            if (IsOpenXRLoaderActive())
-                return MetaXRFoveationFeature.foveatedRenderingLevel;
-            else
-#endif
-                return (FoveatedRenderingLevel)OVRPlugin.foveatedRenderingLevel;
+            return GetFoveatedRenderingLevel();
         }
         set
         {
-#if USING_XR_SDK_OPENXR
-            if (IsOpenXRLoaderActive())
-                MetaXRFoveationFeature.foveatedRenderingLevel = value;
-            else
-#endif
-                OVRPlugin.foveatedRenderingLevel = (OVRPlugin.FoveatedRenderingLevel)value;
+            SetFoveatedRenderingLevel(value);
         }
     }
 
@@ -1517,22 +1513,11 @@ public class OVRManager : MonoBehaviour, OVRMixedRealityCaptureConfiguration
     {
         get
         {
-#if USING_XR_SDK_OPENXR
-            if (IsOpenXRLoaderActive())
-                return MetaXRFoveationFeature.useDynamicFoveatedRendering;
-            else
-#endif
-                return OVRPlugin.useDynamicFoveatedRendering;
+            return GetDynamicFoveatedRenderingEnabled();
         }
         set
         {
-#if USING_XR_SDK_OPENXR
-            if (IsOpenXRLoaderActive())
-                MetaXRFoveationFeature.useDynamicFoveatedRendering = value;
-            else
-#endif
-                OVRPlugin.useDynamicFoveatedRendering = value;
-
+            SetDynamicFoveatedRenderingEnabled(value);
         }
     }
 
@@ -1822,9 +1807,7 @@ public class OVRManager : MonoBehaviour, OVRMixedRealityCaptureConfiguration
     public bool LateLatching = false;
 #endif
 
-    [SerializeField]
-    [HideInInspector]
-    private OVRManager.ControllerDrivenHandPosesType _readOnlyControllerDrivenHandPosesType = OVRManager.ControllerDrivenHandPosesType.None;
+    private static OVRManager.ControllerDrivenHandPosesType _readOnlyControllerDrivenHandPosesType = OVRManager.ControllerDrivenHandPosesType.None;
     [Tooltip("Defines if hand poses can be populated by controller data.")]
     public OVRManager.ControllerDrivenHandPosesType controllerDrivenHandPosesType = OVRManager.ControllerDrivenHandPosesType.None;
 
@@ -1982,7 +1965,7 @@ public class OVRManager : MonoBehaviour, OVRMixedRealityCaptureConfiguration
     public static string UnityAlphaOrBetaVersionWarningMessage =
         "WARNING: It's not recommended to use Unity alpha/beta release in Oculus development. Use a stable release if you encounter any issue.";
 
-    #region Unity Messages
+#region Unity Messages
 
 #if UNITY_EDITOR
     [AOT.MonoPInvokeCallback(typeof(OVRPlugin.LogCallback2DelegateType))]
@@ -2024,10 +2007,20 @@ public class OVRManager : MonoBehaviour, OVRMixedRealityCaptureConfiguration
         // uncomment the following line to disable the callstack printed to log
         //Application.SetStackTraceLogType(LogType.Log, StackTraceLogType.None);  // TEMPORARY
 
-        Debug.Log("Unity v" + Application.unityVersion + ", " +
+        string versionMessage = "Unity v" + Application.unityVersion + ", " +
                   "Oculus Utilities v" + OVRPlugin.wrapperVersion + ", " +
                   "OVRPlugin v" + OVRPlugin.version + ", " +
-                  "SDK v" + OVRPlugin.nativeSDKVersion + ".");
+                  "SDK v" + OVRPlugin.nativeSDKVersion + ".";
+
+        if (OVRPlugin.version < OVRPlugin.wrapperVersion)
+        {
+            Debug.LogWarning(versionMessage);
+            Debug.LogWarning("You are using an old version of OVRPlugin. Some features may not work correctly. Please use 'Oculus/Tools/OVR Utilities Plugin' menu to upgrade.");
+        }
+        else
+        {
+            Debug.Log(versionMessage);
+        }
 
         Debug.LogFormat("SystemHeadset {0}, API {1}", systemHeadsetType.ToString(), xrApi.ToString());
 
@@ -2756,14 +2749,6 @@ public class OVRManager : MonoBehaviour, OVRMixedRealityCaptureConfiguration
                     SpaceSetComponentStatusComplete?.Invoke(data.RequestId, data.Result >= 0, data.Space, data.Uuid,
                         data.ComponentType, data.Enabled != 0);
 
-                    if (data.ComponentType == OVRPlugin.SpaceComponentType.Locatable)
-                    {
-                        OVRTelemetry.Client.MarkerEnd(
-                            OVRTelemetryConstants.Scene.MarkerId.SpatialAnchorSetComponentStatus,
-                            data.Result >= 0 ? OVRPlugin.Qpl.ResultType.Success : OVRPlugin.Qpl.ResultType.Fail,
-                            data.RequestId.GetHashCode());
-                    }
-
                     OVRTask.GetExisting<bool>(data.RequestId).SetResult(data.Result >= 0);
                 }
                 break;
@@ -2804,10 +2789,6 @@ public class OVRManager : MonoBehaviour, OVRMixedRealityCaptureConfiguration
                         SpaceEraseComplete(data.RequestId, result, data.Uuid, data.Location);
 
                         OVRTask.GetExisting<bool>(data.RequestId).SetResult(result);
-
-                        OVRTelemetry.Client.MarkerEnd(OVRTelemetryConstants.Scene.MarkerId.SpatialAnchorErase,
-                            result ? OVRPlugin.Qpl.ResultType.Success : OVRPlugin.Qpl.ResultType.Fail,
-                            data.RequestId.GetHashCode());
                     }
 
                     break;
@@ -2859,7 +2840,7 @@ public class OVRManager : MonoBehaviour, OVRMixedRealityCaptureConfiguration
     private static bool suppressUnableToFindMainCameraMessage = false;
     private static WeakReference<Camera> lastFoundMainCamera = null;
 
-    private static Camera FindMainCamera()
+    public static Camera FindMainCamera()
     {
         Camera lastCamera;
         if (lastFoundMainCamera != null &&
@@ -2915,7 +2896,7 @@ public class OVRManager : MonoBehaviour, OVRMixedRealityCaptureConfiguration
 
         if (result != null)
         {
-            Debug.LogFormat("[OVRManager] mainCamera found for MRC: {0}", result.gameObject.name);
+            //Debug.LogFormat("[OVRManager] mainCamera found: {0}", result.gameObject.name);
             suppressUnableToFindMainCameraMessage = false;
         }
         else if (!suppressUnableToFindMainCameraMessage)
@@ -3004,7 +2985,7 @@ public class OVRManager : MonoBehaviour, OVRMixedRealityCaptureConfiguration
         Debug.Log("[OVRManager] OnApplicationQuit");
     }
 
-    #endregion // Unity Messages
+#endregion // Unity Messages
 
     /// <summary>
     /// Leaves the application/game and returns to the launcher/dashboard
@@ -3381,18 +3362,6 @@ public class OVRManager : MonoBehaviour, OVRMixedRealityCaptureConfiguration
         return (preferences.Flags & OVRPlugin.PassthroughPreferenceFlags.DefaultToActive) ==
             OVRPlugin.PassthroughPreferenceFlags.DefaultToActive;
     }
-
-    public static bool IsOpenXRLoaderActive()
-    {
-#if USING_XR_SDK_OPENXR
-        XRLoader loader = XRGeneralSettings.Instance.Manager.activeLoader;
-        OpenXRLoader openXRLoader = loader as OpenXRLoader;
-        return openXRLoader != null;
-#else
-        return false;
-#endif
-    }
-
 #region Utils
 
     private class Observable<T>

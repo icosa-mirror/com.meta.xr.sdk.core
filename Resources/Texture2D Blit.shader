@@ -26,7 +26,7 @@
                 struct v2f
                 {
                     float4 vertex : SV_POSITION;
-                    half2 texcoord : TEXCOORD0;
+                    float2 texcoord : TEXCOORD0;
                 };
 
                 sampler2D _MainTex;

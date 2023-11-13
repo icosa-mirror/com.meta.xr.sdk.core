@@ -21,6 +21,7 @@
 using System;
 using System.Linq;
 using System.Collections.Generic;
+using UnityEditor;
 using UnityEngine;
 
 namespace Meta.XR.BuildingBlocks.Editor
@@ -29,15 +30,9 @@ namespace Meta.XR.BuildingBlocks.Editor
     {
         protected override List<GameObject> InstallRoutine()
         {
-            var cameraRig = OVRProjectSetupUtils.FindComponentInScene<OVRCameraRig>();
-            if (cameraRig == null)
-            {
-                throw new InvalidOperationException(
-                    "The Virtual Keyboard BB cannot be installed without a camera rig present in the scene.");
-            }
-
             var virtualKeyboardGo = Instantiate(Prefab, Vector3.zero, Quaternion.identity);
-            virtualKeyboardGo.name = "[BB] Virtual Keyboard";
+            virtualKeyboardGo.name = $"{Utils.BlockPublicTag} Virtual Keyboard";
+            Undo.RegisterCreatedObjectUndo(virtualKeyboardGo, "Create virtual keyboard.");
             var virtualKeyboard = virtualKeyboardGo.GetComponent<OVRVirtualKeyboard>();
             if (virtualKeyboard == null)
             {
@@ -45,9 +40,9 @@ namespace Meta.XR.BuildingBlocks.Editor
                     "The Virtual Keyboard component is missing.");
             }
 
-            var controllerBBs = Utils.GetBlocksWithType<OVRControllerHelper>();
-            var leftController = controllerBBs.First(controller => controller.m_controller == OVRInput.Controller.LTouch);
-            var rightController = controllerBBs.First(controller => controller.m_controller == OVRInput.Controller.RTouch);
+            var controllerBuildingBlocks = Utils.GetBlocksWithType<OVRControllerHelper>();
+            var leftController = controllerBuildingBlocks.First(controller => controller.m_controller == OVRInput.Controller.LTouch);
+            var rightController = controllerBuildingBlocks.First(controller => controller.m_controller == OVRInput.Controller.RTouch);
 
             var interactorPos = new Vector3(0f, 0f, 0.062f);
             var interactorScale = 0.01f * Vector3.one;
@@ -61,6 +56,7 @@ namespace Meta.XR.BuildingBlocks.Editor
                     name = "KeyboardInteractorAnchorLeft"
                 }
             };
+            Undo.RegisterCreatedObjectUndo(interactorAnchorLeft, "Create left interactor.");
 
             var interactorAnchorRight = new GameObject
             {
@@ -72,15 +68,18 @@ namespace Meta.XR.BuildingBlocks.Editor
                     name = "KeyboardInteractorAnchorRight"
                 }
             };
+            Undo.RegisterCreatedObjectUndo(interactorAnchorRight, "Create right interactor.");
 
-            virtualKeyboard.leftControllerRootTransform = cameraRig.leftControllerAnchor;
-            virtualKeyboard.rightControllerRootTransform = cameraRig.rightControllerAnchor;
+            var cameraRigBuildingBlock = Utils.GetBlocksWithType<OVRCameraRig>().First();
+
+            virtualKeyboard.leftControllerRootTransform = cameraRigBuildingBlock.leftControllerAnchor;
+            virtualKeyboard.rightControllerRootTransform = cameraRigBuildingBlock.rightControllerAnchor;
             virtualKeyboard.leftControllerDirectTransform = interactorAnchorLeft.transform;
             virtualKeyboard.rightControllerDirectTransform = interactorAnchorRight.transform;
 
-            var handBBs = Utils.GetBlocksWithType<OVRHand>();
-            var leftHand = handBBs.First(hand => hand.HandType == OVRHand.Hand.HandLeft);
-            var rightHand = handBBs.First(hand => hand.HandType == OVRHand.Hand.HandRight);
+            var handBuildingBlocks = Utils.GetBlocksWithType<OVRHand>();
+            var leftHand = handBuildingBlocks.First(hand => hand.HandType == OVRHand.Hand.HandLeft);
+            var rightHand = handBuildingBlocks.First(hand => hand.HandType == OVRHand.Hand.HandRight);
 
             virtualKeyboard.handLeft = leftHand;
             virtualKeyboard.handRight = rightHand;

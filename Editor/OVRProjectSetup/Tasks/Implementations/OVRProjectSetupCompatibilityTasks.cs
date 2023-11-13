@@ -20,6 +20,7 @@
 
 using System;
 using UnityEditor;
+using UnityEngine;
 
 [InitializeOnLoad]
 internal static class OVRProjectSetupCompatibilityTasks
@@ -140,5 +141,44 @@ internal static class OVRProjectSetupCompatibilityTasks
             fix: group => PlayerSettings.Android.androidTVCompatibility = false,
             fixMessage: "PlayerSettings.Android.androidTVCompatibility = false"
         );
+
+        OVRProjectSetup.AddTask(
+            level: OVRProjectSetup.TaskLevel.Recommended,
+            group: compatibilityTaskGroup,
+            isDone: _ =>
+            {
+                if (TryGetXRSimPackageVersion(out var xrSimVersion))
+                {
+                    return xrSimVersion == SDKVersion;
+                }
+
+                return true;
+            },
+            conditionalValidity: _ =>
+            {
+#if UNITY_EDITOR_WIN
+                return true;
+#else
+                return false;
+#endif
+            },
+            conditionalMessage: _ => TryGetXRSimPackageVersion(out var xrSimVersion)
+                ? $"The Oculus Integration SDK (v{SDKVersion}) and Meta XR Simulator package (v{xrSimVersion}) versions must match to ensure correct functionality"
+                : "The Oculus Integration SDK and Meta XR Simulator package versions must match");
     }
+
+    private static bool TryGetXRSimPackageVersion(out int version)
+    {
+        version = default;
+        var package = OVRProjectSetupUtils.GetPackage("com.meta.xr.simulator");
+        if (package == null)
+        {
+            return false;
+        }
+
+        var versionParts = package.version.Split('.');
+        return versionParts.Length > 0 && int.TryParse(versionParts[0], out version);
+    }
+
+    private static int SDKVersion => OVRPlugin.version.Minor - 32;
 }

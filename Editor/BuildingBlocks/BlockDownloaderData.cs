@@ -42,25 +42,17 @@ namespace Meta.XR.BuildingBlocks.Editor
         private Action _onInstall;
 
 #if UNITY_2021_1_OR_NEWER
-        public override bool DisplayOnContentTab => !_isInstalled && base.DisplayOnContentTab;
+        public override bool Hidden => _isInstalled || base.Hidden;
 #else
-    public override bool DisplayOnContentTab => false;
+        public override bool Hidden => true;
 #endif
 
 #if UNITY_2021_1_OR_NEWER
         internal override bool CanBeAdded => !_isInstalled;
 #else
-    internal override bool CanBeAdded => false;
+        internal override bool CanBeAdded => false;
 #endif
 
-        [ContextMenu("Validate")]
-        internal override void Validate()
-        {
-            base.Validate();
-
-            Assert.IsFalse(string.IsNullOrEmpty(ZipFileUrl), $"{nameof(ZipFileUrl)} cannot be null or empty");
-            Assert.IsTrue(ZipFileUrl.EndsWith(".zip"), $"{nameof(ZipFileUrl)} must be a zip file");
-        }
 
         [ContextMenu("Check if is installed")]
         public void PrintIsInstalled()
@@ -83,7 +75,7 @@ namespace Meta.XR.BuildingBlocks.Editor
 
         internal override bool RequireListRefreshAfterInstall => true;
 
-        internal override void AddToProject(Action onInstall = null)
+        internal override void AddToProject(GameObject selectedGameObject = null, Action onInstall = null)
         {
             _onInstall = onInstall;
             Install();
@@ -106,7 +98,7 @@ namespace Meta.XR.BuildingBlocks.Editor
                 .AddAnnotation(OVRTelemetryConstants.BB.AnnotationType.BlockId, Id)
                 .Send();
 #else
-        throw new InvalidOperationException("Remote blocks installation is only available from Unity 2021");
+            throw new InvalidOperationException("Remote blocks installation is only available from Unity 2021");
 #endif
         }
 

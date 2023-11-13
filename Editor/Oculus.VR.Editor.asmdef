@@ -88,7 +88,7 @@
         },
         {
             "define": "OVR_UNITY_PACKAGE_MANAGER",
-            "name": "com.meta.xr.sdk.utilities",
+            "name": "com.meta.xr.sdk.core",
             "expression": ""
         }
     ],

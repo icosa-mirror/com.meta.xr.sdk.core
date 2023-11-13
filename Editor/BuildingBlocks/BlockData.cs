@@ -26,7 +26,6 @@ using UnityEditor;
 using UnityEditor.SceneManagement;
 using UnityEngine;
 using UnityEngine.SceneManagement;
-using Object = UnityEngine.Object;
 
 namespace Meta.XR.BuildingBlocks.Editor
 {
@@ -43,33 +42,34 @@ namespace Meta.XR.BuildingBlocks.Editor
 
         private static readonly IReadOnlyList<BlockData> EmptyBlockList = new List<BlockData>();
 
-        [Tooltip("Indicates whether only one instance of this block can be installed per scene.")] [SerializeField]
+        [Tooltip("Indicates whether only one instance of this block can be installed per scene.")]
+        [SerializeField]
         internal bool isSingleton;
 
+        [Tooltip("(Optional) Briefly write how this block should be used.")]
+        [TextArea(5, 40)]
+        [SerializeField]
+        internal string usageInstructions;
+
+        public string UsageInstructions => usageInstructions;
         public bool IsSingleton => isSingleton;
 
-        [ContextMenu("Validate")]
-        internal override void Validate()
-        {
-            base.Validate();
 
-            Assert.NotNull(Prefab, $"{nameof(Prefab)} cannot be null");
-            Assert.IsNull(Prefab.GetComponent<BuildingBlock>(),
-                $"{nameof(Prefab)} must not contain the {nameof(BuildingBlock)} component, it'll be added dynamically");
-            Assert.IsFalse(HasCyclicDependencies(), $"{nameof(Dependencies)} cannot have cycles");
-            Assert.IsFalse(HasDuplicateDependencies(), $"{nameof(Dependencies)} cannot have duplicates");
-        }
-
-        internal override void AddToProject(Action onInstall = null)
+        internal override void AddToProject(GameObject selectedGameObject = null, Action onInstall = null)
         {
-            InstallWithDependenciesAndCommit();
+            InstallWithDependenciesAndCommit(selectedGameObject);
             onInstall?.Invoke();
         }
 
         [ContextMenu("Install")]
-        private void InstallWithDependenciesAndCommit()
+        private void ContextMenuInstall()
         {
-            if (HasNonBBCameraRig())
+            InstallWithDependenciesAndCommit();
+        }
+
+        private void InstallWithDependenciesAndCommit(GameObject selectedGameObject = null)
+        {
+            if (HasNonBuildingBlockCameraRig())
             {
                 if (!EditorUtility.DisplayDialog("Confirmation",
                         $"You already have a scene setup with OVRCameraRig that may not be compatible with {Utils.BlocksPublicName}. Do you want to proceed?", "Yes", "No"))
@@ -81,15 +81,20 @@ namespace Meta.XR.BuildingBlocks.Editor
             Exception installException = null;
             try
             {
-                var installedObjects = InstallWithDependencies();
+
+                var installedObjects = InstallWithDependencies(selectedGameObject);
                 SaveScene();
                 FixSetupRules();
 
-                EditorApplication.delayCall += () => { Selection.objects = installedObjects.Cast<Object>().ToArray(); };
-            } catch (Exception e) {
+                EditorApplication.delayCall += () => { Utils.SelectBlocksInScene(installedObjects); };
+            }
+            catch (Exception e)
+            {
                 installException = e;
                 throw;
-            } finally {
+            }
+            finally
+            {
                 OVRTelemetry.Start(OVRTelemetryConstants.BB.MarkerId.InstallBlockData)
                     .SetResult(installException == null ? OVRPlugin.Qpl.ResultType.Success : OVRPlugin.Qpl.ResultType.Fail)
                     .AddAnnotation(OVRTelemetryConstants.BB.AnnotationType.BlockId, Id)
@@ -98,13 +103,13 @@ namespace Meta.XR.BuildingBlocks.Editor
             }
         }
 
-        internal static bool HasNonBBCameraRig()
+        internal static bool HasNonBuildingBlockCameraRig()
         {
             var cameraRig = FindObjectOfType<OVRCameraRig>();
             return cameraRig != null && cameraRig.GetComponent<BuildingBlock>() == null;
         }
 
-        private static void FixSetupRules()
+        internal static void FixSetupRules()
         {
             var buildTargetGroup = BuildPipeline.GetBuildTargetGroup(EditorUserBuildSettings.activeBuildTarget);
             UpdateTasks(buildTargetGroup, FixTasks);
@@ -137,7 +142,7 @@ namespace Meta.XR.BuildingBlocks.Editor
         private bool HasMissingDependencies => Dependencies.Any(dependency => dependency == null);
         private bool IsSingletonAndAlreadyPresent => IsSingleton && IsBlockPresentInScene(Id);
 
-        internal List<GameObject> InstallWithDependencies()
+        internal List<GameObject> InstallWithDependencies(GameObject selectedGameObject = null)
         {
             if (IsSingletonAndAlreadyPresent)
             {
@@ -150,17 +155,17 @@ namespace Meta.XR.BuildingBlocks.Editor
                 throw new InvalidOperationException($"A dependency of block {BlockName} is not present in the project.");
             }
 
-            InstallDependencies(Dependencies);
-            return Install();
+            InstallDependencies(Dependencies, selectedGameObject);
+            return Install(selectedGameObject);
         }
 
-        internal List<GameObject> Install()
+        internal List<GameObject> Install(GameObject selectedGameObject = null)
         {
-            var spawnedObjects = InstallRoutine();
+            var spawnedObjects = InstallRoutine(selectedGameObject);
 
             foreach (var spawnedObject in spawnedObjects)
             {
-                var block = spawnedObject.AddComponent<BuildingBlock>();
+                var block = Undo.AddComponent<BuildingBlock>(spawnedObject);
                 block.blockId = Id;
                 block.version = Version;
                 while (UnityEditorInternal.ComponentUtility.MoveComponentUp(block))
@@ -179,11 +184,17 @@ namespace Meta.XR.BuildingBlocks.Editor
         {
             var instance = Instantiate(Prefab, Vector3.zero, Quaternion.identity);
             instance.SetActive(true);
-            instance.name = $"[BB] {BlockName}";
+            instance.name = $"{Utils.BlockPublicTag} {BlockName}";
+            Undo.RegisterCreatedObjectUndo(instance, "Create " + instance.name);
             return new List<GameObject> { instance };
         }
 
-        private static void InstallDependencies(IEnumerable<BlockData> dependencies)
+        protected virtual List<GameObject> InstallRoutine(GameObject selectedGameObject)
+        {
+            return InstallRoutine();
+        }
+
+        private static void InstallDependencies(IEnumerable<BlockData> dependencies, GameObject selectedGameObject = null)
         {
             foreach (var dependency in dependencies)
             {
@@ -192,7 +203,7 @@ namespace Meta.XR.BuildingBlocks.Editor
                     continue;
                 }
 
-                dependency.InstallWithDependencies();
+                dependency.InstallWithDependencies(selectedGameObject);
             }
         }
 
@@ -219,67 +230,24 @@ namespace Meta.XR.BuildingBlocks.Editor
                     $"Block {BlockName} is already in the latest version.");
             }
 
-            DestroyImmediate(block.gameObject);
+            if (IsSingleton)
+            {
+                foreach (var instance in this.GetBlocks())
+                {
+                    DestroyImmediate(instance.gameObject);
+                }
+            }
+            else
+            {
+                DestroyImmediate(block.gameObject);
+            }
+
             InstallWithDependenciesAndCommit();
 
             OVRTelemetry.Start(OVRTelemetryConstants.BB.MarkerId.UpdateBlock)
                 .AddAnnotation(OVRTelemetryConstants.BB.AnnotationType.BlockId, Id)
                 .AddAnnotation(OVRTelemetryConstants.BB.AnnotationType.Version, Version.ToString())
                 .Send();
-        }
-
-        internal bool HasDuplicateDependencies()
-        {
-            var depSet = new HashSet<string>();
-            return dependencies.Any(dependency => !depSet.Add(dependency));
-        }
-
-        internal bool HasCyclicDependencies()
-        {
-            var visited = new Dictionary<BlockData, bool>();
-            var recStack = new Dictionary<BlockData, bool>();
-
-            visited[this] = true;
-            recStack[this] = true;
-
-            foreach (var dependency in Dependencies)
-            {
-                if (IsCyclicUntil(dependency, visited, recStack))
-                {
-                    return true;
-                }
-            }
-
-            return false;
-        }
-
-        private static bool IsCyclicUntil(BlockData blockData,
-            Dictionary<BlockData, bool> visited,
-            Dictionary<BlockData, bool> recStack)
-        {
-            if (recStack.TryGetValue(blockData, out var hasRec) && hasRec)
-            {
-                return true;
-            }
-
-            if (visited.TryGetValue(blockData, out var hasVisited) && hasVisited)
-            {
-                return false;
-            }
-
-            visited[blockData] = true;
-            recStack[blockData] = true;
-
-            foreach (var dependency in blockData.Dependencies)
-            {
-                if (IsCyclicUntil(dependency, visited, recStack))
-                {
-                    return true;
-                }
-            }
-
-            recStack[blockData] = false;
-            return false;
         }
 
         private static void SaveScene()

@@ -20,6 +20,8 @@
 
 using System;
 using System.Collections.Generic;
+using System.Linq;
+using UnityEditor;
 using UnityEngine;
 
 namespace Meta.XR.BuildingBlocks.Editor
@@ -28,17 +30,13 @@ namespace Meta.XR.BuildingBlocks.Editor
     {
         protected override List<GameObject> InstallRoutine()
         {
-            var cameraRig = OVRProjectSetupUtils.FindComponentInScene<OVRCameraRig>();
-            if (cameraRig == null)
+            var cameraRigBB = Utils.GetBlocksWithType<OVRCameraRig>().First();
+
+            var createdGameObjects = new List<GameObject>
             {
-                throw new InvalidOperationException(
-                    "The Eye Gaze Building Block cannot be installed without a camera rig present in the scene.");
-            }
-
-            var createdGameObjects = new List<GameObject>();
-
-            createdGameObjects.Add(InstantiateEye(OVREyeGaze.EyeId.Left, cameraRig.leftEyeAnchor));
-            createdGameObjects.Add(InstantiateEye(OVREyeGaze.EyeId.Right, cameraRig.rightEyeAnchor));
+                InstantiateEye(OVREyeGaze.EyeId.Left, cameraRigBB.leftEyeAnchor),
+                InstantiateEye(OVREyeGaze.EyeId.Right, cameraRigBB.rightEyeAnchor)
+            };
 
             return createdGameObjects;
         }
@@ -47,8 +45,9 @@ namespace Meta.XR.BuildingBlocks.Editor
         {
             var gameObject = Instantiate(Prefab, Vector3.zero, Quaternion.identity);
             gameObject.SetActive(true);
-            gameObject.name = $"[BB] {BlockName} {eye.ToString()}";
-            gameObject.transform.parent = parent;
+            gameObject.name = $"{Utils.BlockPublicTag} {BlockName} {eye.ToString()}";
+            Undo.RegisterCreatedObjectUndo(gameObject, $"Create {eye.ToString()} eye.");
+            Undo.SetTransformParent(gameObject.transform, parent, true, $"{eye.ToString()} eye parent");
 
             var eyeGaze = gameObject.GetComponentInChildren<OVREyeGaze>();
             if (eyeGaze == null)

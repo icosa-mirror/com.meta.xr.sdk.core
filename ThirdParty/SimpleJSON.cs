@@ -167,7 +167,8 @@ namespace OVRSimpleJSON // SimpleJSON
             }
             public KeyValuePair<string, JSONNode> Current
             {
-                get {
+                get
+                {
                     if (type == Type.Array)
                         return new KeyValuePair<string, JSONNode>(string.Empty, m_Array.Current);
                     else if (type == Type.Object)
@@ -248,6 +249,7 @@ namespace OVRSimpleJSON // SimpleJSON
 
         public static bool forceASCII = false; // Use Unicode by default
         public static bool longAsString = false; // lazy creator creates a JSONString instead of JSONNumber
+        public static bool allowLineComments = true; // allow "//"-style comments at the end of a line
 
         public abstract JSONNodeType Tag { get; }
 
@@ -290,6 +292,12 @@ namespace OVRSimpleJSON // SimpleJSON
         {
             return aNode;
         }
+        public virtual void Clear() { }
+
+        public virtual JSONNode Clone()
+        {
+            return null;
+        }
 
         public virtual IEnumerable<JSONNode> Children
         {
@@ -307,6 +315,16 @@ namespace OVRSimpleJSON // SimpleJSON
                     foreach (var D in C.DeepChildren)
                         yield return D;
             }
+        }
+
+        public virtual bool HasKey(string aKey)
+        {
+            return false;
+        }
+
+        public virtual JSONNode GetValueOrDefault(string aKey, JSONNode aDefault)
+        {
+            return aDefault;
         }
 
         public override string ToString()
@@ -339,7 +357,7 @@ namespace OVRSimpleJSON // SimpleJSON
             get
             {
                 double v = 0.0;
-                if (double.TryParse(Value,NumberStyles.Float, CultureInfo.InvariantCulture, out v))
+                if (double.TryParse(Value, NumberStyles.Float, CultureInfo.InvariantCulture, out v))
                     return v;
                 return 0.0;
             }
@@ -381,13 +399,28 @@ namespace OVRSimpleJSON // SimpleJSON
             get
             {
                 long val = 0;
-                if (long.TryParse(Value, out val))
+                if (long.TryParse(Value, NumberStyles.Integer, CultureInfo.InvariantCulture, out val))
                     return val;
                 return 0L;
             }
             set
             {
-                Value = value.ToString();
+                Value = value.ToString(CultureInfo.InvariantCulture);
+            }
+        }
+
+        public virtual ulong AsULong
+        {
+            get
+            {
+                ulong val = 0;
+                if (ulong.TryParse(Value, NumberStyles.Integer, CultureInfo.InvariantCulture, out val))
+                    return val;
+                return 0;
+            }
+            set
+            {
+                Value = value.ToString(CultureInfo.InvariantCulture);
             }
         }
 
@@ -414,7 +447,7 @@ namespace OVRSimpleJSON // SimpleJSON
 
         public static implicit operator JSONNode(string s)
         {
-            return new JSONString(s);
+            return (s == null) ? (JSONNode)JSONNull.CreateOrGet() : new JSONString(s);
         }
         public static implicit operator string(JSONNode d)
         {
@@ -451,12 +484,23 @@ namespace OVRSimpleJSON // SimpleJSON
         public static implicit operator JSONNode(long n)
         {
             if (longAsString)
-                return new JSONString(n.ToString());
+                return new JSONString(n.ToString(CultureInfo.InvariantCulture));
             return new JSONNumber(n);
         }
         public static implicit operator long(JSONNode d)
         {
             return (d == null) ? 0L : d.AsLong;
+        }
+
+        public static implicit operator JSONNode(ulong n)
+        {
+            if (longAsString)
+                return new JSONString(n.ToString(CultureInfo.InvariantCulture));
+            return new JSONNumber(n);
+        }
+        public static implicit operator ulong(JSONNode d)
+        {
+            return (d == null) ? 0 : d.AsULong;
         }
 
         public static implicit operator JSONNode(bool b)
@@ -505,7 +549,8 @@ namespace OVRSimpleJSON // SimpleJSON
         private static StringBuilder m_EscapeBuilder;
         internal static StringBuilder EscapeBuilder
         {
-            get {
+            get
+            {
                 if (m_EscapeBuilder == null)
                     m_EscapeBuilder = new StringBuilder();
                 return m_EscapeBuilder;
@@ -562,11 +607,14 @@ namespace OVRSimpleJSON // SimpleJSON
         {
             if (quoted)
                 return token;
-            string tmp = token.ToLower();
-            if (tmp == "false" || tmp == "true")
-                return tmp == "true";
-            if (tmp == "null")
-                return JSONNull.CreateOrGet();
+            if (token.Length <= 5)
+            {
+                string tmp = token.ToLower();
+                if (tmp == "false" || tmp == "true")
+                    return tmp == "true";
+                if (tmp == "null")
+                    return JSONNull.CreateOrGet();
+            }
             double val;
             if (double.TryParse(token, NumberStyles.Float, CultureInfo.InvariantCulture, out val))
                 return val;
@@ -583,6 +631,7 @@ namespace OVRSimpleJSON // SimpleJSON
             string TokenName = "";
             bool QuoteMode = false;
             bool TokenIsQuoted = false;
+            bool HasNewlineChar = false;
             while (i < aJSON.Length)
             {
                 switch (aJSON[i])
@@ -601,6 +650,7 @@ namespace OVRSimpleJSON // SimpleJSON
                         TokenName = "";
                         Token.Length = 0;
                         ctx = stack.Peek();
+                        HasNewlineChar = false;
                         break;
 
                     case '[':
@@ -618,6 +668,7 @@ namespace OVRSimpleJSON // SimpleJSON
                         TokenName = "";
                         Token.Length = 0;
                         ctx = stack.Peek();
+                        HasNewlineChar = false;
                         break;
 
                     case '}':
@@ -634,6 +685,8 @@ namespace OVRSimpleJSON // SimpleJSON
                         stack.Pop();
                         if (Token.Length > 0 || TokenIsQuoted)
                             ctx.Add(TokenName, ParseElement(Token.ToString(), TokenIsQuoted));
+                        if (ctx != null)
+                            ctx.Inline = !HasNewlineChar;
                         TokenIsQuoted = false;
                         TokenName = "";
                         Token.Length = 0;
@@ -673,6 +726,7 @@ namespace OVRSimpleJSON // SimpleJSON
 
                     case '\r':
                     case '\n':
+                        HasNewlineChar = true;
                         break;
 
                     case ' ':
@@ -717,6 +771,16 @@ namespace OVRSimpleJSON // SimpleJSON
                                     break;
                             }
                         }
+                        break;
+                    case '/':
+                        if (allowLineComments && !QuoteMode && i + 1 < aJSON.Length && aJSON[i + 1] == '/')
+                        {
+                            while (++i < aJSON.Length && aJSON[i] != '\n' && aJSON[i] != '\r') ;
+                            break;
+                        }
+                        Token.Append(aJSON[i]);
+                        break;
+                    case '\uFEFF': // remove / ignore BOM (Byte Order Mark)
                         break;
 
                     default:
@@ -806,6 +870,25 @@ namespace OVRSimpleJSON // SimpleJSON
         {
             m_List.Remove(aNode);
             return aNode;
+        }
+
+        public override void Clear()
+        {
+            m_List.Clear();
+        }
+
+        public override JSONNode Clone()
+        {
+            var node = new JSONArray();
+            node.m_List.Capacity = m_List.Capacity;
+            foreach (var n in m_List)
+            {
+                if (n != null)
+                    node.Add(n.Clone());
+                else
+                    node.Add(null);
+            }
+            return node;
         }
 
         public override IEnumerable<JSONNode> Children
@@ -951,6 +1034,34 @@ namespace OVRSimpleJSON // SimpleJSON
             }
         }
 
+        public override void Clear()
+        {
+            m_Dict.Clear();
+        }
+
+        public override JSONNode Clone()
+        {
+            var node = new JSONObject();
+            foreach (var n in m_Dict)
+            {
+                node.Add(n.Key, n.Value.Clone());
+            }
+            return node;
+        }
+
+        public override bool HasKey(string aKey)
+        {
+            return m_Dict.ContainsKey(aKey);
+        }
+
+        public override JSONNode GetValueOrDefault(string aKey, JSONNode aDefault)
+        {
+            JSONNode res;
+            if (m_Dict.TryGetValue(aKey, out res))
+                return res;
+            return aDefault;
+        }
+
         public override IEnumerable<JSONNode> Children
         {
             get
@@ -1013,6 +1124,10 @@ namespace OVRSimpleJSON // SimpleJSON
         {
             m_Data = aData;
         }
+        public override JSONNode Clone()
+        {
+            return new JSONString(m_Data);
+        }
 
         internal override void WriteToStringBuilder(StringBuilder aSB, int aIndent, int aIndentInc, JSONTextMode aMode)
         {
@@ -1033,6 +1148,10 @@ namespace OVRSimpleJSON // SimpleJSON
         public override int GetHashCode()
         {
             return m_Data.GetHashCode();
+        }
+        public override void Clear()
+        {
+            m_Data = "";
         }
     }
     // End of JSONString
@@ -1066,6 +1185,11 @@ namespace OVRSimpleJSON // SimpleJSON
             get { return (long)m_Data; }
             set { m_Data = value; }
         }
+        public override ulong AsULong
+        {
+            get { return (ulong)m_Data; }
+            set { m_Data = value; }
+        }
 
         public JSONNumber(double aData)
         {
@@ -1077,9 +1201,14 @@ namespace OVRSimpleJSON // SimpleJSON
             Value = aData;
         }
 
+        public override JSONNode Clone()
+        {
+            return new JSONNumber(m_Data);
+        }
+
         internal override void WriteToStringBuilder(StringBuilder aSB, int aIndent, int aIndentInc, JSONTextMode aMode)
         {
-            aSB.Append(Value);
+            aSB.Append(Value.ToString(CultureInfo.InvariantCulture));
         }
         private static bool IsNumeric(object value)
         {
@@ -1106,6 +1235,10 @@ namespace OVRSimpleJSON // SimpleJSON
         public override int GetHashCode()
         {
             return m_Data.GetHashCode();
+        }
+        public override void Clear()
+        {
+            m_Data = 0;
         }
     }
     // End of JSONNumber
@@ -1144,6 +1277,11 @@ namespace OVRSimpleJSON // SimpleJSON
             Value = aData;
         }
 
+        public override JSONNode Clone()
+        {
+            return new JSONBool(m_Data);
+        }
+
         internal override void WriteToStringBuilder(StringBuilder aSB, int aIndent, int aIndentInc, JSONTextMode aMode)
         {
             aSB.Append((m_Data) ? "true" : "false");
@@ -1159,6 +1297,10 @@ namespace OVRSimpleJSON // SimpleJSON
         public override int GetHashCode()
         {
             return m_Data.GetHashCode();
+        }
+        public override void Clear()
+        {
+            m_Data = false;
         }
     }
     // End of JSONBool
@@ -1188,6 +1330,11 @@ namespace OVRSimpleJSON // SimpleJSON
         {
             get { return false; }
             set { }
+        }
+
+        public override JSONNode Clone()
+        {
+            return CreateOrGet();
         }
 
         public override bool Equals(object obj)
@@ -1314,7 +1461,26 @@ namespace OVRSimpleJSON // SimpleJSON
             set
             {
                 if (longAsString)
-                    Set(new JSONString(value.ToString()));
+                    Set(new JSONString(value.ToString(CultureInfo.InvariantCulture)));
+                else
+                    Set(new JSONNumber(value));
+            }
+        }
+
+        public override ulong AsULong
+        {
+            get
+            {
+                if (longAsString)
+                    Set(new JSONString("0"));
+                else
+                    Set(new JSONNumber(0.0));
+                return 0L;
+            }
+            set
+            {
+                if (longAsString)
+                    Set(new JSONString(value.ToString(CultureInfo.InvariantCulture)));
                 else
                     Set(new JSONNumber(value));
             }

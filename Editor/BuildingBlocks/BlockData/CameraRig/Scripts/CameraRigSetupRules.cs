@@ -31,7 +31,6 @@ namespace Meta.XR.BuildingBlocks.Editor
     {
         static CameraRigSetupRules()
         {
-
             OVRProjectSetup.AddTask(
                 level: OVRProjectSetup.TaskLevel.Required,
                 group: OVRProjectSetup.TaskGroup.Compatibility,
@@ -50,7 +49,7 @@ namespace Meta.XR.BuildingBlocks.Editor
             );
         }
 
-        private static bool BelongsToBBCameraRig(GameObject gameObject)
+        private static bool BelongsToCameraRigBuildingBlock(GameObject gameObject)
         {
             return OVRProjectSetupUtils.HasComponentInParents<OVRCameraRig>(gameObject)
                    && OVRProjectSetupUtils.HasComponentInParents<BuildingBlock>(gameObject);
@@ -58,7 +57,7 @@ namespace Meta.XR.BuildingBlocks.Editor
 
         private static bool CamerRigBuildingBlockExists<T>(IEnumerable<T> components) where T : Behaviour
         {
-            return components.Any(component => BelongsToBBCameraRig(component.gameObject));
+            return components.Any(component => BelongsToCameraRigBuildingBlock(component.gameObject));
         }
 
         private static List<T> FindComponents<T>(bool findInMainCameraOnly) where T : Behaviour
@@ -80,28 +79,11 @@ namespace Meta.XR.BuildingBlocks.Editor
 
         private static void FixDuplicatedComponents<T>(List<T> components) where T : Behaviour
         {
-            var hasFoundTheCameraRig = false;
             foreach (var component in components)
             {
-                if (hasFoundTheCameraRig)
-                {
-                    component.enabled = false;
-                    continue;
-                }
-
-                if (BelongsToBBCameraRig(component.gameObject))
-                {
-                    component.enabled = true;
-                    hasFoundTheCameraRig = true;
-                    continue;
-                }
-
-                component.enabled = false;
+                component.enabled = BelongsToCameraRigBuildingBlock(component.gameObject);
+                EditorSceneManager.MarkSceneDirty(component.gameObject.scene);
             }
-
-            var activeScene = UnityEngine.SceneManagement.SceneManager.GetActiveScene();
-            EditorSceneManager.MarkSceneDirty(activeScene);
-            EditorSceneManager.SaveScene(activeScene);
         }
     }
 }

@@ -197,15 +197,6 @@ internal static class OVRSpaceQuery
         {
             var querySpaces = OVRPlugin.QuerySpaces(ToQueryInfo(), out requestId);
 
-            OVRTelemetry.Client.MarkerStart(OVRTelemetryConstants.Scene.MarkerId.SpatialAnchorQuery,
-                requestId.GetHashCode());
-
-            if (!querySpaces)
-            {
-                OVRTelemetry.Client.MarkerEnd(OVRTelemetryConstants.Scene.MarkerId.SpatialAnchorQuery,
-                    OVRPlugin.Qpl.ResultType.Fail, requestId.GetHashCode());
-            }
-
             return querySpaces;
         }
 

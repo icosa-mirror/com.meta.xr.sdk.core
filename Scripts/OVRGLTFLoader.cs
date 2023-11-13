@@ -61,13 +61,6 @@ public enum OVRTextureQualityFiltering
     Aniso16x = 5,
 }
 
-public struct OVRBinaryChunk
-{
-    public Stream chunkStream;
-    public uint chunkLength;
-    public long chunkStart;
-}
-
 public struct OVRMeshData
 {
     public Mesh mesh;
@@ -87,7 +80,6 @@ public struct OVRMaterialData
 public struct OVRGLTFScene
 {
     public GameObject root;
-    public List<GameObject> nodes;
     public Dictionary<OVRGLTFInputNode, OVRGLTFAnimatinonNode> animationNodes;
     public Dictionary<int, OVRGLTFAnimatinonNode[]> animationNodeLookup;
     public List<OVRGLTFAnimationNodeMorphTargetHandler> morphTargetHandlers;
@@ -115,11 +107,13 @@ public struct OVRMeshAttributes
 
 public class OVRGLTFLoader
 {
+    private const float LoadingMaxTimePerFrame = 1.0f / 70f;
+
+    private readonly Func<Stream> m_deferredStream;
     private JSONNode m_jsonData;
     private Stream m_glbStream;
-    private OVRBinaryChunk m_binaryChunk;
 
-    private List<GameObject> m_Nodes;
+    private GameObject[] m_Nodes;
 
     private Dictionary<OVRGLTFInputNode, OVRGLTFAnimatinonNode> m_InputAnimationNodes;
 
@@ -129,10 +123,12 @@ public class OVRGLTFLoader
     // <nodeIndex, OVRGLTFAnimatinonNodeMorphTargetHandler>
     private Dictionary<int, OVRGLTFAnimationNodeMorphTargetHandler> m_morphTargetHandlers;
 
-    private Shader m_Shader = null;
-    private Shader m_AlphaBlendShader = null;
+    private Shader m_Shader = Shader.Find("Legacy Shaders/Diffuse");
+    private Shader m_AlphaBlendShader = Shader.Find("Unlit/Transparent");
     private OVRTextureQualityFiltering m_TextureQuality = OVRTextureQualityFiltering.Bilinear; // = Unity default
     private float m_TextureMipmapBias = 0.0f; // = shader default
+
+    public OVRGLTFScene scene;
 
     public static readonly Vector3 GLTFToUnitySpace = new Vector3(-1, 1, 1);
     public static readonly Vector3 GLTFToUnityTangent = new Vector4(-1, 1, 1, -1);
@@ -151,6 +147,11 @@ public class OVRGLTFLoader
     };
 
     public Func<string, Material, Texture2D> textureUriHandler;
+    private Dictionary<int, Texture2D> m_textures;
+    private Dictionary<int, Material> m_materials;
+    private float m_processingNodesStart;
+    private OVRGLTFAccessor _dataAccessor;
+
 
     public OVRGLTFLoader(string fileName)
     {
@@ -162,73 +163,91 @@ public class OVRGLTFLoader
         m_glbStream = new MemoryStream(data, 0, data.Length, false, true);
     }
 
+    public OVRGLTFLoader(Func<Stream> deferredStream)
+    {
+        m_deferredStream = deferredStream;
+    }
+
     public OVRGLTFScene LoadGLB(bool supportAnimation, bool loadMips = true)
     {
-        OVRGLTFScene scene = new OVRGLTFScene();
-        m_Nodes = new List<GameObject>();
+        var loadGltfCoroutine = LoadGLBCoroutine(supportAnimation, loadMips);
+        while (loadGltfCoroutine.MoveNext())
+        {
+            // process the coroutine synchronously
+        }
+        return scene;
+    }
+
+    public IEnumerator LoadGLBCoroutine(bool supportAnimation, bool loadMips = true)
+    {
+        scene = new OVRGLTFScene();
         m_InputAnimationNodes = new Dictionary<OVRGLTFInputNode, OVRGLTFAnimatinonNode>();
         m_AnimationLookup = new Dictionary<int, OVRGLTFAnimatinonNode[]>();
         m_morphTargetHandlers = new Dictionary<int, OVRGLTFAnimationNodeMorphTargetHandler>();
+        m_textures = new Dictionary<int, Texture2D>();
+        m_materials = new Dictionary<int, Material>();
 
-        int rootNodeId = 0;
+        // If running in the unity editor avoid a background task
+        if (Application.isBatchMode)
+        {
+            Debug.Log("Batch Mode Single Threaded Loading");
+            m_jsonData = InitializeGLBLoad();
+        }
+        else
+        {
+            var task = Task.Run<JSONNode>(() => InitializeGLBLoad());
+            yield return new WaitUntil(() => task.IsCompleted);
+            m_jsonData = task.Result;
+            if (task.IsFaulted)
+            {
+                Debug.LogException(task.Exception);
+            }
+        }
+        if (m_jsonData == null || !OVRGLTFAccessor.TryCreate(m_jsonData["accessors"], m_jsonData["bufferViews"], m_jsonData["buffers"],
+                m_glbStream, out _dataAccessor))
+        {
+            m_glbStream?.Close();
+            yield break;
+        }
+
+        var loadGltf = LoadGLTF(supportAnimation, loadMips);
+        // Run coroutine withut initial frame skip
+        while (loadGltf.MoveNext())
+        {
+            yield return loadGltf.Current;
+        }
+
+        m_glbStream.Close();
+
+        if (!m_Nodes.Any())
+        {
+            yield break;
+        }
+
+        // Rotate to match unity coordinates
+        scene.root.transform.Rotate(Vector3.up, 180.0f);
+        scene.root.SetActive(true);
+        scene.animationNodes = m_InputAnimationNodes;
+        scene.animationNodeLookup = m_AnimationLookup;
+        scene.morphTargetHandlers = m_morphTargetHandlers.Values.ToList();
+    }
+
+    private JSONNode InitializeGLBLoad()
+    {
+        if (m_deferredStream != null)
+        {
+            m_glbStream = m_deferredStream.Invoke();
+        }
         if (ValidateGLB(m_glbStream))
         {
             byte[] jsonChunkData = ReadChunk(m_glbStream, OVRChunkType.JSON);
             if (jsonChunkData != null)
             {
                 string json = System.Text.Encoding.ASCII.GetString(jsonChunkData);
-                m_jsonData = JSON.Parse(json);
-            }
-
-            uint binChunkLength = 0;
-            bool validBinChunk = ValidateChunk(m_glbStream, OVRChunkType.BIN, out binChunkLength);
-            if (validBinChunk && m_jsonData != null)
-            {
-                m_binaryChunk.chunkLength = binChunkLength;
-                m_binaryChunk.chunkStart = m_glbStream.Position;
-                m_binaryChunk.chunkStream = m_glbStream;
-
-                if (m_Shader == null)
-                {
-                    Debug.LogWarning("A shader was not set before loading the model. Using default mobile shader.");
-                    m_Shader = Shader.Find("Legacy Shaders/Diffuse");
-                }
-
-                if (m_AlphaBlendShader == null)
-                {
-                    Debug.LogWarning(
-                        "An alpha blend shader was not set before loading the model. Using default transparent shader.");
-                    m_AlphaBlendShader = Shader.Find("Unlit/Transparent");
-                }
-
-                rootNodeId = LoadGLTF(supportAnimation, loadMips);
-                if (rootNodeId < 0)
-                {
-                    m_glbStream.Close();
-                    return scene;
-                }
+                return JSON.Parse(json);
             }
         }
-
-        m_glbStream.Close();
-
-        scene.nodes = m_Nodes;
-        scene.root = new GameObject("GLB Scene Root");
-        scene.animationNodes = m_InputAnimationNodes;
-        scene.animationNodeLookup = m_AnimationLookup;
-        scene.morphTargetHandlers = m_morphTargetHandlers.Values.ToList();
-
-        foreach (GameObject node in m_Nodes)
-        {
-            if (node.transform.parent == null)
-            {
-                node.transform.SetParent(scene.root.transform);
-            }
-        }
-
-        scene.root.transform.Rotate(Vector3.up, 180.0f);
-
-        return scene;
+        return null;
     }
 
     public void SetModelShader(Shader shader)
@@ -334,6 +353,10 @@ public class OVRGLTFLoader
 
     private bool ValidateGLB(Stream glbStream)
     {
+        if (glbStream == null)
+        {
+            return false;
+        }
         // Read the magic entry and ensure value matches the glTF value
         int uint32Size = sizeof(uint);
         byte[] buffer = new byte[uint32Size];
@@ -400,66 +423,102 @@ public class OVRGLTFLoader
         return true;
     }
 
-    private int LoadGLTF(bool supportAnimation, bool loadMips)
+    private IEnumerator LoadGLTF(bool supportAnimation, bool loadMips)
     {
         if (m_jsonData == null)
         {
             Debug.LogError("m_jsonData was null");
-            return -1;
+            yield break;
         }
 
         var scenes = m_jsonData["scenes"];
         if (scenes.Count == 0)
         {
             Debug.LogError("No valid scenes in this glTF.");
-            return -1;
+            yield break;
         }
 
         // Create GameObjects for each node in the model so that they can be referenced during processing
+        scene.root = new GameObject("GLB Scene Root");
+        var sceneRootTransform = scene.root.transform;
+        scene.root.SetActive(false);
+
         var nodes = m_jsonData["nodes"].AsArray;
-        for (int i = 0; i < nodes.Count; i++)
+        m_Nodes = new GameObject[nodes.Count];
+        sceneRootTransform.hierarchyCapacity = nodes.Count;
+        var i = 0;
+        foreach (var node in nodes.Values)
         {
-            var jsonNode = m_jsonData["nodes"][i];
-            GameObject go = new GameObject(jsonNode["name"]);
-            m_Nodes.Add(go);
+            var go = new GameObject();
+            go.transform.SetParent(sceneRootTransform, false);
+            m_Nodes[i++] = go;
         }
 
         // Limit loading to just the first scene in the glTF
         var mainScene = scenes[0];
         var rootNodes = mainScene["nodes"].AsArray;
-
+        m_processingNodesStart = Time.realtimeSinceStartup;
         // Load all nodes (some models like e.g. laptops use multiple nodes)
         foreach (JSONNode rootNode in rootNodes)
         {
             int rootNodeId = rootNode.AsInt;
-            ProcessNode(m_jsonData["nodes"][rootNodeId], rootNodeId, loadMips);
-        }
-
-        if (supportAnimation)
-            ProcessAnimations();
-
-        return rootNodes[0].AsInt;
-    }
-
-    private void ProcessNode(JSONNode node, int nodeId, bool loadMips)
-    {
-        // Process the child nodes first
-        var childNodes = node["children"];
-        if (childNodes.Count > 0)
-        {
-            for (int i = 0; i < childNodes.Count; i++)
+            var processNode = ProcessNode(nodes, rootNodeId, loadMips, sceneRootTransform);
+            // Run coroutine without initial frame skip
+            while (processNode.MoveNext())
             {
-                int childId = childNodes[i].AsInt;
-                m_Nodes[childId].transform.SetParent(m_Nodes[nodeId].transform);
-                ProcessNode(m_jsonData["nodes"][childId], childId, loadMips);
+                yield return processNode.Current;
             }
         }
 
-        string nodeName = node["name"].ToString();
-        if (nodeName.Contains("batteryIndicator"))
+        if (supportAnimation)
         {
-            GameObject.Destroy(m_Nodes[nodeId]);
-            return;
+            var processAnimations = ProcessAnimations();
+            // Run coroutine without initial frame skip
+            while (processAnimations.MoveNext())
+            {
+                yield return processAnimations.Current;
+            }
+        }
+    }
+
+    private IEnumerator ProcessNode(JSONArray nodes, int nodeId, bool loadMips, Transform parent)
+    {
+        bool hasSkipped = false;
+        if (Time.realtimeSinceStartup - m_processingNodesStart > LoadingMaxTimePerFrame)
+        {
+            m_processingNodesStart = Time.realtimeSinceStartup;
+            hasSkipped = true;
+            yield return null;
+        }
+
+        JSONNode node = nodes[nodeId];
+
+        var nodeGameObject = m_Nodes[nodeId];
+        var nodeTransform = nodeGameObject.transform;
+        var nodeName = node["name"].Value;
+        nodeTransform.name = nodeName;
+        nodeTransform.SetParent(parent, false);
+
+        // Process the child nodes first
+        var childNodes = node["children"].AsArray;
+        if (childNodes.Count > 0)
+        {
+            foreach (var child in childNodes.Values)
+            {
+                var childId = child.AsInt;
+                var processNode = ProcessNode(nodes, childId, loadMips, nodeTransform);
+                // Run coroutine without initial frame skip
+                while (processNode.MoveNext())
+                {
+                    yield return processNode.Current;
+                }
+            }
+        }
+
+        if (nodeName.StartsWith("batteryIndicator"))
+        {
+            nodeGameObject.SetActive(false);
+            yield break;
         }
 
         if (node["mesh"] != null)
@@ -469,7 +528,7 @@ public class OVRGLTFLoader
 
             if (node["skin"] != null)
             {
-                var renderer = m_Nodes[nodeId].AddComponent<SkinnedMeshRenderer>();
+                var renderer = nodeGameObject.AddComponent<SkinnedMeshRenderer>();
                 renderer.sharedMesh = meshData.mesh;
                 renderer.sharedMaterial = meshData.material;
 
@@ -478,9 +537,9 @@ public class OVRGLTFLoader
             }
             else
             {
-                var filter = m_Nodes[nodeId].AddComponent<MeshFilter>();
+                var filter = nodeGameObject.AddComponent<MeshFilter>();
                 filter.sharedMesh = meshData.mesh;
-                var renderer = m_Nodes[nodeId].AddComponent<MeshRenderer>();
+                var renderer = nodeGameObject.AddComponent<MeshRenderer>();
                 renderer.sharedMaterial = meshData.material;
             }
 
@@ -494,30 +553,41 @@ public class OVRGLTFLoader
         var rotation = node["rotation"].AsArray;
         var scale = node["scale"].AsArray;
 
-        if (translation.Count > 0)
+        if (translation.Count > 0 || rotation.Count > 0)
         {
-            Vector3 position = new Vector3(
-                translation[0] * GLTFToUnitySpace.x,
-                translation[1] * GLTFToUnitySpace.y,
-                translation[2] * GLTFToUnitySpace.z);
-            m_Nodes[nodeId].transform.position = position;
-        }
-
-        if (rotation.Count > 0)
-        {
-            Vector3 rotationAxis = new Vector3(
-                rotation[0] * GLTFToUnitySpace.x,
-                rotation[1] * GLTFToUnitySpace.y,
-                rotation[2] * GLTFToUnitySpace.z);
-            rotationAxis *= -1.0f;
-            m_Nodes[nodeId].transform.rotation =
-                new Quaternion(rotationAxis.x, rotationAxis.y, rotationAxis.z, rotation[3]);
+            var pos = Vector3.zero;
+            var rot = Quaternion.identity;
+            if (translation.Count > 0)
+            {
+                pos = new Vector3(
+                    translation[0] * GLTFToUnitySpace.x,
+                    translation[1] * GLTFToUnitySpace.y,
+                    translation[2] * GLTFToUnitySpace.z);
+            }
+            if (rotation.Count > 0)
+            {
+                rot = new Quaternion(
+                    rotation[0] * GLTFToUnitySpace.x * -1.0f,
+                    rotation[1] * GLTFToUnitySpace.y * -1.0f,
+                    rotation[2] * GLTFToUnitySpace.z * -1.0f,
+                    rotation[3]
+                );
+            }
+            nodeTransform.SetPositionAndRotation(pos, rot);
         }
 
         if (scale.Count > 0)
         {
-            Vector3 scaleVec = new Vector3(scale[0], scale[1], scale[2]);
-            m_Nodes[nodeId].transform.localScale = scaleVec;
+            nodeTransform.localScale = new Vector3(scale[0], scale[1], scale[2]);
+            // disable any zero-scale gameobjects to reduce drawcalls
+            nodeTransform.gameObject.SetActive(nodeTransform.gameObject.transform.localScale != Vector3.zero);
+        }
+
+        var delta = Time.realtimeSinceStartup - m_processingNodesStart;
+        if (!hasSkipped && Time.realtimeSinceStartup - m_processingNodesStart > LoadingMaxTimePerFrame)
+        {
+            m_processingNodesStart = Time.realtimeSinceStartup;
+            yield return null;
         }
     }
 
@@ -541,14 +611,26 @@ public class OVRGLTFLoader
         int[][] indicies = new int[primitives.Count][];
 
         // Begin async processing of material and its texture
-        OVRMaterialData matData = default(OVRMaterialData);
-        Task transcodeTask = null;
+
         var jsonMaterial = primitives[0]["material"];
         if (jsonMaterial != null)
         {
-            matData = ProcessMaterial(jsonMaterial.AsInt);
+            var matData = ProcessMaterial(jsonMaterial.AsInt);
             matData.texture = ProcessTexture(matData.textureId);
-            transcodeTask = Task.Run(() => { TranscodeTexture(ref matData.texture); });
+            TranscodeTexture(ref matData.texture);
+
+            // reuse materials whenever possible
+            int matId = jsonMaterial.AsInt;
+            if (m_materials.TryGetValue(matId, out var cachedMat))
+            {
+                meshData.material = cachedMat;
+            }
+            else
+            {
+                Material mat = CreateUnityMaterial(matData, loadMips);
+                m_materials.Add(matId, mat);
+                meshData.material = mat;
+            }
         }
 
         OVRMeshAttributes attributes = new OVRMeshAttributes();
@@ -560,12 +642,11 @@ public class OVRGLTFLoader
             var jsonPrimitive = primitives[i];
 
             int indicesAccessorId = jsonPrimitive["indices"].AsInt;
-            var jsonAccessor = m_jsonData["accessors"][indicesAccessorId];
-            OVRGLTFAccessor indicesReader = new OVRGLTFAccessor(jsonAccessor, m_jsonData);
 
-            indicies[i] = new int[indicesReader.GetDataCount()];
-            indicesReader.ReadAsInt(m_binaryChunk, ref indicies[i], 0);
-            FlipTraingleIndices(ref indicies[i]);
+            _dataAccessor.Seek(indicesAccessorId);
+
+            indicies[i] = _dataAccessor.ReadInt();
+            FlipTriangleIndices(ref indicies[i]);
 
             attributes = ReadMeshAttributes(jsonPrimitive["attributes"], totalVertexCount, vertexOffset);
 
@@ -608,22 +689,14 @@ public class OVRGLTFLoader
             meshData.baseAttributes = attributes;
         }
 
-        if (transcodeTask != null)
-        {
-            transcodeTask.Wait();
-            meshData.material = CreateUnityMaterial(matData, loadMips);
-        }
-
         return meshData;
     }
 
-    private static void FlipTraingleIndices(ref int[] indices)
+    private static void FlipTriangleIndices(ref int[] indices)
     {
-        for (int i = 0; i < indices.Length; i += 3)
+        for (var i = 0; i < indices.Length; i += 3)
         {
-            int a = indices[i];
-            indices[i] = indices[i + 2];
-            indices[i + 2] = a;
+            (indices[i], indices[i + 2]) = (indices[i + 2], indices[i]);
         }
     }
 
@@ -633,77 +706,48 @@ public class OVRGLTFLoader
         var jsonAttribute = jsonAttributes["POSITION"];
         if (jsonAttribute != null)
         {
-            results.vertices = new Vector3[totalVertexCount];
-            var jsonAccessor = m_jsonData["accessors"][jsonAttribute.AsInt];
-            OVRGLTFAccessor dataReader = new OVRGLTFAccessor(jsonAccessor, m_jsonData);
-            dataReader.ReadAsVector3(m_binaryChunk, ref results.vertices, vertexOffset, GLTFToUnitySpace);
+            _dataAccessor.Seek(jsonAttribute.AsInt);
+            results.vertices = _dataAccessor.ReadVector3(GLTFToUnitySpace);
         }
 
         jsonAttribute = jsonAttributes["NORMAL"];
         if (jsonAttribute != null)
         {
-            results.normals = new Vector3[totalVertexCount];
-            var jsonAccessor = m_jsonData["accessors"][jsonAttribute.AsInt];
-            OVRGLTFAccessor dataReader = new OVRGLTFAccessor(jsonAccessor, m_jsonData);
-            dataReader.ReadAsVector3(m_binaryChunk, ref results.normals, vertexOffset, GLTFToUnitySpace);
+            _dataAccessor.Seek(jsonAttribute.AsInt);
+            results.normals = _dataAccessor.ReadVector3(GLTFToUnitySpace);
         }
 
         jsonAttribute = jsonAttributes["TANGENT"];
         if (jsonAttribute != null)
         {
-            results.tangents = new Vector4[totalVertexCount];
-            var jsonAccessor = m_jsonData["accessors"][jsonAttribute.AsInt];
-            OVRGLTFAccessor dataReader = new OVRGLTFAccessor(jsonAccessor, m_jsonData);
-            dataReader.ReadAsVector4(m_binaryChunk, ref results.tangents, vertexOffset, GLTFToUnityTangent);
+            _dataAccessor.Seek(jsonAttribute.AsInt);
+            results.tangents = _dataAccessor.ReadVector4(GLTFToUnityTangent);
         }
 
         jsonAttribute = jsonAttributes["TEXCOORD_0"];
         if (jsonAttribute != null)
         {
-            results.texcoords = new Vector2[totalVertexCount];
-            var jsonAccessor = m_jsonData["accessors"][jsonAttribute.AsInt];
-            OVRGLTFAccessor dataReader = new OVRGLTFAccessor(jsonAccessor, m_jsonData);
-            dataReader.ReadAsVector2(m_binaryChunk, ref results.texcoords, vertexOffset);
+            _dataAccessor.Seek(jsonAttribute.AsInt);
+            results.texcoords = _dataAccessor.ReadVector2();
         }
 
         jsonAttribute = jsonAttributes["COLOR_0"];
         if (jsonAttribute != null)
         {
-            results.colors = new Color[totalVertexCount];
-            var jsonAccessor = m_jsonData["accessors"][jsonAttribute.AsInt];
-            OVRGLTFAccessor dataReader = new OVRGLTFAccessor(jsonAccessor, m_jsonData);
-            dataReader.ReadAsColor(m_binaryChunk, ref results.colors, vertexOffset);
+            _dataAccessor.Seek(jsonAttribute.AsInt);
+            results.colors = _dataAccessor.ReadColor();
         }
 
         jsonAttribute = jsonAttributes["WEIGHTS_0"];
         if (jsonAttribute != null)
         {
             results.boneWeights = new BoneWeight[totalVertexCount];
-            var jsonAccessor = m_jsonData["accessors"][jsonAttribute.AsInt];
-            OVRGLTFAccessor weightReader = new OVRGLTFAccessor(jsonAccessor, m_jsonData);
+            _dataAccessor.Seek(jsonAttribute.AsInt);
+            _dataAccessor.ReadWeights(ref results.boneWeights);
 
             var jointAttribute = jsonAttributes["JOINTS_0"];
-            var jointAccessor = m_jsonData["accessors"][jointAttribute.AsInt];
-            OVRGLTFAccessor jointReader = new OVRGLTFAccessor(jointAccessor, m_jsonData);
-
-            Vector4[] weights = new Vector4[weightReader.GetDataCount()];
-            Vector4[] joints = new Vector4[jointReader.GetDataCount()];
-
-            weightReader.ReadAsBoneWeights(m_binaryChunk, ref weights, 0);
-            jointReader.ReadAsVector4(m_binaryChunk, ref joints, 0, Vector4.one);
-
-            for (int w = 0; w < weights.Length; w++)
-            {
-                results.boneWeights[vertexOffset + w].boneIndex0 = (int)joints[w].x;
-                results.boneWeights[vertexOffset + w].boneIndex1 = (int)joints[w].y;
-                results.boneWeights[vertexOffset + w].boneIndex2 = (int)joints[w].z;
-                results.boneWeights[vertexOffset + w].boneIndex3 = (int)joints[w].w;
-
-                results.boneWeights[vertexOffset + w].weight0 = weights[w].x;
-                results.boneWeights[vertexOffset + w].weight1 = weights[w].y;
-                results.boneWeights[vertexOffset + w].weight2 = weights[w].z;
-                results.boneWeights[vertexOffset + w].weight3 = weights[w].w;
-            }
+            _dataAccessor.Seek(jointAttribute.AsInt);
+            _dataAccessor.ReadJoints(ref results.boneWeights);
         }
 
         return results;
@@ -714,12 +758,9 @@ public class OVRGLTFLoader
         Matrix4x4[] inverseBindMatrices = null;
         if (skinNode["inverseBindMatrices"] != null)
         {
-            int inverseBindMatricesId = skinNode["inverseBindMatrices"].AsInt;
-            var jsonInverseBindMatrices = m_jsonData["accessors"][inverseBindMatricesId];
-
-            OVRGLTFAccessor dataReader = new OVRGLTFAccessor(jsonInverseBindMatrices, m_jsonData);
-            inverseBindMatrices = new Matrix4x4[dataReader.GetDataCount()];
-            dataReader.ReadAsMatrix4x4(m_binaryChunk, ref inverseBindMatrices, 0, GLTFToUnitySpace);
+            var inverseBindMatricesId = skinNode["inverseBindMatrices"].AsInt;
+            _dataAccessor.Seek(inverseBindMatricesId);
+            inverseBindMatrices = _dataAccessor.ReadMatrix4x4(GLTFToUnitySpace);
         }
 
         if (skinNode["skeleton"] != null)
@@ -813,29 +854,23 @@ public class OVRGLTFLoader
             return textureData;
         }
 
-        int sampler = jsonTexture["sampler"].AsInt;
-        var jsonSampler = m_jsonData["samplers"][sampler];
+        // skip "sampler". not supported
 
-        int bufferViewId = jsonSource["bufferView"].AsInt;
-        var jsonBufferView = m_jsonData["bufferViews"][bufferViewId];
-        OVRGLTFAccessor dataReader = new OVRGLTFAccessor(jsonBufferView, m_jsonData, true);
-
-
+        var bufferViewId = jsonSource["bufferView"].AsInt;
         switch (jsonSource["mimeType"].Value)
         {
             case "image/ktx2":
-                textureData.data = dataReader.ReadAsTexture(m_binaryChunk);
+                textureData.data = _dataAccessor.ReadBuffer(bufferViewId);
                 textureData.format = OVRTextureFormat.KTX2;
                 break;
             case "image/png":
-                textureData.data = dataReader.ReadAsTexture(m_binaryChunk);
+                textureData.data = _dataAccessor.ReadBuffer(bufferViewId);
                 textureData.format = OVRTextureFormat.PNG;
                 break;
             default:
                 Debug.LogWarning($"Unsupported image mimeType '{jsonSource["mimeType"].Value}'");
                 break;
         }
-
         return textureData;
     }
 
@@ -845,7 +880,6 @@ public class OVRGLTFLoader
         {
             return;
         }
-
         if (textureData.format == OVRTextureFormat.KTX2)
         {
             OVRKtxTexture.Load(textureData.data, ref textureData);
@@ -870,17 +904,25 @@ public class OVRGLTFLoader
             mat.SetFloat("_MainTexMMBias", m_TextureMipmapBias);
 
         Texture2D texture = null;
+        bool configureCreatedTexture = false;
+        if (m_textures.TryGetValue(matData.textureId, out texture))
+        {
+            mat.mainTexture = texture;
+            return mat;
+        }
 
         if (matData.texture.format == OVRTextureFormat.KTX2)
         {
             texture = new Texture2D(matData.texture.width, matData.texture.height, matData.texture.transcodedFormat,
                 loadMips);
             texture.LoadRawTextureData(matData.texture.data);
+            configureCreatedTexture = true;
         }
         else if (matData.texture.format == OVRTextureFormat.PNG)
         {
             texture = new Texture2D(2, 2, TextureFormat.RGBA32, loadMips);
             texture.LoadImage(matData.texture.data);
+            configureCreatedTexture = true;
         }
         else if (!String.IsNullOrEmpty(matData.texture.uri))
         {
@@ -888,11 +930,13 @@ public class OVRGLTFLoader
         }
 
         if (!texture) return mat;
-
-        ApplyTextureQuality(m_TextureQuality, ref texture);
-        texture.Apply(updateMipmaps: false, makeNoLongerReadable: true);
+        if (configureCreatedTexture)
+        {
+            ApplyTextureQuality(m_TextureQuality, ref texture);
+            texture.Apply(updateMipmaps: false, makeNoLongerReadable: true);
+        }
+        m_textures[matData.textureId] = texture;
         mat.mainTexture = texture;
-
         return mat;
     }
 
@@ -909,10 +953,11 @@ public class OVRGLTFLoader
         return OVRGLTFInputNode.None;
     }
 
-    private void ProcessAnimations()
+    private IEnumerator ProcessAnimations()
     {
         var animations = m_jsonData["animations"];
         var animationIndex = 0;
+        var processingStart = Time.realtimeSinceStartup;
         foreach (JSONNode animation in animations.AsArray)
         {
             //We don't need animation name at this moment
@@ -927,7 +972,7 @@ public class OVRGLTFLoader
                 if (!animationNodeLookup.TryGetValue(nodeId, out var animationNode))
                 {
                     m_morphTargetHandlers.TryGetValue(nodeId, out var morphTargetHandler);
-                    animationNode = animationNodeLookup[nodeId] = new OVRGLTFAnimatinonNode(m_jsonData, m_binaryChunk,
+                    animationNode = animationNodeLookup[nodeId] = new OVRGLTFAnimatinonNode(
                         inputNodeType, m_Nodes[nodeId],
                         morphTargetHandler);
                 }
@@ -940,11 +985,15 @@ public class OVRGLTFLoader
                     }
                 }
 
-                animationNode.AddChannel(channel, animation["samplers"]);
+                animationNode.AddChannel(channel, animation["samplers"], _dataAccessor);
             }
-
             m_AnimationLookup[animationIndex] = animationNodeLookup.Values.ToArray();
             animationIndex++;
+            if (Time.realtimeSinceStartup - processingStart > LoadingMaxTimePerFrame)
+            {
+                processingStart = Time.realtimeSinceStartup;
+                yield return null;
+            }
         }
     }
 }

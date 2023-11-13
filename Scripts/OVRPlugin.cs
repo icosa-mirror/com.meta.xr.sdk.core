@@ -55,7 +55,7 @@ public static partial class OVRPlugin
 #if OVRPLUGIN_UNSUPPORTED_PLATFORM
     public static readonly System.Version wrapperVersion = _versionZero;
 #else
-    public static readonly System.Version wrapperVersion = OVRP_1_89_0.version;
+    public static readonly System.Version wrapperVersion = OVRP_1_91_0.version;
 #endif
 
 #if !OVRPLUGIN_UNSUPPORTED_PLATFORM
@@ -1703,7 +1703,6 @@ public static partial class OVRPlugin
         MaxBodyBones = BoneId.Body_End,
         MaxBones = BoneId.Max,
         MaxBoneCapsules = 19,
-        MaxNumMicrogestures = 5,
     }
 
     public enum SkeletonType
@@ -1942,6 +1941,8 @@ public static partial class OVRPlugin
     }
 
 
+
+
     [StructLayout(LayoutKind.Sequential)]
     public struct BodyJointLocation
     {
@@ -2086,6 +2087,7 @@ public static partial class OVRPlugin
         public BodyJointLocation JointLocation_68;
         public BodyJointLocation JointLocation_69;
     }
+
 
 
     [StructLayout(LayoutKind.Sequential)]
@@ -4704,6 +4706,7 @@ public static partial class OVRPlugin
         }
 #endif
     }
+
 
     public static bool SetControllerDrivenHandPoses(bool controllerDrivenHandPoses)
     {
@@ -8636,6 +8639,7 @@ public static partial class OVRPlugin
 #endif // OVRPLUGIN_UNSUPPORTED_PLATFORM
 
 
+
     public static bool StopBodyTracking() =>
 #if OVRPLUGIN_UNSUPPORTED_PLATFORM
         false;
@@ -8856,17 +8860,6 @@ public static partial class OVRPlugin
                        && OVRP_1_72_0.ovrp_SetSpaceComponentStatus(ref space, componentType, ToBool(enable), timeout,
                            out requestId) == Result.Success;
 
-        if (componentType == SpaceComponentType.Locatable)
-        {
-            const int markerId = OVRTelemetryConstants.Scene.MarkerId.SpatialAnchorSetComponentStatus;
-            OVRTelemetry.Client.MarkerStart(markerId, requestId.GetHashCode());
-
-            if (!spaceSet)
-            {
-                OVRTelemetry.Client.MarkerEnd(markerId, OVRPlugin.Qpl.ResultType.Fail, requestId.GetHashCode());
-            }
-        }
-
         return spaceSet;
 #endif
     }
@@ -8951,15 +8944,6 @@ public static partial class OVRPlugin
 
         var erased = version >= OVRP_1_72_0.version
                      && OVRP_1_72_0.ovrp_EraseSpace(ref space, location, out requestId) == Result.Success;
-
-        OVRTelemetry.Client.MarkerStart(OVRTelemetryConstants.Scene.MarkerId.SpatialAnchorErase,
-            requestId.GetHashCode());
-
-        if (!erased)
-        {
-            OVRTelemetry.Client.MarkerEnd(OVRTelemetryConstants.Scene.MarkerId.SpatialAnchorErase,
-                OVRPlugin.Qpl.ResultType.Fail);
-        }
 
         return erased;
 #endif
@@ -11853,6 +11837,19 @@ public static partial class OVRPlugin
     private static class OVRP_1_89_0
     {
         public static readonly System.Version version = new System.Version(1, 89, 0);
+
+    }
+
+    private static class OVRP_1_90_0
+    {
+        public static readonly System.Version version = new System.Version(1, 90, 0);
+
+    }
+
+    private static class OVRP_1_91_0
+    {
+        public static readonly System.Version version = new System.Version(1, 91, 0);
+
 
     }
     /* INSERT NEW OVRP CLASS ABOVE THIS LINE */

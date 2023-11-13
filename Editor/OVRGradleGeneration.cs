@@ -131,15 +131,34 @@ public class OVRGradleGeneration
 
         string ovrRootPath = OVRPluginInfo.GetUtilitiesRootPath();
         var importers = PluginImporter.GetAllImporters();
+        var utilitiesPackageInfo = OVRPluginInfo.GetUtilitiesPackageInfo();
+
         foreach (var importer in importers)
         {
             if (!importer.GetCompatibleWithPlatform(report.summary.platform))
                 continue;
-            string fullAssetPath = Path.Combine(Directory.GetCurrentDirectory(), importer.assetPath);
+
+            string assetPath = "";
+            bool isUtilitiesAsset = false;
+
+            assetPath = importer.assetPath;
+            var assetPackageInfo = UnityEditor.PackageManager.PackageInfo.FindForAssetPath(importer.assetPath);
+            if (utilitiesPackageInfo != null && assetPackageInfo != null)
+            {
+                isUtilitiesAsset = (assetPackageInfo.name.Equals(utilitiesPackageInfo.name));
+            }
+            else
+            {
+                if (assetPackageInfo == null)
+                    assetPath = Path.Combine(Directory.GetCurrentDirectory(), importer.assetPath);
 #if UNITY_EDITOR_WIN
-            fullAssetPath = fullAssetPath.Replace("/", "\\");
+                assetPath = assetPath.Replace("/", "\\");
 #endif
-            if (fullAssetPath.StartsWith(ovrRootPath) && fullAssetPath.Contains("OVRPlugin"))
+                isUtilitiesAsset = assetPath.StartsWith(ovrRootPath);
+            }
+
+            // Use the libraries from OVRPlugin that come from the integration sdk or the upm version
+            if (isUtilitiesAsset && assetPath.Contains("OVRPlugin"))
             {
                 if (metaXRFeature.enabled)
                     UnityEngine.Debug.LogFormat("[Meta] Native plugin included in build because of enabled MetaXRFeature: {0}", importer.assetPath);
@@ -151,7 +170,7 @@ public class OVRGradleGeneration
             // Only disable other OpenXR Loaders if the Meta XR feature is enabled
             if (metaXRFeature.enabled)
             {
-                if (!fullAssetPath.StartsWith(ovrRootPath) && (fullAssetPath.Contains("libopenxr_loader.so") || fullAssetPath.Contains("openxr_loader.aar")))
+                if (!isUtilitiesAsset && (assetPath.Contains("libopenxr_loader.so") || assetPath.Contains("openxr_loader.aar")))
                 {
                     UnityEngine.Debug.LogFormat("[Meta] libopenxr_loader.so from other packages will be disabled because of enabled MetaXRFeature: {0}", importer.assetPath);
                     importer.SetIncludeInBuildDelegate(path => false);
@@ -174,9 +193,8 @@ public class OVRGradleGeneration
 
 #if UNITY_ANDROID && USING_XR_SDK_OCULUS && OCULUS_XR_SYMMETRIC
         OculusSettings settings;
-        UnityEditor.EditorBuildSettings.TryGetConfigObject<OculusSettings>("Unity.XR.Oculus.Settings", out settings);
-
-        if (settings.SymmetricProjection && !symmetricWarningShown)
+        if (EditorBuildSettings.TryGetConfigObject<OculusSettings>("Unity.XR.Oculus.Settings", out settings)
+            && settings.SymmetricProjection && !symmetricWarningShown)
         {
             symmetricWarningShown = true;
             UnityEngine.Debug.LogWarning(

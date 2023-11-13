@@ -18,6 +18,7 @@
  * limitations under the License.
  */
 
+using System.Collections;
 using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.UI;
@@ -123,18 +124,12 @@ public class OVRVirtualKeyboardSampleControls : MonoBehaviour
     void Start()
     {
         inputHandler = GetComponent<OVRVirtualKeyboardSampleInputHandler>();
-
-        // If System Keyboard is enabled at the same time as Virtual Keyboard
-        // prevent the system keyboard from opening with input field focus
-        keyboard.TextCommitField.keyboardType = (TouchScreenKeyboardType)(-1);
-
-        ShowKeyboard();
-
         keyboard.KeyboardHiddenEvent.AddListener(OnHideKeyboard);
 
         MoveNearButton.onClick.AddListener(MoveKeyboardNear);
         MoveFarButton.onClick.AddListener(MoveKeyboardFar);
         DestroyKeyboardButton.onClick.AddListener(DestroyKeyboard);
+        StartCoroutine(CreateKeyboard());
     }
 
     private void OnDestroy()
@@ -154,13 +149,33 @@ public class OVRVirtualKeyboardSampleControls : MonoBehaviour
     {
         if (keyboard == null)
         {
+            StartCoroutine(CreateKeyboard());
+        }
+        else
+        {
+            keyboard.gameObject.SetActive(true);
+            UpdateButtonInteractable();
+        }
+    }
+
+    private IEnumerator CreateKeyboard()
+    {
+        var showButtonText = ShowButton.GetComponentInChildren<Text>();
+        showButtonText.text = "Creating Keyboard...";
+        ShowButton.interactable = false;
+        HideButton.interactable = false;
+        DestroyKeyboardButton.interactable = false;
+
+        if (keyboard == null)
+        {
             var go = new GameObject();
             keyboard = go.AddComponent<OVRVirtualKeyboard>();
             keyboardBackup.RestoreTo(keyboard);
             inputHandler.OVRVirtualKeyboard = keyboard;
         }
 
-        keyboard.gameObject.SetActive(true);
+        yield return new OVRVirtualKeyboard.WaitUntilKeyboardVisible(keyboard);
+        showButtonText.text = "Show Keyboard";
         UpdateButtonInteractable();
     }
 

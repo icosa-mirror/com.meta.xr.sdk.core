@@ -49,21 +49,18 @@ internal static class OVRTelemetryConstants
         public static readonly MarkerPoint InitPermissionRequest = new MarkerPoint("InitPermissionRequest");
     }
 
-    public static class Scene
+    public static class Editor
     {
         public static class MarkerId
         {
-            public const int SpatialAnchorSetComponentStatus = 163055742;
-            public const int SpatialAnchorSave = 163056007;
-            public const int SpatialAnchorQuery = 163057870;
-            public const int SpatialAnchorErase = 163059334;
-            public const int SpatialAnchorCreate = 163068641;
+            public const int Start = 163067235;
+            public const int ComponentAdd = 163060094;
         }
-    }
 
-    public static class Editor
-    {
-        public const int Start = 163067235;
+        public static class AnnotationType
+        {
+            public const string ComponentName = "ComponentName";
+        }
     }
 
     public static class BB
