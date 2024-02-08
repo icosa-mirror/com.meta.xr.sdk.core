@@ -162,8 +162,24 @@ public class OVRProjectConfig : ScriptableObject, ISerializationCallbackReceiver
         Stereo = 1,
     }
 
+    public enum SystemLoadingScreenBackground
+    {
+        Black = 0,
+        [InspectorName("Passthrough (Contextual)")]
+        ContextualPassthrough = 1
+    }
+
     public Texture2D systemSplashScreen;
     public SystemSplashScreenType systemSplashScreenType;
+
+    public SystemLoadingScreenBackground systemLoadingScreenBackground
+    {
+        get => _systemLoadingScreenBackground;
+        set => _systemLoadingScreenBackground = value;
+    }
+
+    [SerializeField]
+    internal SystemLoadingScreenBackground _systemLoadingScreenBackground = SystemLoadingScreenBackground.Black;
 
 #if OVR_UNITY_PACKAGE_MANAGER
     // Store the checksum of native plugins to compare and prompt for editor restarts when changed

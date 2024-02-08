@@ -29,7 +29,6 @@ public class OVRVirtualKeyboardSampleControls : MonoBehaviour
 {
     private struct OVRVirtualKeyboardBackup
     {
-        private readonly InputField _textCommitField;
         private readonly Vector3 _position;
         private readonly Quaternion _rotation;
         private readonly Vector3 _scale;
@@ -48,7 +47,6 @@ public class OVRVirtualKeyboardSampleControls : MonoBehaviour
 
         public OVRVirtualKeyboardBackup(OVRVirtualKeyboard keyboard)
         {
-            _textCommitField = keyboard.TextCommitField;
             _position = keyboard.transform.position;
             _rotation = keyboard.transform.rotation;
             _scale = keyboard.transform.localScale;
@@ -70,7 +68,6 @@ public class OVRVirtualKeyboardSampleControls : MonoBehaviour
 
         public void RestoreTo(OVRVirtualKeyboard keyboard)
         {
-            keyboard.TextCommitField = _textCommitField;
             keyboard.transform.SetPositionAndRotation(_position, _rotation);
             keyboard.transform.localScale = _scale;
 

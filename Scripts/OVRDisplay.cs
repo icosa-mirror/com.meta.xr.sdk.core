@@ -107,11 +107,11 @@ public class OVRDisplay
         public float timeWarpError;
     }
 
-    private bool needsConfigureTexture;
-    private EyeRenderDesc[] eyeDescs = new EyeRenderDesc[2];
-    private bool recenterRequested = false;
-    private int recenterRequestedFrameCount = int.MaxValue;
-    private int localTrackingSpaceRecenterCount = 0;
+    protected bool needsConfigureTexture;
+    protected EyeRenderDesc[] eyeDescs = new EyeRenderDesc[2];
+    protected bool recenterRequested = false;
+    protected int recenterRequestedFrameCount = int.MaxValue;
+    protected int localTrackingSpaceRecenterCount = 0;
 
     /// <summary>
     /// Creates an instance of OVRDisplay. Called by OVRManager.
@@ -350,13 +350,13 @@ public class OVRDisplay
         set { OVRPlugin.systemDisplayFrequency = value; }
     }
 
-    private void UpdateTextures()
+    protected void UpdateTextures()
     {
         ConfigureEyeDesc(Node.LeftEye);
         ConfigureEyeDesc(Node.RightEye);
     }
 
-    private void ConfigureEyeDesc(Node eye)
+    protected void ConfigureEyeDesc(Node eye)
     {
         if (!OVRManager.isHmdPresent)
             return;

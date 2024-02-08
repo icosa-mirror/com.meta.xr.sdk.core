@@ -47,7 +47,7 @@ internal static class OVRProjectSetupMovementSDKConfigurationTasks
                 var skeletons = FindMisconfiguredOVRSkeletonInstances();
                 foreach (var skeleton in skeletons)
                 {
-                    OVRSkeletonEditor.FixOVRBodyConfiguration(skeleton);
+                    OVRSkeletonEditor.FixOVRBodyConfiguration(skeleton, skeleton.GetRequiredBodyJointSet());
                 }
             },
             fixMessage: $"Create OVRBody components where they are required"

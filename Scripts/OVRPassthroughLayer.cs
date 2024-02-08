@@ -697,7 +697,7 @@ public class OVRPassthroughLayer : MonoBehaviour
     }
 
     // Returns a gradient from black to white.
-    private static Gradient CreateNeutralColorMapGradient()
+    internal static Gradient CreateNeutralColorMapGradient()
     {
         return new Gradient()
         {

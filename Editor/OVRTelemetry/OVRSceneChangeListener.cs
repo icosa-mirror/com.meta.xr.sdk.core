@@ -36,6 +36,11 @@ public class OVRSceneChangeListener
 
     static OVRSceneChangeListener()
     {
+        Meta.XR.Editor.Callbacks.InitializeOnLoad.Register(OnEditorReady);
+    }
+
+    private static void OnEditorReady()
+    {
         if (OVRRuntimeSettings.Instance.TelemetryEnabled)
         {
             RegisterCallback();

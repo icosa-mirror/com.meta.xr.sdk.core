@@ -158,6 +158,10 @@ public static class OVRCustomSkeletonEditorExtensions
         {
             return FBXBodyBoneNames[(int)bi];
         }
+        else if (skeletonType == OVRSkeleton.SkeletonType.FullBody)
+        {
+            return FBXFullBodyBoneNames[(int)bi];
+        }
         else
         {
             if (bi >= OVRSkeleton.BoneId.Hand_ThumbTip && bi <= OVRSkeleton.BoneId.Hand_PinkyTip)
@@ -247,6 +251,93 @@ public static class OVRCustomSkeletonEditorExtensions
         "RightHandLittleTip"
     };
 
+    private static readonly string[] FBXFullBodyBoneNames =
+    {
+        "Root",
+        "Hips",
+        "SpineLower",
+        "SpineMiddle",
+        "SpineUpper",
+        "Chest",
+        "Neck",
+        "Head",
+        "LeftShoulder",
+        "LeftScapula",
+        "LeftArmUpper",
+        "LeftArmLower",
+        "LeftHandWristTwist",
+        "RightShoulder",
+        "RightScapula",
+        "RightArmUpper",
+        "RightArmLower",
+        "RightHandWristTwist",
+        "LeftHandPalm",
+        "LeftHandWrist",
+        "LeftHandThumbMetacarpal",
+        "LeftHandThumbProximal",
+        "LeftHandThumbDistal",
+        "LeftHandThumbTip",
+        "LeftHandIndexMetacarpal",
+        "LeftHandIndexProximal",
+        "LeftHandIndexIntermediate",
+        "LeftHandIndexDistal",
+        "LeftHandIndexTip",
+        "LeftHandMiddleMetacarpal",
+        "LeftHandMiddleProximal",
+        "LeftHandMiddleIntermediate",
+        "LeftHandMiddleDistal",
+        "LeftHandMiddleTip",
+        "LeftHandRingMetacarpal",
+        "LeftHandRingProximal",
+        "LeftHandRingIntermediate",
+        "LeftHandRingDistal",
+        "LeftHandRingTip",
+        "LeftHandLittleMetacarpal",
+        "LeftHandLittleProximal",
+        "LeftHandLittleIntermediate",
+        "LeftHandLittleDistal",
+        "LeftHandLittleTip",
+        "RightHandPalm",
+        "RightHandWrist",
+        "RightHandThumbMetacarpal",
+        "RightHandThumbProximal",
+        "RightHandThumbDistal",
+        "RightHandThumbTip",
+        "RightHandIndexMetacarpal",
+        "RightHandIndexProximal",
+        "RightHandIndexIntermediate",
+        "RightHandIndexDistal",
+        "RightHandIndexTip",
+        "RightHandMiddleMetacarpal",
+        "RightHandMiddleProximal",
+        "RightHandMiddleIntermediate",
+        "RightHandMiddleDistal",
+        "RightHandMiddleTip",
+        "RightHandRingMetacarpal",
+        "RightHandRingProximal",
+        "RightHandRingIntermediate",
+        "RightHandRingDistal",
+        "RightHandRingTip",
+        "RightHandLittleMetacarpal",
+        "RightHandLittleProximal",
+        "RightHandLittleIntermediate",
+        "RightHandLittleDistal",
+        "RightHandLittleTip",
+        "LeftUpperLeg",
+        "LeftLowerLeg",
+        "LeftFootAnkleTwist",
+        "LeftFootAnkle",
+        "LeftFootSubtalar",
+        "LeftFootTransverse",
+        "LeftFootBall",
+        "RightUpperLeg",
+        "RightLowerLeg",
+        "RightFootAnkleTwist",
+        "RightFootAnkle",
+        "RightFootSubtalar",
+        "RightFootTransverse",
+        "RightFootBall"
+    };
 
     private static readonly string[] FBXHandSidePrefix = { "l_", "r_" };
     private const string FBXHandBonePrefix = "b_";

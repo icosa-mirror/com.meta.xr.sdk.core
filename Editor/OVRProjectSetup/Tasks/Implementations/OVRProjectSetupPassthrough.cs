@@ -18,6 +18,7 @@
  * limitations under the License.
  */
 
+using Meta.XR.BuildingBlocks;
 using UnityEditor;
 
 [InitializeOnLoad]
@@ -93,7 +94,9 @@ internal static class OVRProjectSetupPassthrough
                 var ovrCameraRig = OVRProjectSetupUtils.FindComponentInScene<OVRCameraRig>();
                 return ovrCameraRig != null &&
                        OVRPassthroughHelper.HasCentralCamera(ovrCameraRig) &&
-                       OVRPassthroughHelper.IsAnyPassthroughLayerUnderlay();
+                       OVRPassthroughHelper.IsAnyPassthroughLayerUnderlay() &&
+                       // Apply the rule only when there are no building blocks present in the scene
+                       !OVRProjectSetupUtils.FindComponentInScene<BuildingBlock>();
             },
             message: "When using Passthrough as an underlay it's required set the camera background to transparent",
             fix: _ =>

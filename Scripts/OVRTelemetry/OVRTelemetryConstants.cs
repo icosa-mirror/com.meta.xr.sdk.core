@@ -32,6 +32,8 @@ internal static class OVRTelemetryConstants
 
         public static class AnnotationTypes
         {
+            public const string ProjectName = "ProjectName";
+            public const string ProjectGuid = "ProjectGuid";
             public const string Origin = "Origin";
             public const string EngineVersion = "developer_platform_version";
         }

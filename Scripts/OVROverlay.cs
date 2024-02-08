@@ -277,10 +277,10 @@ public class OVROverlay : MonoBehaviour
 
     #endregion
 
-    private static Material tex2DMaterial;
-    private static Material cubeMaterial;
+    protected static Material tex2DMaterial;
+    protected static Material cubeMaterial;
 
-    private OVRPlugin.LayerLayout layout
+    protected OVRPlugin.LayerLayout layout
     {
         get
         {
@@ -292,7 +292,7 @@ public class OVROverlay : MonoBehaviour
         }
     }
 
-    private struct LayerTexture
+    protected struct LayerTexture
     {
         public Texture appTexture;
         public IntPtr appTexturePtr;
@@ -300,34 +300,34 @@ public class OVROverlay : MonoBehaviour
         public IntPtr[] swapChainPtr;
     };
 
-    private LayerTexture[] layerTextures;
+    protected LayerTexture[] layerTextures;
 
-    private OVRPlugin.LayerDesc layerDesc;
-    private int stageCount = -1;
+    protected OVRPlugin.LayerDesc layerDesc;
+    protected int stageCount = -1;
 
-    private int layerIndex = -1; // Controls the composition order based on wake-up time.
-    private GCHandle layerIdHandle;
-    private IntPtr layerIdPtr = IntPtr.Zero;
+    protected int layerIndex = -1; // Controls the composition order based on wake-up time.
+    protected GCHandle layerIdHandle;
+    protected IntPtr layerIdPtr = IntPtr.Zero;
 
-    private int frameIndex = 0;
-    private int prevFrameIndex = -1;
+    protected int frameIndex = 0;
+    protected int prevFrameIndex = -1;
 
-    private Renderer rend;
+    protected Renderer rend;
 
 
     public bool isOverlayVisible { get; private set; }
 
-    private int texturesPerStage
+    protected int texturesPerStage
     {
         get { return (layout == OVRPlugin.LayerLayout.Stereo) ? 2 : 1; }
     }
 
-    private static bool NeedsTexturesForShape(OverlayShape shape)
+    protected static bool NeedsTexturesForShape(OverlayShape shape)
     {
         return !IsPassthroughShape(shape);
     }
 
-    private bool CreateLayer(int mipLevels, int sampleCount, OVRPlugin.EyeTextureFormat etFormat, int flags,
+    protected bool CreateLayer(int mipLevels, int sampleCount, OVRPlugin.EyeTextureFormat etFormat, int flags,
         OVRPlugin.Sizei size, OVRPlugin.OverlayShape shape)
     {
         if (!layerIdHandle.IsAllocated || layerIdPtr == IntPtr.Zero)
@@ -393,7 +393,7 @@ public class OVROverlay : MonoBehaviour
         return true;
     }
 
-    private bool CreateLayerTextures(bool useMipmaps, OVRPlugin.Sizei size, bool isHdr)
+    protected bool CreateLayerTextures(bool useMipmaps, OVRPlugin.Sizei size, bool isHdr)
     {
         if (isExternalSurface)
         {
@@ -462,7 +462,7 @@ public class OVROverlay : MonoBehaviour
         return needsCopy;
     }
 
-    private void DestroyLayerTextures()
+    protected void DestroyLayerTextures()
     {
         if (isExternalSurface)
         {
@@ -481,7 +481,7 @@ public class OVROverlay : MonoBehaviour
         layerTextures = null;
     }
 
-    private void DestroyLayer()
+    protected void DestroyLayer()
     {
         if (layerIndex != -1)
         {
@@ -564,7 +564,7 @@ public class OVROverlay : MonoBehaviour
         colorOffset = offset;
     }
 
-    private bool LatchLayerTextures()
+    protected bool LatchLayerTextures()
     {
         if (isExternalSurface)
         {
@@ -623,7 +623,7 @@ public class OVROverlay : MonoBehaviour
         return true;
     }
 
-    private OVRPlugin.LayerDesc GetCurrentLayerDesc()
+    protected OVRPlugin.LayerDesc GetCurrentLayerDesc()
     {
         OVRPlugin.Sizei textureSize = new OVRPlugin.Sizei() { w = 0, h = 0 };
 
@@ -700,7 +700,7 @@ public class OVROverlay : MonoBehaviour
         return newDesc;
     }
 
-    private Rect GetBlitRect(int eyeId)
+    protected Rect GetBlitRect(int eyeId)
     {
         if (texturesPerStage == 2)
         {
@@ -718,7 +718,7 @@ public class OVROverlay : MonoBehaviour
     }
 
     // A blit method that only draws into the specified rect by setting the viewport.
-    private void BlitSubImage(Texture src, RenderTexture dst, Material mat, Rect rect, bool invertRect = false)
+    protected void BlitSubImage(Texture src, RenderTexture dst, Material mat, Rect rect, bool invertRect = false)
     {
         var p = RenderTexture.active;
         RenderTexture.active = dst;
@@ -757,7 +757,7 @@ public class OVROverlay : MonoBehaviour
         RenderTexture.active = p;
     }
 
-    private bool PopulateLayer(int mipLevels, bool isHdr, OVRPlugin.Sizei size, int sampleCount, int stage)
+    protected bool PopulateLayer(int mipLevels, bool isHdr, OVRPlugin.Sizei size, int sampleCount, int stage)
     {
         if (isExternalSurface)
         {
@@ -865,7 +865,7 @@ public class OVROverlay : MonoBehaviour
         return ret;
     }
 
-    private bool SubmitLayer(bool overlay, bool headLocked, bool noDepthBufferTesting, OVRPose pose, Vector3 scale,
+    protected bool SubmitLayer(bool overlay, bool headLocked, bool noDepthBufferTesting, OVRPose pose, Vector3 scale,
         int frameIndex)
     {
         int rightEyeIndex = (texturesPerStage >= 2) ? 1 : 0;
@@ -908,7 +908,7 @@ public class OVROverlay : MonoBehaviour
         return isOverlayVisible;
     }
 
-    private void SetupEditorPreview()
+    protected void SetupEditorPreview()
     {
 #if UNITY_EDITOR
         if (previewInEditor)

@@ -29,7 +29,6 @@ using UnityEngine.UI;
 using Quaternion = UnityEngine.Quaternion;
 using Vector3 = UnityEngine.Vector3;
 using System.Linq;
-using System.Threading.Tasks;
 using UnityEngine.Events;
 using UnityEngine.EventSystems;
 using UnityEngine.Serialization;
@@ -51,6 +50,94 @@ public class OVRVirtualKeyboard : MonoBehaviour
         [Obsolete]
         Direct = 1,
         Custom = 2,
+    }
+
+    public interface ITextHandler
+    {
+        public Action<string> OnTextChanged { set; get; }
+
+        public string Text { get; }
+        public bool SubmitOnEnter { get; }
+        public bool IsFocused { get; }
+
+        public void Submit();
+        public void AppendText(string s);
+        public void ApplyBackspace();
+        public void MoveTextEnd();
+    }
+
+    public abstract class AbstractTextHandler : MonoBehaviour, ITextHandler
+    {
+        public abstract Action<string> OnTextChanged { get; set; }
+
+        public abstract string Text { get; }
+        public abstract bool SubmitOnEnter { get; }
+        public abstract bool IsFocused { get; }
+
+        public abstract void Submit();
+        public abstract void AppendText(string s);
+        public abstract void ApplyBackspace();
+        public abstract void MoveTextEnd();
+    }
+
+    private class TextHandlerScope : ITextHandler, IDisposable
+    {
+        private readonly ITextHandler _textHandler;
+        private readonly Action<string> _textChangeHandler;
+        public TextHandlerScope(ITextHandler textHandler, Action<string> textChangeHandler)
+        {
+            _textHandler = textHandler;
+            _textChangeHandler = textChangeHandler;
+
+            _textHandler.OnTextChanged -= _textChangeHandler;
+        }
+
+        public void Dispose()
+        {
+            _textHandler.OnTextChanged += _textChangeHandler;
+        }
+
+        public Action<string> OnTextChanged { get => throw new NotImplementedException(); set => throw new NotImplementedException(); }
+        public string Text => _textHandler.Text;
+        public bool SubmitOnEnter => _textHandler.SubmitOnEnter;
+        public bool IsFocused => _textHandler.IsFocused;
+        public void Submit()
+        {
+            _textHandler?.Submit();
+        }
+
+        public void AppendText(string s)
+        {
+            if (_textHandler == null)
+            {
+                return;
+            }
+            _textHandler.AppendText(s);
+            // Text Context currently expects an end of text caretPosition
+            if (_textHandler.IsFocused)
+            {
+                _textHandler.MoveTextEnd();
+            }
+        }
+
+        public void ApplyBackspace()
+        {
+            if (_textHandler == null)
+            {
+                return;
+            }
+            _textHandler.ApplyBackspace();
+            // Text Context currently expects an end of text caretPosition
+            if (_textHandler.IsFocused)
+            {
+                _textHandler.MoveTextEnd();
+            }
+        }
+
+        public void MoveTextEnd()
+        {
+            _textHandler?.MoveTextEnd();
+        }
     }
 
     /// <summary>
@@ -370,6 +457,15 @@ public class OVRVirtualKeyboard : MonoBehaviour
 
     }
 
+    private struct VirtualKeyboardTextureInfo
+    {
+        public IntPtr buffer;
+        public uint bufferLength;
+        public Texture2D texture;
+        public bool hasTexture;
+        public List<Material> materials;
+    }
+
     private static OVRVirtualKeyboard singleton_;
 
     /// <summary>
@@ -413,7 +509,16 @@ public class OVRVirtualKeyboard : MonoBehaviour
     /// </summary>
     [SerializeField]
     [FormerlySerializedAs("TextCommitField")]
+    [Obsolete]
+    [HideInInspector]
     private InputField textCommitField;
+
+    /// <summary>
+    /// Use to connect the Virtual Keyboard to various text sources, like a Unity Input Fields via OVRVirtualKeyboardUnityInputFieldTextHandler
+    /// </summary>
+    [SerializeField]
+    private AbstractTextHandler textHandler;
+    private ITextHandler _runtimeTextHandler;
 
     [Header("Controller Input")]
     /// <summary>
@@ -502,7 +607,8 @@ public class OVRVirtualKeyboard : MonoBehaviour
 
     private UInt64 keyboardSpace_;
 
-    private Dictionary<ulong, List<Material>> virtualKeyboardTextures_ = new Dictionary<ulong, List<Material>>();
+    private Dictionary<ulong, VirtualKeyboardTextureInfo> virtualKeyboardTextures_ = new Dictionary<ulong, VirtualKeyboardTextureInfo>();
+
     private OVRGLTFScene virtualKeyboardScene_;
     private UInt64 virtualKeyboardModelKey_;
     private bool modelInitialized_ = false;
@@ -512,33 +618,53 @@ public class OVRVirtualKeyboard : MonoBehaviour
     private List<IInputSource> _inputSources;
 
     // Used to ignore internal invokes of OnValueChanged without unbinding/rebinding
-    private bool ignoreTextCommmitFieldOnValueChanged_;
-    private InputField runtimeInputField_;
     private KeyboardEventListener keyboardEventListener_;
     private Coroutine gltfModelCoroutine_;
     private OVRGLTFLoader _gltfLoader;
 
-    // ensures runtime updates to the TextCommitField keep text context in sync
+    private int _animationStateCount;
+    private int _animationStateBufferLength;
+    private IntPtr _animationStateBuffer;
+
+    [Obsolete("TextCommitField has been replaced with TextHandler for more flexibility.")]
     public InputField TextCommitField
     {
-        get => runtimeInputField_;
+        get
+        {
+            Debug.LogWarning("Migrate to TextHandler for better performance.");
+            return (textHandler as OVRVirtualKeyboardInputFieldTextHandler)?.InputField;
+        }
         set
         {
-            if (runtimeInputField_ == value)
+            Debug.LogWarning("Migrate to TextHandler for better performance.");
+            if (TextHandler is OVRVirtualKeyboardInputFieldTextHandler handler)
+            {
+                handler.InputField = value;
+            }
+        }
+    }
+
+    // ensures runtime updates to the TextHandler keep text context in sync
+    public ITextHandler TextHandler
+    {
+        get => _runtimeTextHandler;
+        set
+        {
+            if (_runtimeTextHandler == value)
             {
                 return;
             }
 
-            if (runtimeInputField_ != null)
+            if (_runtimeTextHandler != null)
             {
-                runtimeInputField_.onValueChanged.RemoveListener(OnTextCommitFieldChange);
+                _runtimeTextHandler.OnTextChanged -= OnTextHandlerChange;
             }
 
-            runtimeInputField_ = value;
-            if (runtimeInputField_ != null)
+            _runtimeTextHandler = value;
+            if (_runtimeTextHandler != null)
             {
-                runtimeInputField_.onValueChanged.AddListener(OnTextCommitFieldChange);
-                ChangeTextContextInternal(runtimeInputField_.text);
+                _runtimeTextHandler.OnTextChanged += OnTextHandlerChange;
+                ChangeTextContextInternal(_runtimeTextHandler.Text);
             }
         }
     }
@@ -588,7 +714,7 @@ public class OVRVirtualKeyboard : MonoBehaviour
         }
 
         // Initialize serialized text commit field
-        TextCommitField = textCommitField;
+        TextHandler = textHandler;
 
         // Register for events
         CommitTextEvent.AddListener(OnCommitText);
@@ -606,8 +732,16 @@ public class OVRVirtualKeyboard : MonoBehaviour
         KeyboardShownEvent.RemoveListener(OnKeyboardShown);
         KeyboardHiddenEvent.RemoveListener(OnKeyboardHidden);
 
-        TextCommitField = null;
+        foreach (var texture in virtualKeyboardTextures_.Values)
+        {
+            if (texture.buffer != IntPtr.Zero)
+            {
+                Marshal.FreeHGlobal(texture.buffer);
+            }
+        }
+        virtualKeyboardTextures_.Clear();
 
+        TextHandler = null;
         if (singleton_ == this)
         {
             if (OVRManager.instance != null)
@@ -634,6 +768,19 @@ public class OVRVirtualKeyboard : MonoBehaviour
 #if UNITY_EDITOR
     private void OnValidate()
     {
+        // Handle migration from obsolete textCommitField to textHandler
+#pragma warning disable CS0612
+#pragma warning disable CS0618
+        if (textCommitField != null && textHandler != null)
+        {
+            Debug.Log("Migrating Text Commit Field to Unity Input Field Text Handler", this);
+            TextHandler = textHandler;
+            TextCommitField = textCommitField;
+            textCommitField = null;
+        }
+#pragma warning restore CS0618
+#pragma warning restore CS0612
+
         transform.hideFlags = (InitialPosition == KeyboardPosition.Custom) ? HideFlags.None : HideFlags.NotEditable;
     }
 
@@ -720,7 +867,6 @@ public class OVRVirtualKeyboard : MonoBehaviour
     /// <param name="source">Input source to use (ex. Controller/Hand Left/Right).</param>
     /// <param name="isPressed">If true, will trigger a key press if the ray collides with a keyboard key.</param>
     /// <param name="useRaycastMask">Defaults to true. Will use the configured raycast mask for the given input source.</param>
-
     public void SendVirtualKeyboardRayInput(Transform inputTransform,
         InputSource source, bool isPressed, bool useRaycastMask = true)
     {
@@ -781,9 +927,9 @@ public class OVRVirtualKeyboard : MonoBehaviour
     /// </summary>
     public void ChangeTextContext(string textContext)
     {
-        if (TextCommitField != null && TextCommitField.text != textContext)
+        if (TextHandler != null && TextHandler.Text != textContext)
         {
-            Debug.LogWarning("TextCommitField text out of sync with Keyboard text context");
+            Debug.LogWarning("TextHandler text out of sync with Keyboard text context");
         }
 
         ChangeTextContextInternal(textContext);
@@ -839,11 +985,14 @@ public class OVRVirtualKeyboard : MonoBehaviour
                 return null;
             }
             var textureId = ulong.Parse(uri.LocalPath.Substring(1));
-            if (virtualKeyboardTextures_.ContainsKey(textureId) == false)
+
+            VirtualKeyboardTextureInfo texture;
+            if (!virtualKeyboardTextures_.TryGetValue(textureId, out texture))
             {
-                virtualKeyboardTextures_[textureId] = new List<Material>();
+                texture.materials = new List<Material>();
             }
-            virtualKeyboardTextures_[textureId].Add(mat);
+            texture.materials.Add(mat);
+            virtualKeyboardTextures_[textureId] = texture;
             return null; // defer texture data loading
         };
         _gltfLoader.SetModelShader(keyboardModelShader);
@@ -947,9 +1096,9 @@ public class OVRVirtualKeyboard : MonoBehaviour
             }
 
             // Should call this whenever the keyboard is created or when the text focus changes
-            if (TextCommitField != null)
+            if (TextHandler != null)
             {
-                ChangeTextContextInternal(TextCommitField.text);
+                ChangeTextContextInternal(TextHandler.Text);
             }
         }
         else
@@ -1170,112 +1319,117 @@ public class OVRVirtualKeyboard : MonoBehaviour
         {
             return;
         }
-
         OVRPlugin.GetVirtualKeyboardDirtyTextures(out var dirtyTextures);
         foreach (var textureId in dirtyTextures.TextureIds)
         {
-            if (!virtualKeyboardTextures_.TryGetValue(textureId, out var textureMaterials))
+
+            if (!virtualKeyboardTextures_.TryGetValue(textureId, out var textureInfo))
             {
                 continue;
             }
 
+            // Query texture details
             var textureData = new OVRPlugin.VirtualKeyboardTextureData();
             OVRPlugin.GetVirtualKeyboardTextureData(textureId, ref textureData);
+            // Access the texture data
             if (textureData.BufferCountOutput > 0)
             {
-                try
+                if (textureInfo.bufferLength < textureData.BufferCountOutput && textureInfo.buffer != IntPtr.Zero)
                 {
-                    textureData.Buffer = Marshal.AllocHGlobal((int)textureData.BufferCountOutput);
-                    textureData.BufferCapacityInput = textureData.BufferCountOutput;
-                    OVRPlugin.GetVirtualKeyboardTextureData(textureId, ref textureData);
+                    Marshal.FreeHGlobal(textureInfo.buffer);
+                    textureInfo.buffer = IntPtr.Zero;
+                }
+                if (textureInfo.buffer == IntPtr.Zero)
+                {
+                    textureInfo.bufferLength = textureData.BufferCountOutput;
+                    textureInfo.buffer = Marshal.AllocHGlobal((int)textureData.BufferCountOutput);
+                }
+                textureData.Buffer = textureInfo.buffer;
+                textureData.BufferCapacityInput = textureInfo.bufferLength;
 
-                    var texBytes = new byte[textureData.BufferCountOutput];
-                    Marshal.Copy(textureData.Buffer, texBytes, 0, (int)textureData.BufferCountOutput);
-
-                    var tex = new Texture2D((int)textureData.TextureWidth, (int)textureData.TextureHeight,
-                        TextureFormat.RGBA32, false);
-                    tex.filterMode = FilterMode.Trilinear;
-                    tex.SetPixelData(texBytes, 0);
-                    tex.Apply(true /*updateMipmaps*/, true /*makeNoLongerReadable*/);
-                    foreach (var material in textureMaterials)
+                OVRPlugin.GetVirtualKeyboardTextureData(textureId, ref textureData);
+                if (textureInfo.hasTexture)
+                {
+                    if (textureInfo.texture.width != textureData.TextureWidth ||
+                        textureInfo.texture.height != textureData.TextureHeight)
                     {
-                        material.mainTexture = tex;
+                        textureInfo.hasTexture = false;
                     }
                 }
-                finally
+                if (!textureInfo.hasTexture)
                 {
-                    Marshal.FreeHGlobal(textureData.Buffer);
+                    textureInfo.texture = new Texture2D((int)textureData.TextureWidth,
+                        (int)textureData.TextureHeight,
+                        TextureFormat.RGBA32, false);
+                    textureInfo.texture.filterMode = FilterMode.Trilinear;
+                    textureInfo.hasTexture = true;
+                }
+                textureInfo.texture.LoadRawTextureData(textureInfo.buffer,
+                    (int)textureInfo.bufferLength);
+                textureInfo.texture.Apply(true /*updateMipmaps*/, false /*makeNoLongerReadable*/);
+                virtualKeyboardTextures_[textureId] = textureInfo;
+                foreach (var material in textureInfo.materials)
+                {
+                    material.mainTexture = textureInfo.texture;
                 }
             }
         }
 
-        var result = OVRPlugin.GetVirtualKeyboardModelAnimationStates(out var animationStates);
-        if (result == OVRPlugin.Result.Success)
+
+        // reset animation count
+        _animationStateCount = 0;
+        OVRPlugin.GetVirtualKeyboardModelAnimationStates(AnimationStatesBufferProvider, AnimationStateHandler);
+
+        if (_animationStateCount > 0)
         {
-            for (var i = 0; i < animationStates.States.Length; i++)
+            foreach (var morphTargets in virtualKeyboardScene_.morphTargetHandlers)
             {
-                if (!virtualKeyboardScene_.animationNodeLookup.ContainsKey(animationStates.States[i].AnimationIndex))
-                {
-                    Debug.LogWarning($"Unknown Animation State Index {animationStates.States[i].AnimationIndex}");
-                    continue;
-                }
-
-                var animationNodes =
-                    virtualKeyboardScene_.animationNodeLookup[animationStates.States[i].AnimationIndex];
-                foreach (var animationNode in animationNodes)
-                {
-                    animationNode.UpdatePose(animationStates.States[i].Fraction, false);
-                }
+                morphTargets.Update();
             }
+        }
+    }
 
-            if (animationStates.States.Length > 0)
-            {
-                foreach (var morphTargets in virtualKeyboardScene_.morphTargetHandlers)
-                {
-                    morphTargets.Update();
-                }
-            }
+    IntPtr AnimationStatesBufferProvider(int bufferLength, int count)
+    {
+        if (_animationStateBufferLength < bufferLength)
+        {
+            Marshal.FreeHGlobal(_animationStateBuffer);
+            _animationStateBufferLength = bufferLength;
+            _animationStateBuffer = Marshal.AllocHGlobal(_animationStateBufferLength);
+        }
+
+        _animationStateCount = count;
+        return _animationStateBuffer;
+    }
+
+    void AnimationStateHandler(ref OVRPlugin.VirtualKeyboardModelAnimationState state)
+    {
+        if (state.AnimationIndex >= virtualKeyboardScene_.animationNodeLookup.Count)
+        {
+            Debug.LogWarning($"Unknown Animation State Index {state.AnimationIndex}");
+            return;
+        }
+
+        var animationNodes = virtualKeyboardScene_.animationNodeLookup[state.AnimationIndex];
+        for (var i = 0; i < animationNodes.Length; i++)
+        {
+            animationNodes[i].UpdatePose(state.Fraction, false);
         }
     }
 
     private void OnCommitText(string text)
     {
-        if (TextCommitField == null)
+        if (TextHandler == null)
         {
             return;
         }
-        if (TextCommitField.isFocused && TextCommitField.caretPosition != TextCommitField.text.Length)
-        {
-            Debug.LogWarning("Virtual Keyboard expects an end of text caretPosition");
-        }
 
-        TextCommitField.SetTextWithoutNotify(TextCommitField.text + text);
-        // Text Context currently expects an end of text caretPosition
-        if (TextCommitField.isFocused && TextCommitField.caretPosition != TextCommitField.text.Length)
-        {
-            TextCommitField.caretPosition = TextCommitField.text.Length;
-        }
-
-        // only process change events when text changes externally
-        ignoreTextCommmitFieldOnValueChanged_ = true;
-        try
-        {
-            TextCommitField.onValueChanged.Invoke(TextCommitField.text);
-        }
-        finally
-        {
-            // Resume processing text change events
-            ignoreTextCommmitFieldOnValueChanged_ = false;
-        }
+        using var textScope = new TextHandlerScope(TextHandler, OnTextHandlerChange);
+        textScope.AppendText(text);
     }
 
-    private void OnTextCommitFieldChange(string textContext)
+    private void OnTextHandlerChange(string textContext)
     {
-        if (ignoreTextCommmitFieldOnValueChanged_)
-        {
-            return;
-        }
-
         ChangeTextContextInternal(textContext);
     }
 
@@ -1295,49 +1449,29 @@ public class OVRVirtualKeyboard : MonoBehaviour
 
     private void OnBackspace()
     {
-        if (TextCommitField == null || TextCommitField.text == String.Empty)
+        if (TextHandler == null)
         {
             return;
         }
-        if (TextCommitField.isFocused && TextCommitField.caretPosition != TextCommitField.text.Length)
-        {
-            Debug.LogWarning("Virtual Keyboard expects an end of text caretPosition");
-        }
-
-        string text = TextCommitField.text;
-        TextCommitField.SetTextWithoutNotify(text.Substring(0, text.Length - 1));
-        // Text Context currently expects an end of text caretPosition
-        if (TextCommitField.isFocused && TextCommitField.caretPosition != TextCommitField.text.Length)
-        {
-            TextCommitField.caretPosition = TextCommitField.text.Length;
-        }
-
-        // only process change events when text changes externally
-        ignoreTextCommmitFieldOnValueChanged_ = true;
-        try
-        {
-            TextCommitField.onValueChanged.Invoke(TextCommitField.text);
-        }
-        finally
-        {
-            // Resume processing text change events
-            ignoreTextCommmitFieldOnValueChanged_ = false;
-        }
+        using var textScope = new TextHandlerScope(TextHandler, OnTextHandlerChange);
+        textScope.ApplyBackspace();
     }
 
     private void OnEnter()
     {
-        if (TextCommitField == null)
+        if (TextHandler == null)
         {
             return;
         }
-        if (TextCommitField.lineType == InputField.LineType.MultiLineNewline)
+
+        using var textScope = new TextHandlerScope(TextHandler, OnTextHandlerChange);
+        if (textScope.SubmitOnEnter)
         {
-            OnCommitText("\n");
+            textScope.Submit();
         }
         else
         {
-            TextCommitField.onEndEdit?.Invoke(TextCommitField.text);
+            OnCommitText("\n");
         }
     }
 

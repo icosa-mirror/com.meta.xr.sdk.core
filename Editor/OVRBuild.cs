@@ -790,7 +790,9 @@ partial class OculusBuildApp : EditorWindow
 
             // Start the application on the device
             IncrementProgressBar("Launching application on device . . .");
-#if UNITY_2019_3_OR_NEWER
+#if UNITY_2023_2_OR_NEWER
+            string playerActivityName = "\"" + applicationIdentifier + "/com.unity3d.player.UnityPlayerGameActivity\"";
+#elif UNITY_2019_3_OR_NEWER
             string playerActivityName = "\"" + applicationIdentifier + "/com.unity3d.player.UnityPlayerActivity\"";
 #else
             string playerActivityName =

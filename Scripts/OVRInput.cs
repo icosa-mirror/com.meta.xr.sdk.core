@@ -334,20 +334,20 @@ public static class OVRInput
         public bool Append;
     }
 
-    private static readonly float AXIS_AS_BUTTON_THRESHOLD = 0.5f;
-    private static readonly float AXIS_DEADZONE_THRESHOLD = 0.2f;
-    private static List<OVRControllerBase> controllers;
-    private static Controller activeControllerType = Controller.None;
-    private static Controller connectedControllerTypes = Controller.None;
-    private static OVRPlugin.Step stepType = OVRPlugin.Step.Render;
-    private static int fixedUpdateCount = 0;
+    public static readonly float AXIS_AS_BUTTON_THRESHOLD = 0.5f;
+    public static readonly float AXIS_DEADZONE_THRESHOLD = 0.2f;
+    public static List<OVRControllerBase> controllers;
+    public static Controller activeControllerType = Controller.None;
+    public static Controller connectedControllerTypes = Controller.None;
+    public static OVRPlugin.Step stepType = OVRPlugin.Step.Render;
+    public static int fixedUpdateCount = 0;
 
 
     private static bool _pluginSupportsActiveController = false;
     private static bool _pluginSupportsActiveControllerCached = false;
     private static System.Version _pluginSupportsActiveControllerMinVersion = new System.Version(1, 9, 0);
 
-    private static bool pluginSupportsActiveController
+    public static bool pluginSupportsActiveController
     {
         get
         {
@@ -2182,7 +2182,7 @@ public static class OVRInput
     // (https://github.com/dotnet/roslyn/issues/28729)
     #pragma warning disable format
 
-    private abstract class OVRControllerBase
+    public abstract class OVRControllerBase
     {
         public class VirtualButtonMap
         {
@@ -2713,7 +2713,7 @@ public static class OVRInput
         }
     }
 
-    private class OVRControllerTouch : OVRControllerBase
+    public class OVRControllerTouch : OVRControllerBase
     {
         public OVRControllerTouch()
         {
@@ -2821,7 +2821,7 @@ public static class OVRInput
         }
     }
 
-    private class OVRControllerLTouch : OVRControllerBase
+    public class OVRControllerLTouch : OVRControllerBase
     {
         public OVRControllerLTouch()
         {
@@ -3029,7 +3029,7 @@ public static class OVRInput
         }
     }
 
-    private class OVRControllerHands : OVRControllerBase
+    public class OVRControllerHands : OVRControllerBase
     {
         public OVRControllerHands()
         {
@@ -3137,7 +3137,7 @@ public static class OVRInput
         }
     }
 
-    private class OVRControllerLHand : OVRControllerBase
+    public class OVRControllerLHand : OVRControllerBase
     {
         public OVRControllerLHand()
         {
@@ -3241,7 +3241,7 @@ public static class OVRInput
         }
     }
 
-    private class OVRControllerRHand : OVRControllerBase
+    public class OVRControllerRHand : OVRControllerBase
     {
         public OVRControllerRHand()
         {
@@ -3345,7 +3345,7 @@ public static class OVRInput
         }
     }
 
-    private class OVRControllerRemote : OVRControllerBase
+    public class OVRControllerRemote : OVRControllerBase
     {
         public OVRControllerRemote()
         {
@@ -3444,7 +3444,7 @@ public static class OVRInput
         }
     }
 
-    private class OVRControllerGamepadPC : OVRControllerBase
+    public class OVRControllerGamepadPC : OVRControllerBase
     {
         public OVRControllerGamepadPC()
         {

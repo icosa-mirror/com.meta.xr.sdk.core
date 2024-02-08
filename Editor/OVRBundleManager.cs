@@ -603,7 +603,11 @@ public class OVRBundleManager
             string output, error;
             string appPackagename = PlayerSettings.GetApplicationIdentifier(BuildTargetGroup.Android)
                                     + GetTransitionApkOptionalIdentifier();
+#if UNITY_2023_2_OR_NEWER
+            string playerActivityName = "\"" + appPackagename + "/com.unity3d.player.UnityPlayerGameActivity\"";
+#else
             string playerActivityName = "\"" + appPackagename + "/com.unity3d.player.UnityPlayerActivity\"";
+#endif
             string[] appStartCommand =
             {
                 "-d shell",

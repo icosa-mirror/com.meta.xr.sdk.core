@@ -28,7 +28,9 @@ public class OVRManagerEditor : Editor
     private SerializedProperty _requestFaceTrackingPermissionOnStartup;
     private SerializedProperty _requestEyeTrackingPermissionOnStartup;
     private SerializedProperty _requestScenePermissionOnStartup;
+    private SerializedProperty _requestRecordAudioPermissionOnStartup;
     private bool _expandPermissionsRequest;
+    private bool _showFaceTrackingDataSources = false;
 
     void OnEnable()
     {
@@ -40,6 +42,8 @@ public class OVRManagerEditor : Editor
             serializedObject.FindProperty(nameof(OVRManager.requestEyeTrackingPermissionOnStartup));
         _requestScenePermissionOnStartup =
             serializedObject.FindProperty(nameof(OVRManager.requestScenePermissionOnStartup));
+        _requestRecordAudioPermissionOnStartup =
+            serializedObject.FindProperty(nameof(OVRManager.requestRecordAudioPermissionOnStartup));
     }
 
     public override void OnInspectorGUI()
@@ -197,6 +201,79 @@ public class OVRManagerEditor : Editor
         EditorGUI.EndDisabledGroup();
 #endif
 
+        // Common Movement Tracking section header
+        EditorGUILayout.Space();
+        EditorGUILayout.LabelField("Movement Tracking", EditorStyles.boldLabel);
+        EditorGUI.indentLevel++;
+
+        // Body Tracking settings
+        EditorGUI.BeginDisabledGroup(projectConfig.bodyTrackingSupport == OVRProjectConfig.FeatureSupport.None);
+        OVRPlugin.BodyTrackingFidelity2 bodyTrackingFidelity = runtimeSettings.BodyTrackingFidelity;
+        OVREditorUtil.SetupEnumField(target, new GUIContent("Body Tracking Fidelity",
+                "Body Tracking Fidelity defines quality of tracking"), ref bodyTrackingFidelity, ref modified,
+            "https://developer.oculus.com/documentation/unity/move-body-tracking/");
+
+        if (modified)
+        {
+            runtimeSettings.BodyTrackingFidelity = bodyTrackingFidelity;
+            OVRRuntimeSettings.CommitRuntimeSettings(runtimeSettings);
+        }
+
+        OVRPlugin.BodyJointSet bodyTrackingJointSet = runtimeSettings.BodyTrackingJointSet;
+        OVREditorUtil.SetupEnumField(target, new GUIContent("Body Tracking Joint Set",
+                "Body Tracking Joint Set"), ref bodyTrackingJointSet, ref modified,
+            "https://developer.oculus.com/documentation/unity/move-body-tracking/");
+        if (modified)
+        {
+            runtimeSettings.BodyTrackingJointSet = bodyTrackingJointSet;
+            OVRRuntimeSettings.CommitRuntimeSettings(runtimeSettings);
+        }
+        EditorGUI.EndDisabledGroup();
+
+        // Face Tracking settings
+        EditorGUI.BeginDisabledGroup(projectConfig.faceTrackingSupport == OVRProjectConfig.FeatureSupport.None);
+
+        _showFaceTrackingDataSources = EditorGUILayout.Foldout(
+            _showFaceTrackingDataSources,
+            new GUIContent("Face Tracking Data Sources", "Specifies the face tracking data sources accepted by the application.\n\n" +
+                "Requires Face Tracking Support to be \"Required\" or \"Supported\" in the General section of Quest Features."));
+
+        bool visualFaceTracking = runtimeSettings.RequestsVisualFaceTracking;
+        bool audioFaceTracking = runtimeSettings.RequestsAudioFaceTracking;
+        bool dataSourceSelected = visualFaceTracking || audioFaceTracking;
+        // Show the warning under the foldout, even if the foldout is collapsed.
+        if (projectConfig.faceTrackingSupport != OVRProjectConfig.FeatureSupport.None && !dataSourceSelected)
+        {
+            EditorGUILayout.HelpBox("Please specify at least one face tracking data source. If you don't choose, all available data sources will be chosen.", MessageType.Warning, true);
+        }
+
+        if (_showFaceTrackingDataSources)
+        {
+            EditorGUI.indentLevel++;
+            OVREditorUtil.SetupBoolField(
+                target,
+                new GUIContent("Visual", "Estimate face expressions with visual or audiovisual data."),
+                ref visualFaceTracking,
+                ref modified);
+            OVREditorUtil.SetupBoolField(
+                target,
+                new GUIContent("Audio", "Estimate face expressions using audio data only."),
+                ref audioFaceTracking,
+                ref modified);
+            EditorGUI.indentLevel--;
+        }
+
+        if (modified)
+        {
+            runtimeSettings.RequestsVisualFaceTracking = visualFaceTracking;
+            runtimeSettings.RequestsAudioFaceTracking = audioFaceTracking;
+            OVRRuntimeSettings.CommitRuntimeSettings(runtimeSettings);
+        }
+        EditorGUI.EndDisabledGroup();
+
+        // Common Movement Tracking section footer
+        EditorGUI.indentLevel--;
+
 #endif
 
         #region PermissionRequests
@@ -206,36 +283,38 @@ public class OVRManagerEditor : Editor
             EditorGUILayout.BeginFoldoutHeaderGroup(_expandPermissionsRequest, "Permission Requests On Startup");
         if (_expandPermissionsRequest)
         {
-            void AddPermissionGroup(bool featureEnabled, string permissionName, SerializedProperty property)
+            void AddPermissionGroup(bool featureEnabled, string permissionName, string capabilityName, SerializedProperty property)
             {
                 using (new EditorGUI.DisabledScope(!featureEnabled))
                 {
                     if (!featureEnabled)
                     {
                         EditorGUILayout.LabelField(
-                            $"Requires {permissionName} Capability to be enabled in the Quest features section.",
+                            $"Requires {capabilityName} Capability to be enabled in the Quest features section.",
                             EditorStyles.wordWrappedLabel);
                     }
 
                     var label = new GUIContent(permissionName,
-                        $"Requests {permissionName} permission on start up. {permissionName} Capability must be enabled in the project settings.");
+                        $"Requests {permissionName} permission on start up. {capabilityName} Capability must be enabled in the project settings.");
                     EditorGUILayout.PropertyField(property, label);
                 }
             }
 
             AddPermissionGroup(projectConfig.bodyTrackingSupport != OVRProjectConfig.FeatureSupport.None,
-                "Body Tracking", _requestBodyTrackingPermissionOnStartup);
+                "Body Tracking", "Body Tracking", _requestBodyTrackingPermissionOnStartup);
             AddPermissionGroup(projectConfig.faceTrackingSupport != OVRProjectConfig.FeatureSupport.None,
-                "Face Tracking", _requestFaceTrackingPermissionOnStartup);
-            AddPermissionGroup(projectConfig.eyeTrackingSupport != OVRProjectConfig.FeatureSupport.None, "Eye Tracking",
-                _requestEyeTrackingPermissionOnStartup);
-            AddPermissionGroup(projectConfig.sceneSupport != OVRProjectConfig.FeatureSupport.None, "Scene",
-                _requestScenePermissionOnStartup);
+                "Face Tracking", "Face Tracking", _requestFaceTrackingPermissionOnStartup);
+            AddPermissionGroup(projectConfig.eyeTrackingSupport != OVRProjectConfig.FeatureSupport.None,
+                "Eye Tracking", "Eye Tracking", _requestEyeTrackingPermissionOnStartup);
+            AddPermissionGroup(projectConfig.sceneSupport != OVRProjectConfig.FeatureSupport.None,
+                "Scene", "Scene", _requestScenePermissionOnStartup);
+            AddPermissionGroup(projectConfig.faceTrackingSupport != OVRProjectConfig.FeatureSupport.None,
+                "Record Audio for audio based Face Tracking", "Face Tracking", _requestRecordAudioPermissionOnStartup);
         }
 
         EditorGUILayout.EndFoldoutHeaderGroup();
 
-        #endregion
+#endregion
 
 
         if (modified)

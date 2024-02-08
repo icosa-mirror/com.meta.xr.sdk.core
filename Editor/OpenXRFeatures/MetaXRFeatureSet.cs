@@ -37,6 +37,8 @@ namespace Meta.XR
         FeatureIds = new string[] {
             MetaXRFeature.featureId,
             MetaXRFoveationFeature.featureId,
+            MetaXREyeTrackedFoveationFeature.featureId,
+            MetaXRSubsampledLayout.featureId,
             },
         UiName = "Meta XR",
         Description = "Feature set for using Meta XR Features",

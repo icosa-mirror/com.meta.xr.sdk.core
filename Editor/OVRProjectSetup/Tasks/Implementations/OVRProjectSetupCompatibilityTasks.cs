@@ -57,6 +57,21 @@ internal static class OVRProjectSetupCompatibilityTasks
             fixMessage: "PlayerSettings.Android.minSdkVersion = AndroidSdkVersions.AndroidApiLevel29"
         );
 
+#if UNITY_2023_2_OR_NEWER
+        // Force using GameActivity on Unity 2023.2+ (reference: T169740072)
+        OVRProjectSetup.AddTask(
+            level: OVRProjectSetup.TaskLevel.Required,
+            group: compatibilityTaskGroup,
+            platform: BuildTargetGroup.Android,
+            isDone: buildTargetGroup =>
+                PlayerSettings.Android.applicationEntry == AndroidApplicationEntry.GameActivity,
+            message: "Always specify single \"GameActivity\" application entry on Unity 2023.2+",
+            fix: buildTargetGroup =>
+                PlayerSettings.Android.applicationEntry = AndroidApplicationEntry.GameActivity,
+            fixMessage: "PlayerSettings.Android.applicationEntry = AndroidApplicationEntry.GameActivity"
+        );
+#endif
+
         // [Required] Android target level API
         OVRProjectSetup.AddTask(
             level: OVRProjectSetup.TaskLevel.Recommended,

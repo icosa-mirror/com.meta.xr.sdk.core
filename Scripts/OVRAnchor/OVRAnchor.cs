@@ -21,6 +21,7 @@
 using System;
 using System.Collections.Generic;
 using Unity.Collections;
+using Unity.Collections.LowLevel.Unsafe;
 using UnityEngine;
 using static OVRPlugin;
 
@@ -31,8 +32,9 @@ using static OVRPlugin;
 /// Scenes anchors are uniquely identified with their <see cref="Uuid"/>.
 /// <para>You may dispose of an anchor by calling their <see cref="Dispose"/> method.</para>
 /// </remarks>
-public readonly struct OVRAnchor : IEquatable<OVRAnchor>, IDisposable
+public readonly partial struct OVRAnchor : IEquatable<OVRAnchor>, IDisposable
 {
+
     #region Static
 
     public static readonly OVRAnchor Null = new OVRAnchor(0, Guid.Empty);
@@ -72,7 +74,7 @@ public readonly struct OVRAnchor : IEquatable<OVRAnchor>, IDisposable
     /// <param name="anchors">IList that will get cleared and populated with the requested anchors.</param>s
     /// <param name="location">Storage location to query</param>
     /// <param name="maxResults">The maximum number of results the query can return</param>
-    /// <param name="timeout">Timeout in seconds for the query. Zero indicates the query does not timeout.</param>
+    /// <param name="timeout">Timeout in seconds for the query.</param>
     /// <remarks>Dispose of the returned <see cref="OVRTask{T}"/> if you don't use the results</remarks>
     /// <returns>An <see cref="OVRTask{T}"/> that will eventually let you test if the fetch was successful or not.
     /// If the result is true, then the <see cref="anchors"/> parameter has been populated with the requested anchors.</returns>
@@ -96,7 +98,7 @@ public readonly struct OVRAnchor : IEquatable<OVRAnchor>, IDisposable
     /// <param name="uuids">Enumerable of uuids that anchors fetched must verify</param>
     /// <param name="anchors">IList that will get cleared and populated with the requested anchors.</param>s
     /// <param name="location">Storage location to query</param>
-    /// <param name="timeout">Timeout in seconds for the query. Zero indicates the query does not timeout.</param>
+    /// <param name="timeout">Timeout in seconds for the query.</param>
     /// <remarks>Dispose of the returned <see cref="OVRTask{T}"/> if you don't use the results</remarks>
     /// <returns>An <see cref="OVRTask{T}"/> that will eventually let you test if the fetch was successful or not.
     /// If the result is true, then the <see cref="anchors"/> parameter has been populated with the requested anchors.</returns>
@@ -117,6 +119,7 @@ public readonly struct OVRAnchor : IEquatable<OVRAnchor>, IDisposable
 
         return FetchAnchors(anchors, GetQueryInfo(uuids, location, timeout));
     }
+
 
 
     private static OVRTask<bool> FetchAnchors(IList<OVRAnchor> anchors, OVRPlugin.SpaceQueryInfo queryInfo)
@@ -229,6 +232,7 @@ public readonly struct OVRAnchor : IEquatable<OVRAnchor>, IDisposable
     }
 
     #endregion
+
 
     internal ulong Handle { get; }
 

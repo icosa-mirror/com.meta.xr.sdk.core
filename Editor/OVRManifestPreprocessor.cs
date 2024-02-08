@@ -175,6 +175,12 @@ public class OVRManifestPreprocessor
         }
 
         string toolsNamespace = element.GetAttribute("xmlns:tools");
+        if (string.IsNullOrEmpty(toolsNamespace))
+        {
+            toolsNamespace = "http://schemas.android.com/tools";
+            element.SetAttribute("xmlns:tools", toolsNamespace);
+        }
+
         var nodes = doc.SelectNodes(path + "/" + elementName);
         foreach (XmlElement e in nodes)
         {
@@ -219,6 +225,16 @@ public class OVRManifestPreprocessor
                 UnityEngine.Debug.LogError("Could not find Android Namespace in manifest.");
                 return;
             }
+
+#if UNITY_2023_2_OR_NEWER
+            // replace UnityPlayerActivity to UnityPlayerGameActivity
+            XmlElement activityNode = doc.SelectSingleNode("/manifest/application/activity") as XmlElement;
+            string activityName = activityNode.GetAttribute("name", androidNamespaceURI);
+            if (activityName == "com.unity3d.player.UnityPlayerActivity")
+            {
+                activityNode.SetAttribute("name", androidNamespaceURI, "com.unity3d.player.UnityPlayerGameActivity");
+            }
+#endif
 
             ApplyRequiredManfiestTags(doc, androidNamespaceURI, modifyIfFound, enableSecurity);
             ApplyFeatureManfiestTags(doc, androidNamespaceURI, modifyIfFound);
@@ -431,6 +447,19 @@ public class OVRManifestPreprocessor
                 ColorSpaceToManifestTag(runtimeSettings.colorSpace));
         }
 
+        // Contextual Passthrough
+        AddOrRemoveTag(doc,
+            androidNamespaceURI,
+            "/manifest/application",
+            "meta-data",
+            "com.oculus.ossplash.background",
+            required: true,
+            modifyIfFound,
+            "value",
+            projectConfig.systemLoadingScreenBackground == OVRProjectConfig.SystemLoadingScreenBackground.ContextualPassthrough
+                ? "passthrough-contextual"
+                : "black");
+
         //============================================================================
         // Render Model
         OVRProjectConfig.RenderModelSupport renderModelSupport = OVRProjectConfig.GetProjectConfig().renderModelSupport;
@@ -529,6 +558,13 @@ public class OVRManifestPreprocessor
             "uses-permission",
             OVRPermissionsRequester.GetPermissionId(OVRPermissionsRequester.Permission.FaceTracking),
             faceTrackingEntryNeeded,
+            modifyIfFound);
+        AddOrRemoveTag(doc,
+            androidNamespaceURI,
+            "/manifest",
+            "uses-permission",
+            OVRPermissionsRequester.GetPermissionId(OVRPermissionsRequester.Permission.RecordAudio),
+            faceTrackingEntryNeeded, // audio recording for audio based face tracking
             modifyIfFound);
 
         //============================================================================

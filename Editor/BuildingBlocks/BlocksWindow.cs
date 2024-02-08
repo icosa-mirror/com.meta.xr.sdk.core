@@ -519,7 +519,7 @@ namespace Meta.XR.BuildingBlocks.Editor
 
         private bool ShouldShowTutorial()
         {
-            _shouldShowTutorial = false;
+            _shouldShowTutorial = !_tutorialCompleted.Value;
             if (_shouldShowTutorial)
             {
                 // Make sure the scene doesn't have a non block version of the OVRCameraRig

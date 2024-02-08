@@ -27,7 +27,7 @@ using UnityEngine;
 
 internal static partial class OVRTelemetry
 {
-    private static bool IsActive
+    internal static bool IsActive
     {
         get
         {

@@ -588,7 +588,7 @@ PrefabInstance:
         type: 3}
       propertyPath: textCommitField
       value: 
-      objectReference: {fileID: 855775171}
+      objectReference: {fileID: 0}
     - target: {fileID: 3631170893708523032, guid: 325510b4b085edf48876b864e4744ec6,
         type: 3}
       propertyPath: directInteraction
@@ -689,6 +689,11 @@ PrefabInstance:
       propertyPath: rightControllerDirectTransform
       value: 
       objectReference: {fileID: 1092080677}
+    - target: {fileID: 4657916616331644310, guid: 325510b4b085edf48876b864e4744ec6,
+        type: 3}
+      propertyPath: inputField
+      value: 
+      objectReference: {fileID: 855775171}
     - target: {fileID: 6169875605364958289, guid: 325510b4b085edf48876b864e4744ec6,
         type: 3}
       propertyPath: m_IsActive

@@ -55,7 +55,7 @@ public static partial class OVRPlugin
 #if OVRPLUGIN_UNSUPPORTED_PLATFORM
     public static readonly System.Version wrapperVersion = _versionZero;
 #else
-    public static readonly System.Version wrapperVersion = OVRP_1_91_0.version;
+    public static readonly System.Version wrapperVersion = OVRP_1_92_0.version;
 #endif
 
 #if !OVRPLUGIN_UNSUPPORTED_PLATFORM
@@ -193,6 +193,8 @@ public static partial class OVRPlugin
         Failure_DeprecatedOperation = -1009,
         Failure_ErrorLimitReached = -1010,
         Failure_ErrorInitializationFailed = -1011,
+        Failure_RuntimeUnavailable = -1012,
+        Failure_HandleInvalid = -1013,
 
         /// Space error cases
         Failure_SpaceCloudStorageDisabled = -2000,
@@ -1589,10 +1591,98 @@ public static partial class OVRPlugin
         Body_RightHandLittleTip = Body_Start + 69,
         Body_End = Body_Start + 70,
 
+        // full body bones
+        FullBody_Start = 0,
+        FullBody_Root = FullBody_Start + 0,
+        FullBody_Hips = FullBody_Start + 1,
+        FullBody_SpineLower = FullBody_Start + 2,
+        FullBody_SpineMiddle = FullBody_Start + 3,
+        FullBody_SpineUpper = FullBody_Start + 4,
+        FullBody_Chest = FullBody_Start + 5,
+        FullBody_Neck = FullBody_Start + 6,
+        FullBody_Head = FullBody_Start + 7,
+        FullBody_LeftShoulder = FullBody_Start + 8,
+        FullBody_LeftScapula = FullBody_Start + 9,
+        FullBody_LeftArmUpper = FullBody_Start + 10,
+        FullBody_LeftArmLower = FullBody_Start + 11,
+        FullBody_LeftHandWristTwist = FullBody_Start + 12,
+        FullBody_RightShoulder = FullBody_Start + 13,
+        FullBody_RightScapula = FullBody_Start + 14,
+        FullBody_RightArmUpper = FullBody_Start + 15,
+        FullBody_RightArmLower = FullBody_Start + 16,
+        FullBody_RightHandWristTwist = FullBody_Start + 17,
+        FullBody_LeftHandPalm = FullBody_Start + 18,
+        FullBody_LeftHandWrist = FullBody_Start + 19,
+        FullBody_LeftHandThumbMetacarpal = FullBody_Start + 20,
+        FullBody_LeftHandThumbProximal = FullBody_Start + 21,
+        FullBody_LeftHandThumbDistal = FullBody_Start + 22,
+        FullBody_LeftHandThumbTip = FullBody_Start + 23,
+        FullBody_LeftHandIndexMetacarpal = FullBody_Start + 24,
+        FullBody_LeftHandIndexProximal = FullBody_Start + 25,
+        FullBody_LeftHandIndexIntermediate = FullBody_Start + 26,
+        FullBody_LeftHandIndexDistal = FullBody_Start + 27,
+        FullBody_LeftHandIndexTip = FullBody_Start + 28,
+        FullBody_LeftHandMiddleMetacarpal = FullBody_Start + 29,
+        FullBody_LeftHandMiddleProximal = FullBody_Start + 30,
+        FullBody_LeftHandMiddleIntermediate = FullBody_Start + 31,
+        FullBody_LeftHandMiddleDistal = FullBody_Start + 32,
+        FullBody_LeftHandMiddleTip = FullBody_Start + 33,
+        FullBody_LeftHandRingMetacarpal = FullBody_Start + 34,
+        FullBody_LeftHandRingProximal = FullBody_Start + 35,
+        FullBody_LeftHandRingIntermediate = FullBody_Start + 36,
+        FullBody_LeftHandRingDistal = FullBody_Start + 37,
+        FullBody_LeftHandRingTip = FullBody_Start + 38,
+        FullBody_LeftHandLittleMetacarpal = FullBody_Start + 39,
+        FullBody_LeftHandLittleProximal = FullBody_Start + 40,
+        FullBody_LeftHandLittleIntermediate = FullBody_Start + 41,
+        FullBody_LeftHandLittleDistal = FullBody_Start + 42,
+        FullBody_LeftHandLittleTip = FullBody_Start + 43,
+        FullBody_RightHandPalm = FullBody_Start + 44,
+        FullBody_RightHandWrist = FullBody_Start + 45,
+        FullBody_RightHandThumbMetacarpal = FullBody_Start + 46,
+        FullBody_RightHandThumbProximal = FullBody_Start + 47,
+        FullBody_RightHandThumbDistal = FullBody_Start + 48,
+        FullBody_RightHandThumbTip = FullBody_Start + 49,
+        FullBody_RightHandIndexMetacarpal = FullBody_Start + 50,
+        FullBody_RightHandIndexProximal = FullBody_Start + 51,
+        FullBody_RightHandIndexIntermediate = FullBody_Start + 52,
+        FullBody_RightHandIndexDistal = FullBody_Start + 53,
+        FullBody_RightHandIndexTip = FullBody_Start + 54,
+        FullBody_RightHandMiddleMetacarpal = FullBody_Start + 55,
+        FullBody_RightHandMiddleProximal = FullBody_Start + 56,
+        FullBody_RightHandMiddleIntermediate = FullBody_Start + 57,
+        FullBody_RightHandMiddleDistal = FullBody_Start + 58,
+        FullBody_RightHandMiddleTip = FullBody_Start + 59,
+        FullBody_RightHandRingMetacarpal = FullBody_Start + 60,
+        FullBody_RightHandRingProximal = FullBody_Start + 61,
+        FullBody_RightHandRingIntermediate = FullBody_Start + 62,
+        FullBody_RightHandRingDistal = FullBody_Start + 63,
+        FullBody_RightHandRingTip = FullBody_Start + 64,
+        FullBody_RightHandLittleMetacarpal = FullBody_Start + 65,
+        FullBody_RightHandLittleProximal = FullBody_Start + 66,
+        FullBody_RightHandLittleIntermediate = FullBody_Start + 67,
+        FullBody_RightHandLittleDistal = FullBody_Start + 68,
+        FullBody_RightHandLittleTip = FullBody_Start + 69,
+        FullBody_LeftUpperLeg = FullBody_Start + 70,
+        FullBody_LeftLowerLeg = FullBody_Start + 71,
+        FullBody_LeftFootAnkleTwist = FullBody_Start + 72,
+        FullBody_LeftFootAnkle = FullBody_Start + 73,
+        FullBody_LeftFootSubtalar = FullBody_Start + 74,
+        FullBody_LeftFootTransverse = FullBody_Start + 75,
+        FullBody_LeftFootBall = FullBody_Start + 76,
+        FullBody_RightUpperLeg = FullBody_Start + 77,
+        FullBody_RightLowerLeg = FullBody_Start + 78,
+        FullBody_RightFootAnkleTwist = FullBody_Start + 79,
+        FullBody_RightFootAnkle = FullBody_Start + 80,
+        FullBody_RightFootSubtalar = FullBody_Start + 81,
+        FullBody_RightFootTransverse = FullBody_Start + 82,
+        FullBody_RightFootBall = FullBody_Start + 83,
+        FullBody_End = FullBody_Start + 84,
+        FullBody_Invalid = FullBody_Start + 85,
 
         // add new bones here
 
-        Max = ((int)Hand_End > (int)Body_End) ? (int)Hand_End : (int)Body_End,
+        Max = FullBody_End,
     }
 
     public enum HandFinger
@@ -1711,6 +1801,7 @@ public static partial class OVRPlugin
         HandLeft = 0,
         HandRight = 1,
         Body = 2,
+        FullBody = 3,
     }
 
     [StructLayout(LayoutKind.Sequential)]
@@ -1834,7 +1925,116 @@ public static partial class OVRPlugin
         public BoneCapsule BoneCapsules_18;
     }
 
-
+[StructLayout(LayoutKind.Sequential)]
+    private struct Skeleton3Internal
+    {
+        public SkeletonType Type;
+        public uint NumBones;
+        public uint NumBoneCapsules;
+        public Bone Bones_0;
+        public Bone Bones_1;
+        public Bone Bones_2;
+        public Bone Bones_3;
+        public Bone Bones_4;
+        public Bone Bones_5;
+        public Bone Bones_6;
+        public Bone Bones_7;
+        public Bone Bones_8;
+        public Bone Bones_9;
+        public Bone Bones_10;
+        public Bone Bones_11;
+        public Bone Bones_12;
+        public Bone Bones_13;
+        public Bone Bones_14;
+        public Bone Bones_15;
+        public Bone Bones_16;
+        public Bone Bones_17;
+        public Bone Bones_18;
+        public Bone Bones_19;
+        public Bone Bones_20;
+        public Bone Bones_21;
+        public Bone Bones_22;
+        public Bone Bones_23;
+        public Bone Bones_24;
+        public Bone Bones_25;
+        public Bone Bones_26;
+        public Bone Bones_27;
+        public Bone Bones_28;
+        public Bone Bones_29;
+        public Bone Bones_30;
+        public Bone Bones_31;
+        public Bone Bones_32;
+        public Bone Bones_33;
+        public Bone Bones_34;
+        public Bone Bones_35;
+        public Bone Bones_36;
+        public Bone Bones_37;
+        public Bone Bones_38;
+        public Bone Bones_39;
+        public Bone Bones_40;
+        public Bone Bones_41;
+        public Bone Bones_42;
+        public Bone Bones_43;
+        public Bone Bones_44;
+        public Bone Bones_45;
+        public Bone Bones_46;
+        public Bone Bones_47;
+        public Bone Bones_48;
+        public Bone Bones_49;
+        public Bone Bones_50;
+        public Bone Bones_51;
+        public Bone Bones_52;
+        public Bone Bones_53;
+        public Bone Bones_54;
+        public Bone Bones_55;
+        public Bone Bones_56;
+        public Bone Bones_57;
+        public Bone Bones_58;
+        public Bone Bones_59;
+        public Bone Bones_60;
+        public Bone Bones_61;
+        public Bone Bones_62;
+        public Bone Bones_63;
+        public Bone Bones_64;
+        public Bone Bones_65;
+        public Bone Bones_66;
+        public Bone Bones_67;
+        public Bone Bones_68;
+        public Bone Bones_69;
+        public Bone Bones_70;
+        public Bone Bones_71;
+        public Bone Bones_72;
+        public Bone Bones_73;
+        public Bone Bones_74;
+        public Bone Bones_75;
+        public Bone Bones_76;
+        public Bone Bones_77;
+        public Bone Bones_78;
+        public Bone Bones_79;
+        public Bone Bones_80;
+        public Bone Bones_81;
+        public Bone Bones_82;
+        public Bone Bones_83;
+        public BoneCapsule BoneCapsules_0;
+        public BoneCapsule BoneCapsules_1;
+        public BoneCapsule BoneCapsules_2;
+        public BoneCapsule BoneCapsules_3;
+        public BoneCapsule BoneCapsules_4;
+        public BoneCapsule BoneCapsules_5;
+        public BoneCapsule BoneCapsules_6;
+        public BoneCapsule BoneCapsules_7;
+        public BoneCapsule BoneCapsules_8;
+        public BoneCapsule BoneCapsules_9;
+        public BoneCapsule BoneCapsules_10;
+        public BoneCapsule BoneCapsules_11;
+        public BoneCapsule BoneCapsules_12;
+        public BoneCapsule BoneCapsules_13;
+        public BoneCapsule BoneCapsules_14;
+        public BoneCapsule BoneCapsules_15;
+        public BoneCapsule BoneCapsules_16;
+        public BoneCapsule BoneCapsules_17;
+        public BoneCapsule BoneCapsules_18;
+    }
     public enum MeshConstants
     {
         MaxVertices = 3000,
@@ -1940,8 +2140,34 @@ public static partial class OVRPlugin
         public Posef pose;
     }
 
+    public enum BodyJointSet
+    {
+        [InspectorName(null)] // None should not be selectable
+        None = -1,
+        UpperBody = 0,
+        FullBody = 1,
+    }
 
 
+    public enum BodyTrackingFidelity2
+    {
+        Low = 1,
+        High = 2
+    }
+
+
+    public enum BodyTrackingCalibrationState
+    {
+        Valid = 1,
+        Calibrating = 2,
+        Invalid = 3
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    public struct BodyTrackingCalibrationInfo
+    {
+        public float BodyHeight;
+    }
 
     [StructLayout(LayoutKind.Sequential)]
     public struct BodyJointLocation
@@ -1977,6 +2203,9 @@ public static partial class OVRPlugin
         /// position.
         /// </summary>
         public bool PositionTracked => (LocationFlags & SpaceLocationFlags.PositionTracked) != 0;
+
+        public static readonly BodyJointLocation invalid = new BodyJointLocation
+            { LocationFlags = 0, Pose = Posef.identity };
     }
 
     /// <summary>
@@ -2007,6 +2236,9 @@ public static partial class OVRPlugin
         /// </summary>
         public double Time;
 
+        public BodyJointSet JointSet;
+        public BodyTrackingCalibrationState CalibrationStatus;
+        public BodyTrackingFidelity2 Fidelity;
     }
 
     [StructLayout(LayoutKind.Sequential)]
@@ -2089,6 +2321,100 @@ public static partial class OVRPlugin
     }
 
 
+    [StructLayout(LayoutKind.Sequential)]
+    private struct BodyState4Internal
+    {
+        public Bool IsActive;
+        public float Confidence;
+        public uint SkeletonChangedCount;
+        public double Time;
+        public BodyJointLocation JointLocation_0;
+        public BodyJointLocation JointLocation_1;
+        public BodyJointLocation JointLocation_2;
+        public BodyJointLocation JointLocation_3;
+        public BodyJointLocation JointLocation_4;
+        public BodyJointLocation JointLocation_5;
+        public BodyJointLocation JointLocation_6;
+        public BodyJointLocation JointLocation_7;
+        public BodyJointLocation JointLocation_8;
+        public BodyJointLocation JointLocation_9;
+        public BodyJointLocation JointLocation_10;
+        public BodyJointLocation JointLocation_11;
+        public BodyJointLocation JointLocation_12;
+        public BodyJointLocation JointLocation_13;
+        public BodyJointLocation JointLocation_14;
+        public BodyJointLocation JointLocation_15;
+        public BodyJointLocation JointLocation_16;
+        public BodyJointLocation JointLocation_17;
+        public BodyJointLocation JointLocation_18;
+        public BodyJointLocation JointLocation_19;
+        public BodyJointLocation JointLocation_20;
+        public BodyJointLocation JointLocation_21;
+        public BodyJointLocation JointLocation_22;
+        public BodyJointLocation JointLocation_23;
+        public BodyJointLocation JointLocation_24;
+        public BodyJointLocation JointLocation_25;
+        public BodyJointLocation JointLocation_26;
+        public BodyJointLocation JointLocation_27;
+        public BodyJointLocation JointLocation_28;
+        public BodyJointLocation JointLocation_29;
+        public BodyJointLocation JointLocation_30;
+        public BodyJointLocation JointLocation_31;
+        public BodyJointLocation JointLocation_32;
+        public BodyJointLocation JointLocation_33;
+        public BodyJointLocation JointLocation_34;
+        public BodyJointLocation JointLocation_35;
+        public BodyJointLocation JointLocation_36;
+        public BodyJointLocation JointLocation_37;
+        public BodyJointLocation JointLocation_38;
+        public BodyJointLocation JointLocation_39;
+        public BodyJointLocation JointLocation_40;
+        public BodyJointLocation JointLocation_41;
+        public BodyJointLocation JointLocation_42;
+        public BodyJointLocation JointLocation_43;
+        public BodyJointLocation JointLocation_44;
+        public BodyJointLocation JointLocation_45;
+        public BodyJointLocation JointLocation_46;
+        public BodyJointLocation JointLocation_47;
+        public BodyJointLocation JointLocation_48;
+        public BodyJointLocation JointLocation_49;
+        public BodyJointLocation JointLocation_50;
+        public BodyJointLocation JointLocation_51;
+        public BodyJointLocation JointLocation_52;
+        public BodyJointLocation JointLocation_53;
+        public BodyJointLocation JointLocation_54;
+        public BodyJointLocation JointLocation_55;
+        public BodyJointLocation JointLocation_56;
+        public BodyJointLocation JointLocation_57;
+        public BodyJointLocation JointLocation_58;
+        public BodyJointLocation JointLocation_59;
+        public BodyJointLocation JointLocation_60;
+        public BodyJointLocation JointLocation_61;
+        public BodyJointLocation JointLocation_62;
+        public BodyJointLocation JointLocation_63;
+        public BodyJointLocation JointLocation_64;
+        public BodyJointLocation JointLocation_65;
+        public BodyJointLocation JointLocation_66;
+        public BodyJointLocation JointLocation_67;
+        public BodyJointLocation JointLocation_68;
+        public BodyJointLocation JointLocation_69;
+        public BodyJointLocation JointLocation_70;
+        public BodyJointLocation JointLocation_71;
+        public BodyJointLocation JointLocation_72;
+        public BodyJointLocation JointLocation_73;
+        public BodyJointLocation JointLocation_74;
+        public BodyJointLocation JointLocation_75;
+        public BodyJointLocation JointLocation_76;
+        public BodyJointLocation JointLocation_77;
+        public BodyJointLocation JointLocation_78;
+        public BodyJointLocation JointLocation_79;
+        public BodyJointLocation JointLocation_80;
+        public BodyJointLocation JointLocation_81;
+        public BodyJointLocation JointLocation_82;
+        public BodyJointLocation JointLocation_83;
+        public BodyTrackingCalibrationState CalibrationStatus;
+        public BodyTrackingFidelity2 Fidelity;
+    }
 
     [StructLayout(LayoutKind.Sequential)]
     public struct KeyboardState
@@ -2156,6 +2482,7 @@ public static partial class OVRPlugin
         public float[] ExpressionWeights;
         public float[] ExpressionWeightConfidences;
         public FaceExpressionStatus Status;
+        public FaceTrackingDataSource DataSource;
         public double Time;
     }
 
@@ -2310,9 +2637,17 @@ public static partial class OVRPlugin
         public float ExpressionWeights_60;
         public float ExpressionWeights_61;
         public float ExpressionWeights_62;
+        public float ExpressionWeights_63;
+        public float ExpressionWeights_64;
+        public float ExpressionWeights_65;
+        public float ExpressionWeights_66;
+        public float ExpressionWeights_67;
+        public float ExpressionWeights_68;
+        public float ExpressionWeights_69;
         public float ExpressionWeightConfidences_0;
         public float ExpressionWeightConfidences_1;
         public FaceExpressionStatusInternal Status;
+        public FaceTrackingDataSource DataSource;
         public double Time;
     }
 
@@ -2392,10 +2727,94 @@ public static partial class OVRPlugin
         Max = 63,
     }
 
+    public enum FaceExpression2
+    {
+        Invalid = -1,
+        Brow_Lowerer_L = 0,
+        Brow_Lowerer_R = 1,
+        Cheek_Puff_L = 2,
+        Cheek_Puff_R = 3,
+        Cheek_Raiser_L = 4,
+        Cheek_Raiser_R = 5,
+        Cheek_Suck_L = 6,
+        Cheek_Suck_R = 7,
+        Chin_Raiser_B = 8,
+        Chin_Raiser_T = 9,
+        Dimpler_L = 10,
+        Dimpler_R = 11,
+        Eyes_Closed_L = 12,
+        Eyes_Closed_R = 13,
+        Eyes_Look_Down_L = 14,
+        Eyes_Look_Down_R = 15,
+        Eyes_Look_Left_L = 16,
+        Eyes_Look_Left_R = 17,
+        Eyes_Look_Right_L = 18,
+        Eyes_Look_Right_R = 19,
+        Eyes_Look_Up_L = 20,
+        Eyes_Look_Up_R = 21,
+        Inner_Brow_Raiser_L = 22,
+        Inner_Brow_Raiser_R = 23,
+        Jaw_Drop = 24,
+        Jaw_Sideways_Left = 25,
+        Jaw_Sideways_Right = 26,
+        Jaw_Thrust = 27,
+        Lid_Tightener_L = 28,
+        Lid_Tightener_R = 29,
+        Lip_Corner_Depressor_L = 30,
+        Lip_Corner_Depressor_R = 31,
+        Lip_Corner_Puller_L = 32,
+        Lip_Corner_Puller_R = 33,
+        Lip_Funneler_LB = 34,
+        Lip_Funneler_LT = 35,
+        Lip_Funneler_RB = 36,
+        Lip_Funneler_RT = 37,
+        Lip_Pressor_L = 38,
+        Lip_Pressor_R = 39,
+        Lip_Pucker_L = 40,
+        Lip_Pucker_R = 41,
+        Lip_Stretcher_L = 42,
+        Lip_Stretcher_R = 43,
+        Lip_Suck_LB = 44,
+        Lip_Suck_LT = 45,
+        Lip_Suck_RB = 46,
+        Lip_Suck_RT = 47,
+        Lip_Tightener_L = 48,
+        Lip_Tightener_R = 49,
+        Lips_Toward = 50,
+        Lower_Lip_Depressor_L = 51,
+        Lower_Lip_Depressor_R = 52,
+        Mouth_Left = 53,
+        Mouth_Right = 54,
+        Nose_Wrinkler_L = 55,
+        Nose_Wrinkler_R = 56,
+        Outer_Brow_Raiser_L = 57,
+        Outer_Brow_Raiser_R = 58,
+        Upper_Lid_Raiser_L = 59,
+        Upper_Lid_Raiser_R = 60,
+        Upper_Lip_Raiser_L = 61,
+        Upper_Lip_Raiser_R = 62,
+        Tongue_Tip_Interdental = 63,
+        Tongue_Tip_Alveolar = 64,
+        Tongue_Front_Dorsal_Palate = 65,
+        Tongue_Mid_Dorsal_Palate = 66,
+        Tongue_Back_Dorsal_Velar = 67,
+        Tongue_Out = 68,
+        Tongue_Retreat = 69,
+        Max = 70,
+    }
+
+    public enum FaceTrackingDataSource
+    {
+        Visual = 0,
+        Audio = 1,
+        Count = 2,
+    }
+
     public enum FaceConstants
     {
         MaxFaceExpressions = FaceExpression.Max,
-        MaxFaceRegionConfidences = FaceRegionConfidence.Max
+        MaxFaceRegionConfidences = FaceRegionConfidence.Max,
+        MaxFaceExpressions2 = FaceExpression2.Max
     }
 
     [StructLayout(LayoutKind.Sequential)]
@@ -7700,6 +8119,8 @@ public static partial class OVRPlugin
                 return (bone >= BoneId.Hand_Start) && (bone <= BoneId.Hand_End);
             case SkeletonType.Body:
                 return (bone >= BoneId.Body_Start) && (bone <= BoneId.Body_End);
+            case SkeletonType.FullBody:
+                return (bone >= BoneId.FullBody_Start) && (bone <= BoneId.FullBody_End);
             case SkeletonType.None:
             default:
                 return false;
@@ -7807,12 +8228,211 @@ public static partial class OVRPlugin
         () => cachedSkeleton2.Bones_68,
         () => cachedSkeleton2.Bones_69,
     };
+    private static Skeleton3Internal cachedSkeleton3 = new Skeleton3Internal();
+    delegate Bone GetBoneSkeleton3Delegate();
+    private static GetBoneSkeleton3Delegate[] Skeleton3GetBone = new GetBoneSkeleton3Delegate[]
+    {
+        //0-9
+        () => cachedSkeleton3.Bones_0,
+        () => cachedSkeleton3.Bones_1,
+        () => cachedSkeleton3.Bones_2,
+        () => cachedSkeleton3.Bones_3,
+        () => cachedSkeleton3.Bones_4,
+        () => cachedSkeleton3.Bones_5,
+        () => cachedSkeleton3.Bones_6,
+        () => cachedSkeleton3.Bones_7,
+        () => cachedSkeleton3.Bones_8,
+        () => cachedSkeleton3.Bones_9,
+        //10-19
+        () => cachedSkeleton3.Bones_10,
+        () => cachedSkeleton3.Bones_11,
+        () => cachedSkeleton3.Bones_12,
+        () => cachedSkeleton3.Bones_13,
+        () => cachedSkeleton3.Bones_14,
+        () => cachedSkeleton3.Bones_15,
+        () => cachedSkeleton3.Bones_16,
+        () => cachedSkeleton3.Bones_17,
+        () => cachedSkeleton3.Bones_18,
+        () => cachedSkeleton3.Bones_19,
+        //20-29
+        () => cachedSkeleton3.Bones_20,
+        () => cachedSkeleton3.Bones_21,
+        () => cachedSkeleton3.Bones_22,
+        () => cachedSkeleton3.Bones_23,
+        () => cachedSkeleton3.Bones_24,
+        () => cachedSkeleton3.Bones_25,
+        () => cachedSkeleton3.Bones_26,
+        () => cachedSkeleton3.Bones_27,
+        () => cachedSkeleton3.Bones_28,
+        () => cachedSkeleton3.Bones_29,
+        //30-39
+        () => cachedSkeleton3.Bones_30,
+        () => cachedSkeleton3.Bones_31,
+        () => cachedSkeleton3.Bones_32,
+        () => cachedSkeleton3.Bones_33,
+        () => cachedSkeleton3.Bones_34,
+        () => cachedSkeleton3.Bones_35,
+        () => cachedSkeleton3.Bones_36,
+        () => cachedSkeleton3.Bones_37,
+        () => cachedSkeleton3.Bones_38,
+        () => cachedSkeleton3.Bones_39,
+        //40-49
+        () => cachedSkeleton3.Bones_40,
+        () => cachedSkeleton3.Bones_41,
+        () => cachedSkeleton3.Bones_42,
+        () => cachedSkeleton3.Bones_43,
+        () => cachedSkeleton3.Bones_44,
+        () => cachedSkeleton3.Bones_45,
+        () => cachedSkeleton3.Bones_46,
+        () => cachedSkeleton3.Bones_47,
+        () => cachedSkeleton3.Bones_48,
+        () => cachedSkeleton3.Bones_49,
+        //50-59
+        () => cachedSkeleton3.Bones_50,
+        () => cachedSkeleton3.Bones_51,
+        () => cachedSkeleton3.Bones_52,
+        () => cachedSkeleton3.Bones_53,
+        () => cachedSkeleton3.Bones_54,
+        () => cachedSkeleton3.Bones_55,
+        () => cachedSkeleton3.Bones_56,
+        () => cachedSkeleton3.Bones_57,
+        () => cachedSkeleton3.Bones_58,
+        () => cachedSkeleton3.Bones_59,
+        //60-69
+        () => cachedSkeleton3.Bones_60,
+        () => cachedSkeleton3.Bones_61,
+        () => cachedSkeleton3.Bones_62,
+        () => cachedSkeleton3.Bones_63,
+        () => cachedSkeleton3.Bones_64,
+        () => cachedSkeleton3.Bones_65,
+        () => cachedSkeleton3.Bones_66,
+        () => cachedSkeleton3.Bones_67,
+        () => cachedSkeleton3.Bones_68,
+        () => cachedSkeleton3.Bones_69,
+        //70-79
+        () => cachedSkeleton3.Bones_70,
+        () => cachedSkeleton3.Bones_71,
+        () => cachedSkeleton3.Bones_72,
+        () => cachedSkeleton3.Bones_73,
+        () => cachedSkeleton3.Bones_74,
+        () => cachedSkeleton3.Bones_75,
+        () => cachedSkeleton3.Bones_76,
+        () => cachedSkeleton3.Bones_77,
+        () => cachedSkeleton3.Bones_78,
+        () => cachedSkeleton3.Bones_79,
+        //80-83
+        () => cachedSkeleton3.Bones_80,
+        () => cachedSkeleton3.Bones_81,
+        () => cachedSkeleton3.Bones_82,
+        () => cachedSkeleton3.Bones_83,
+    };
     public static bool GetSkeleton2(SkeletonType skeletonType, ref Skeleton2 skeleton)
     {
 #if OVRPLUGIN_UNSUPPORTED_PLATFORM
         return false;
 #else
-        if (version >= OVRP_1_55_0.version)
+        if (version >= OVRP_1_92_0.version)
+        {
+            SkeletonType globalSkeletonType = skeletonType;
+            if (OVRSkeleton.IsBodySkeleton((OVRSkeleton.SkeletonType)skeletonType))
+            {
+                switch (_currentJointSet)
+                {
+                    case BodyJointSet.FullBody:
+                        globalSkeletonType = SkeletonType.FullBody;
+                        break;
+
+                    case BodyJointSet.UpperBody:
+                        globalSkeletonType = SkeletonType.Body;
+                        break;
+
+                    case BodyJointSet.None:
+                        Debug.LogError("Global joint set is invalid. Ensure that there is an " +
+                            "OVRBody instance that is active an enabled with a valid joint set");
+                        return false;
+                }
+            }
+
+            Result res = OVRP_1_92_0.ovrp_GetSkeleton3(globalSkeletonType, out cachedSkeleton3);
+            if (res == Result.Success)
+            {
+                if (skeleton.BoneCapsules == null || skeleton.BoneCapsules.Length != (int)SkeletonConstants.MaxBoneCapsules)
+                {
+                    skeleton.BoneCapsules = new BoneCapsule[(int)SkeletonConstants.MaxBoneCapsules];
+                }
+
+                skeleton.Type = cachedSkeleton3.Type;
+                skeleton.NumBoneCapsules = cachedSkeleton3.NumBoneCapsules;
+
+                if (skeletonType == SkeletonType.Body && globalSkeletonType == SkeletonType.FullBody)
+                {
+                    // Filter out lower body because it's not expected
+                    uint filteredNumBones = 0;
+                    for (int i = 0; i < cachedSkeleton3.NumBones; ++i)
+                    {
+                        if ((int)(Skeleton3GetBone[i]().Id) < (int)(BoneId.Body_End))
+                        {
+                            filteredNumBones++;
+                        }
+                    }
+                    skeleton.NumBones = filteredNumBones;
+                    if (skeleton.Bones == null || skeleton.Bones.Length != filteredNumBones)
+                    {
+                        skeleton.Bones = new Bone[filteredNumBones];
+                    }
+
+                    int j = 0;
+                    for (int i = 0; i < cachedSkeleton3.NumBones; ++i)
+                    {
+                        if ((int)(Skeleton3GetBone[i]().Id) < (int)(BoneId.Body_End))
+                        {
+                            skeleton.Bones[j++] = Skeleton3GetBone[i]();
+                        }
+                    }
+                }
+                else
+                {
+                    skeleton.NumBones = cachedSkeleton3.NumBones;
+                    if (skeleton.Bones == null || skeleton.Bones.Length != skeleton.NumBones)
+                    {
+                        skeleton.Bones = new Bone[skeleton.NumBones];
+                    }
+
+                    for (int i = 0; i < skeleton.NumBones; ++i)
+                    {
+                        skeleton.Bones[i] = Skeleton3GetBone[i]();
+                    }
+
+                }
+
+                skeleton.BoneCapsules[0] = cachedSkeleton3.BoneCapsules_0;
+                skeleton.BoneCapsules[1] = cachedSkeleton3.BoneCapsules_1;
+                skeleton.BoneCapsules[2] = cachedSkeleton3.BoneCapsules_2;
+                skeleton.BoneCapsules[3] = cachedSkeleton3.BoneCapsules_3;
+                skeleton.BoneCapsules[4] = cachedSkeleton3.BoneCapsules_4;
+                skeleton.BoneCapsules[5] = cachedSkeleton3.BoneCapsules_5;
+                skeleton.BoneCapsules[6] = cachedSkeleton3.BoneCapsules_6;
+                skeleton.BoneCapsules[7] = cachedSkeleton3.BoneCapsules_7;
+                skeleton.BoneCapsules[8] = cachedSkeleton3.BoneCapsules_8;
+                skeleton.BoneCapsules[9] = cachedSkeleton3.BoneCapsules_9;
+                skeleton.BoneCapsules[10] = cachedSkeleton3.BoneCapsules_10;
+                skeleton.BoneCapsules[11] = cachedSkeleton3.BoneCapsules_11;
+                skeleton.BoneCapsules[12] = cachedSkeleton3.BoneCapsules_12;
+                skeleton.BoneCapsules[13] = cachedSkeleton3.BoneCapsules_13;
+                skeleton.BoneCapsules[14] = cachedSkeleton3.BoneCapsules_14;
+                skeleton.BoneCapsules[15] = cachedSkeleton3.BoneCapsules_15;
+                skeleton.BoneCapsules[16] = cachedSkeleton3.BoneCapsules_16;
+                skeleton.BoneCapsules[17] = cachedSkeleton3.BoneCapsules_17;
+                skeleton.BoneCapsules[18] = cachedSkeleton3.BoneCapsules_18;
+
+                return true;
+            }
+            else
+            {
+                return false;
+            }
+        }
+        else if (version >= OVRP_1_55_0.version)
         {
             Result res = OVRP_1_55_0.ovrp_GetSkeleton2(skeletonType, out cachedSkeleton2);
             if (res == Result.Success)
@@ -8044,6 +8664,132 @@ public static partial class OVRPlugin
     }
 
 
+    public static bool GetBodyState4(Step stepId, BodyJointSet jointSet, ref BodyState bodyState)
+    {
+#if OVRPLUGIN_UNSUPPORTED_PLATFORM
+        return false;
+#else
+        if (version >= OVRP_1_92_0.version)
+        {
+            // Allocate space for full body joints
+            bool requestedFullBody = (jointSet == BodyJointSet.FullBody);
+
+            // Avoid per-frame allocations if caller provides appropriately pre-initialized BodyState
+            int jointCount = requestedFullBody ? (int)BoneId.FullBody_End : (int)BoneId.Body_End;
+            if (bodyState.JointLocations?.Length != jointCount)
+            {
+                bodyState.JointLocations = new BodyJointLocation[jointCount];
+            }
+
+            var result = OVRP_1_92_0.ovrp_GetBodyState4(stepId, -1, out var bodyState4Internal);
+
+            if (result != Result.Success || bodyState4Internal.IsActive != Bool.True)
+            {
+                return false;
+            }
+
+            bodyState.Confidence = bodyState4Internal.Confidence;
+            bodyState.SkeletonChangedCount = bodyState4Internal.SkeletonChangedCount;
+            bodyState.Time = bodyState4Internal.Time;
+            bodyState.Fidelity = bodyState4Internal.Fidelity;
+            bodyState.CalibrationStatus = bodyState4Internal.CalibrationStatus;
+            bodyState.JointLocations[0] = bodyState4Internal.JointLocation_0;
+            bodyState.JointLocations[1] = bodyState4Internal.JointLocation_1;
+            bodyState.JointLocations[2] = bodyState4Internal.JointLocation_2;
+            bodyState.JointLocations[3] = bodyState4Internal.JointLocation_3;
+            bodyState.JointLocations[4] = bodyState4Internal.JointLocation_4;
+            bodyState.JointLocations[5] = bodyState4Internal.JointLocation_5;
+            bodyState.JointLocations[6] = bodyState4Internal.JointLocation_6;
+            bodyState.JointLocations[7] = bodyState4Internal.JointLocation_7;
+            bodyState.JointLocations[8] = bodyState4Internal.JointLocation_8;
+            bodyState.JointLocations[9] = bodyState4Internal.JointLocation_9;
+            bodyState.JointLocations[10] = bodyState4Internal.JointLocation_10;
+            bodyState.JointLocations[11] = bodyState4Internal.JointLocation_11;
+            bodyState.JointLocations[12] = bodyState4Internal.JointLocation_12;
+            bodyState.JointLocations[13] = bodyState4Internal.JointLocation_13;
+            bodyState.JointLocations[14] = bodyState4Internal.JointLocation_14;
+            bodyState.JointLocations[15] = bodyState4Internal.JointLocation_15;
+            bodyState.JointLocations[16] = bodyState4Internal.JointLocation_16;
+            bodyState.JointLocations[17] = bodyState4Internal.JointLocation_17;
+            bodyState.JointLocations[18] = bodyState4Internal.JointLocation_18;
+            bodyState.JointLocations[19] = bodyState4Internal.JointLocation_19;
+            bodyState.JointLocations[20] = bodyState4Internal.JointLocation_20;
+            bodyState.JointLocations[21] = bodyState4Internal.JointLocation_21;
+            bodyState.JointLocations[22] = bodyState4Internal.JointLocation_22;
+            bodyState.JointLocations[23] = bodyState4Internal.JointLocation_23;
+            bodyState.JointLocations[24] = bodyState4Internal.JointLocation_24;
+            bodyState.JointLocations[25] = bodyState4Internal.JointLocation_25;
+            bodyState.JointLocations[26] = bodyState4Internal.JointLocation_26;
+            bodyState.JointLocations[27] = bodyState4Internal.JointLocation_27;
+            bodyState.JointLocations[28] = bodyState4Internal.JointLocation_28;
+            bodyState.JointLocations[29] = bodyState4Internal.JointLocation_29;
+            bodyState.JointLocations[30] = bodyState4Internal.JointLocation_30;
+            bodyState.JointLocations[31] = bodyState4Internal.JointLocation_31;
+            bodyState.JointLocations[32] = bodyState4Internal.JointLocation_32;
+            bodyState.JointLocations[33] = bodyState4Internal.JointLocation_33;
+            bodyState.JointLocations[34] = bodyState4Internal.JointLocation_34;
+            bodyState.JointLocations[35] = bodyState4Internal.JointLocation_35;
+            bodyState.JointLocations[36] = bodyState4Internal.JointLocation_36;
+            bodyState.JointLocations[37] = bodyState4Internal.JointLocation_37;
+            bodyState.JointLocations[38] = bodyState4Internal.JointLocation_38;
+            bodyState.JointLocations[39] = bodyState4Internal.JointLocation_39;
+            bodyState.JointLocations[40] = bodyState4Internal.JointLocation_40;
+            bodyState.JointLocations[41] = bodyState4Internal.JointLocation_41;
+            bodyState.JointLocations[42] = bodyState4Internal.JointLocation_42;
+            bodyState.JointLocations[43] = bodyState4Internal.JointLocation_43;
+            bodyState.JointLocations[44] = bodyState4Internal.JointLocation_44;
+            bodyState.JointLocations[45] = bodyState4Internal.JointLocation_45;
+            bodyState.JointLocations[46] = bodyState4Internal.JointLocation_46;
+            bodyState.JointLocations[47] = bodyState4Internal.JointLocation_47;
+            bodyState.JointLocations[48] = bodyState4Internal.JointLocation_48;
+            bodyState.JointLocations[49] = bodyState4Internal.JointLocation_49;
+            bodyState.JointLocations[50] = bodyState4Internal.JointLocation_50;
+            bodyState.JointLocations[51] = bodyState4Internal.JointLocation_51;
+            bodyState.JointLocations[52] = bodyState4Internal.JointLocation_52;
+            bodyState.JointLocations[53] = bodyState4Internal.JointLocation_53;
+            bodyState.JointLocations[54] = bodyState4Internal.JointLocation_54;
+            bodyState.JointLocations[55] = bodyState4Internal.JointLocation_55;
+            bodyState.JointLocations[56] = bodyState4Internal.JointLocation_56;
+            bodyState.JointLocations[57] = bodyState4Internal.JointLocation_57;
+            bodyState.JointLocations[58] = bodyState4Internal.JointLocation_58;
+            bodyState.JointLocations[59] = bodyState4Internal.JointLocation_59;
+            bodyState.JointLocations[60] = bodyState4Internal.JointLocation_60;
+            bodyState.JointLocations[61] = bodyState4Internal.JointLocation_61;
+            bodyState.JointLocations[62] = bodyState4Internal.JointLocation_62;
+            bodyState.JointLocations[63] = bodyState4Internal.JointLocation_63;
+            bodyState.JointLocations[64] = bodyState4Internal.JointLocation_64;
+            bodyState.JointLocations[65] = bodyState4Internal.JointLocation_65;
+            bodyState.JointLocations[66] = bodyState4Internal.JointLocation_66;
+            bodyState.JointLocations[67] = bodyState4Internal.JointLocation_67;
+            bodyState.JointLocations[68] = bodyState4Internal.JointLocation_68;
+            bodyState.JointLocations[69] = bodyState4Internal.JointLocation_69;
+            if (jointSet == BodyJointSet.FullBody)
+            {
+                bodyState.JointLocations[70] = bodyState4Internal.JointLocation_70;
+                bodyState.JointLocations[71] = bodyState4Internal.JointLocation_71;
+                bodyState.JointLocations[72] = bodyState4Internal.JointLocation_72;
+                bodyState.JointLocations[73] = bodyState4Internal.JointLocation_73;
+                bodyState.JointLocations[74] = bodyState4Internal.JointLocation_74;
+                bodyState.JointLocations[75] = bodyState4Internal.JointLocation_75;
+                bodyState.JointLocations[76] = bodyState4Internal.JointLocation_76;
+                bodyState.JointLocations[77] = bodyState4Internal.JointLocation_77;
+                bodyState.JointLocations[78] = bodyState4Internal.JointLocation_78;
+                bodyState.JointLocations[79] = bodyState4Internal.JointLocation_79;
+                bodyState.JointLocations[80] = bodyState4Internal.JointLocation_80;
+                bodyState.JointLocations[81] = bodyState4Internal.JointLocation_81;
+                bodyState.JointLocations[82] = bodyState4Internal.JointLocation_82;
+                bodyState.JointLocations[83] = bodyState4Internal.JointLocation_83;
+            }
+
+            return true;
+        }
+        else
+        {
+            return GetBodyState(stepId, ref bodyState);
+        }
+#endif
+    }
+
     public static bool GetMesh(MeshType meshType, out Mesh mesh)
     {
 #if OVRPLUGIN_UNSUPPORTED_PLATFORM
@@ -8254,9 +9000,12 @@ public static partial class OVRPlugin
 #endif
     }
 
-    public static Result GetVirtualKeyboardModelAnimationStates(out VirtualKeyboardModelAnimationStates animationStates)
+    public delegate IntPtr VirtualKeyboardModelAnimationStateBufferProvider(int minimumBufferLength, int stateCount);
+    public delegate void VirtualKeyboardModelAnimationStateHandler(ref VirtualKeyboardModelAnimationState state);
+
+    public static Result GetVirtualKeyboardModelAnimationStates(VirtualKeyboardModelAnimationStateBufferProvider bufferProvider,
+        VirtualKeyboardModelAnimationStateHandler stateHandler)
     {
-        animationStates = default;
 #if OVRPLUGIN_UNSUPPORTED_PLATFORM
         return Result.Failure_Unsupported;
 #else
@@ -8268,7 +9017,6 @@ public static partial class OVRPlugin
             };
 
             var result = OVRP_1_83_0.ovrp_GetVirtualKeyboardModelAnimationStates(ref animationStatesInternal);
-            animationStates.States = new VirtualKeyboardModelAnimationState[animationStatesInternal.StateCountOutput];
             if (result != Result.Success)
             {
                 Debug.LogError("GetVirtualKeyboardModelAnimationStates failed: cannot query animation state data:" +
@@ -8281,31 +9029,69 @@ public static partial class OVRPlugin
             }
 
             var sizeInBytes = Marshal.SizeOf(typeof(VirtualKeyboardModelAnimationState));
+
+            animationStatesInternal.StatesBuffer = bufferProvider.Invoke((int)animationStatesInternal.StateCountOutput * sizeInBytes, (int)animationStatesInternal.StateCountOutput);
+            animationStatesInternal.StateCapacityInput = (uint)animationStatesInternal.StateCountOutput;
+            result = OVRP_1_83_0.ovrp_GetVirtualKeyboardModelAnimationStates(ref animationStatesInternal);
+            if (result != Result.Success)
+            {
+                Debug.LogError("GetVirtualKeyboardModelAnimationStates failed: cannot populate " +
+                               "animation state data:" + result);
+            }
+            else
+            {
+                VirtualKeyboardModelAnimationState state;
+                var intTarget = new int[1];
+                var floatTarget = new float[1];
+                for (int i = 0; i < animationStatesInternal.StateCountOutput; i++)
+                {
+                    IntPtr p = IntPtr.Add(animationStatesInternal.StatesBuffer, (i * sizeInBytes));
+                    // Intead of Marshal.PtrToStructure<VirtualKeyboardModelAnimationState> to avoid GC.Alloc
+                    Marshal.Copy(p, intTarget, 0, 1);
+                    Marshal.Copy(IntPtr.Add(p, sizeof(int)), floatTarget, 0, 1);
+                    state.AnimationIndex = intTarget[0];
+                    state.Fraction = floatTarget[0];
+                    stateHandler.Invoke(ref state);
+                }
+            }
+            return result;
+        }
+
+        return Result.Failure_Unsupported;
+#endif
+    }
+
+    [Obsolete("Use GetVirtualKeyboardModelAnimationStates with delegates")]
+    public static Result GetVirtualKeyboardModelAnimationStates(out VirtualKeyboardModelAnimationStates animationStates)
+    {
+        animationStates = default;
+#if OVRPLUGIN_UNSUPPORTED_PLATFORM
+        return Result.Failure_Unsupported;
+#else
+        if (version >= OVRP_1_83_0.version)
+        {
+            var sizeInBytes = Marshal.SizeOf(typeof(VirtualKeyboardModelAnimationState));
+            VirtualKeyboardModelAnimationState[] states = Array.Empty<VirtualKeyboardModelAnimationState>();
+            int i = 0;
+            IntPtr buffer = IntPtr.Zero;
             try
             {
-                animationStatesInternal.StatesBuffer =
-                    Marshal.AllocHGlobal(sizeInBytes * (int)animationStatesInternal.StateCountOutput);
-                animationStatesInternal.StateCapacityInput = animationStatesInternal.StateCountOutput;
-                result = OVRP_1_83_0.ovrp_GetVirtualKeyboardModelAnimationStates(ref animationStatesInternal);
-                if (result != Result.Success)
+                var result =  GetVirtualKeyboardModelAnimationStates((bufferSize, stateCount) =>
                 {
-                    Debug.LogError("GetVirtualKeyboardModelAnimationStates failed: cannot populate " +
-                                   "animation state data:" + result);
-                }
-                else
+                    buffer = Marshal.AllocHGlobal(bufferSize);
+                    states =
+                        new VirtualKeyboardModelAnimationState[stateCount];
+                    return buffer;
+                }, (ref VirtualKeyboardModelAnimationState state) =>
                 {
-                    for (int i = 0; i < animationStates.States.Length; i++)
-                    {
-                        IntPtr p = new IntPtr(animationStatesInternal.StatesBuffer.ToInt64() + (i * sizeInBytes));
-                        animationStates.States[i] = Marshal.PtrToStructure<VirtualKeyboardModelAnimationState>(p);
-                    }
-                }
-
+                    states[i++] = state;
+                });
+                animationStates.States = states;
                 return result;
             }
             finally
             {
-                Marshal.FreeHGlobal(animationStatesInternal.StatesBuffer);
+                Marshal.FreeHGlobal(buffer);
             }
         }
 
@@ -8506,6 +9292,7 @@ public static partial class OVRPlugin
 
         return true;
     }
+
     public static bool GetFaceState(Step stepId, int frameIndex, ref FaceState faceState)
     {
 #if OVRPLUGIN_UNSUPPORTED_PLATFORM
@@ -8513,14 +9300,124 @@ public static partial class OVRPlugin
 #else
         if (nativeXrApi == XrApi.OpenXR && stepId == Step.Physics)
         {
-            Debug.LogWarning("Step.Physics is deprecated when using OpenXR");
             stepId = Step.Render;
         }
-
 
         if (version >= OVRP_1_78_0.version)
         {
             return GetFaceStateInternal(stepId, frameIndex, ref faceState);
+        }
+
+        return false;
+#endif
+    }
+
+    private static FaceState2Internal cachedFaceState2 = new FaceState2Internal();
+
+    public static bool GetFaceState2(Step stepId, int frameIndex, ref FaceState faceState)
+    {
+#if OVRPLUGIN_UNSUPPORTED_PLATFORM
+        return false;
+#else
+        if (version >= OVRP_1_92_0.version)
+        {
+            Result res = OVRP_1_92_0.ovrp_GetFaceState2(stepId, frameIndex, out cachedFaceState2);
+            if (res != Result.Success)
+            {
+                return false;
+            }
+
+            // attempt to avoid allocations if client provides appropriately pre-initialized HandState
+            if (faceState.ExpressionWeights == null ||
+                faceState.ExpressionWeights.Length != (int)FaceExpression2.Max)
+            {
+                faceState.ExpressionWeights = new float[(int)FaceExpression2.Max];
+            }
+
+            if (faceState.ExpressionWeightConfidences == null || faceState.ExpressionWeightConfidences.Length !=
+                (int)FaceConstants.MaxFaceRegionConfidences)
+            {
+                faceState.ExpressionWeightConfidences = new float[(int)FaceConstants.MaxFaceRegionConfidences];
+            }
+
+            // unrolling the arrays is necessary to avoid per-frame allocations during marshaling
+            faceState.ExpressionWeights[0] = cachedFaceState2.ExpressionWeights_0;
+            faceState.ExpressionWeights[1] = cachedFaceState2.ExpressionWeights_1;
+            faceState.ExpressionWeights[2] = cachedFaceState2.ExpressionWeights_2;
+            faceState.ExpressionWeights[3] = cachedFaceState2.ExpressionWeights_3;
+            faceState.ExpressionWeights[4] = cachedFaceState2.ExpressionWeights_4;
+            faceState.ExpressionWeights[5] = cachedFaceState2.ExpressionWeights_5;
+            faceState.ExpressionWeights[6] = cachedFaceState2.ExpressionWeights_6;
+            faceState.ExpressionWeights[7] = cachedFaceState2.ExpressionWeights_7;
+            faceState.ExpressionWeights[8] = cachedFaceState2.ExpressionWeights_8;
+            faceState.ExpressionWeights[9] = cachedFaceState2.ExpressionWeights_9;
+            faceState.ExpressionWeights[10] = cachedFaceState2.ExpressionWeights_10;
+            faceState.ExpressionWeights[11] = cachedFaceState2.ExpressionWeights_11;
+            faceState.ExpressionWeights[12] = cachedFaceState2.ExpressionWeights_12;
+            faceState.ExpressionWeights[13] = cachedFaceState2.ExpressionWeights_13;
+            faceState.ExpressionWeights[14] = cachedFaceState2.ExpressionWeights_14;
+            faceState.ExpressionWeights[15] = cachedFaceState2.ExpressionWeights_15;
+            faceState.ExpressionWeights[16] = cachedFaceState2.ExpressionWeights_16;
+            faceState.ExpressionWeights[17] = cachedFaceState2.ExpressionWeights_17;
+            faceState.ExpressionWeights[18] = cachedFaceState2.ExpressionWeights_18;
+            faceState.ExpressionWeights[19] = cachedFaceState2.ExpressionWeights_19;
+            faceState.ExpressionWeights[20] = cachedFaceState2.ExpressionWeights_20;
+            faceState.ExpressionWeights[21] = cachedFaceState2.ExpressionWeights_21;
+            faceState.ExpressionWeights[22] = cachedFaceState2.ExpressionWeights_22;
+            faceState.ExpressionWeights[23] = cachedFaceState2.ExpressionWeights_23;
+            faceState.ExpressionWeights[24] = cachedFaceState2.ExpressionWeights_24;
+            faceState.ExpressionWeights[25] = cachedFaceState2.ExpressionWeights_25;
+            faceState.ExpressionWeights[26] = cachedFaceState2.ExpressionWeights_26;
+            faceState.ExpressionWeights[27] = cachedFaceState2.ExpressionWeights_27;
+            faceState.ExpressionWeights[28] = cachedFaceState2.ExpressionWeights_28;
+            faceState.ExpressionWeights[29] = cachedFaceState2.ExpressionWeights_29;
+            faceState.ExpressionWeights[30] = cachedFaceState2.ExpressionWeights_30;
+            faceState.ExpressionWeights[31] = cachedFaceState2.ExpressionWeights_31;
+            faceState.ExpressionWeights[32] = cachedFaceState2.ExpressionWeights_32;
+            faceState.ExpressionWeights[33] = cachedFaceState2.ExpressionWeights_33;
+            faceState.ExpressionWeights[34] = cachedFaceState2.ExpressionWeights_34;
+            faceState.ExpressionWeights[35] = cachedFaceState2.ExpressionWeights_35;
+            faceState.ExpressionWeights[36] = cachedFaceState2.ExpressionWeights_36;
+            faceState.ExpressionWeights[37] = cachedFaceState2.ExpressionWeights_37;
+            faceState.ExpressionWeights[38] = cachedFaceState2.ExpressionWeights_38;
+            faceState.ExpressionWeights[39] = cachedFaceState2.ExpressionWeights_39;
+            faceState.ExpressionWeights[40] = cachedFaceState2.ExpressionWeights_40;
+            faceState.ExpressionWeights[41] = cachedFaceState2.ExpressionWeights_41;
+            faceState.ExpressionWeights[42] = cachedFaceState2.ExpressionWeights_42;
+            faceState.ExpressionWeights[43] = cachedFaceState2.ExpressionWeights_43;
+            faceState.ExpressionWeights[44] = cachedFaceState2.ExpressionWeights_44;
+            faceState.ExpressionWeights[45] = cachedFaceState2.ExpressionWeights_45;
+            faceState.ExpressionWeights[46] = cachedFaceState2.ExpressionWeights_46;
+            faceState.ExpressionWeights[47] = cachedFaceState2.ExpressionWeights_47;
+            faceState.ExpressionWeights[48] = cachedFaceState2.ExpressionWeights_48;
+            faceState.ExpressionWeights[49] = cachedFaceState2.ExpressionWeights_49;
+            faceState.ExpressionWeights[50] = cachedFaceState2.ExpressionWeights_50;
+            faceState.ExpressionWeights[51] = cachedFaceState2.ExpressionWeights_51;
+            faceState.ExpressionWeights[52] = cachedFaceState2.ExpressionWeights_52;
+            faceState.ExpressionWeights[53] = cachedFaceState2.ExpressionWeights_53;
+            faceState.ExpressionWeights[54] = cachedFaceState2.ExpressionWeights_54;
+            faceState.ExpressionWeights[55] = cachedFaceState2.ExpressionWeights_55;
+            faceState.ExpressionWeights[56] = cachedFaceState2.ExpressionWeights_56;
+            faceState.ExpressionWeights[57] = cachedFaceState2.ExpressionWeights_57;
+            faceState.ExpressionWeights[58] = cachedFaceState2.ExpressionWeights_58;
+            faceState.ExpressionWeights[59] = cachedFaceState2.ExpressionWeights_59;
+            faceState.ExpressionWeights[60] = cachedFaceState2.ExpressionWeights_60;
+            faceState.ExpressionWeights[61] = cachedFaceState2.ExpressionWeights_61;
+            faceState.ExpressionWeights[62] = cachedFaceState2.ExpressionWeights_62;
+            faceState.ExpressionWeights[63] = cachedFaceState2.ExpressionWeights_63;
+            faceState.ExpressionWeights[64] = cachedFaceState2.ExpressionWeights_64;
+            faceState.ExpressionWeights[65] = cachedFaceState2.ExpressionWeights_65;
+            faceState.ExpressionWeights[66] = cachedFaceState2.ExpressionWeights_66;
+            faceState.ExpressionWeights[67] = cachedFaceState2.ExpressionWeights_67;
+            faceState.ExpressionWeights[68] = cachedFaceState2.ExpressionWeights_68;
+            faceState.ExpressionWeights[69] = cachedFaceState2.ExpressionWeights_69;
+            faceState.ExpressionWeightConfidences[0] = cachedFaceState2.ExpressionWeightConfidences_0;
+            faceState.ExpressionWeightConfidences[1] = cachedFaceState2.ExpressionWeightConfidences_1;
+            faceState.Status = cachedFaceState2.Status.ToFaceExpressionStatus();
+            faceState.Time = cachedFaceState2.Time;
+            faceState.DataSource = cachedFaceState2.DataSource;
+
+            return true;
         }
 
         return false;
@@ -8628,7 +9525,72 @@ public static partial class OVRPlugin
         OVRP_1_78_0.ovrp_StopFaceTracking() == Result.Success;
 #endif // OVRPLUGIN_UNSUPPORTED_PLATFORM
 
+    public static bool faceTracking2Enabled =>
+#if OVRPLUGIN_UNSUPPORTED_PLATFORM
+        false;
+#else
+        version >= OVRP_1_92_0.version &&
+        OVRP_1_92_0.ovrp_GetFaceTracking2Enabled(out var val) == Result.Success &&
+        val == Bool.True;
+#endif
 
+    public static bool faceTracking2Supported =>
+#if OVRPLUGIN_UNSUPPORTED_PLATFORM
+        false;
+#else
+        version >= OVRP_1_92_0.version &&
+        OVRP_1_92_0.ovrp_GetFaceTracking2Supported(out var value) == Result.Success &&
+        value == Bool.True;
+#endif //OVRPLUGIN_UNSUPPORTED_PLATFORM
+
+    public static bool StartFaceTracking2(FaceTrackingDataSource[] requestedFaceTrackingDataSources) =>
+#if OVRPLUGIN_UNSUPPORTED_PLATFORM
+        false;
+#else
+        version >= OVRP_1_92_0.version &&
+        OVRP_1_92_0.ovrp_StartFaceTracking2(requestedFaceTrackingDataSources, (uint)(requestedFaceTrackingDataSources?.Length ?? 0)) == Result.Success;
+#endif // OVRPLUGIN_UNSUPPORTED_PLATFORM
+
+    public static bool StopFaceTracking2() =>
+#if OVRPLUGIN_UNSUPPORTED_PLATFORM
+        false;
+#else
+        version >= OVRP_1_92_0.version &&
+        OVRP_1_92_0.ovrp_StopFaceTracking2() == Result.Success;
+#endif // OVRPLUGIN_UNSUPPORTED_PLATFORM
+
+
+    private static BodyJointSet _currentJointSet = BodyJointSet.None;
+    public static bool StartBodyTracking2(BodyJointSet jointSet)
+    {
+#if OVRPLUGIN_UNSUPPORTED_PLATFORM
+        return false;
+#else
+        if (version >= OVRP_1_92_0.version)
+        {
+            if (_currentJointSet != BodyJointSet.None)
+            {
+                return true;
+            }
+            if (OVRP_1_92_0.ovrp_StartBodyTracking2(jointSet) == Result.Success)
+            {
+                _currentJointSet = jointSet;
+                return true;
+            }
+
+            return false;
+        }
+        else if (jointSet != BodyJointSet.FullBody)
+        {
+            return StartBodyTracking();
+        }
+        else
+        {
+            Debug.LogError("Full body joint set is not supported by this version of OVRPlugin.");
+            return false;
+        }
+#endif // OVRPLUGIN_UNSUPPORTED_PLATFORM
+    }
 
     public static bool StartBodyTracking() =>
 #if OVRPLUGIN_UNSUPPORTED_PLATFORM
@@ -8639,14 +9601,42 @@ public static partial class OVRPlugin
 #endif // OVRPLUGIN_UNSUPPORTED_PLATFORM
 
 
-
-    public static bool StopBodyTracking() =>
+    public static bool RequestBodyTrackingFidelity(BodyTrackingFidelity2 fidelity) =>
 #if OVRPLUGIN_UNSUPPORTED_PLATFORM
         false;
 #else
-        version >= OVRP_1_78_0.version &&
-        OVRP_1_78_0.ovrp_StopBodyTracking() == Result.Success;
+        version >= OVRP_1_92_0.version && OVRP_1_92_0.ovrp_RequestBodyTrackingFidelity(fidelity) == Result.Success;
 #endif // OVRPLUGIN_UNSUPPORTED_PLATFORM
+
+
+    public static bool SuggestBodyTrackingCalibrationOverride(BodyTrackingCalibrationInfo calibrationInfo) =>
+#if OVRPUGIN_UNSUPPORTED_PLATFORM
+        false;
+#else
+        version >= OVRP_1_92_0.version && OVRP_1_92_0.ovrp_SuggestBodyTrackingCalibrationOverride(calibrationInfo) == Result.Success;
+#endif // OVRPUGIN_UNSUPPORTED_PLATFORM
+    public static bool ResetBodyTrackingCalibration() =>
+#if OVRPUGIN_UNSUPPORTED_PLATFORM
+        false;
+#else
+        version >= OVRP_1_92_0.version && OVRP_1_92_0.ovrp_ResetBodyTrackingCalibration() == Result.Success;
+#endif // OVRPUGIN_UNSUPPORTED_PLATFORM
+
+    public static bool StopBodyTracking()
+    {
+#if OVRPLUGIN_UNSUPPORTED_PLATFORM
+        return false;
+#else
+        if (version >= OVRP_1_92_0.version)
+        {
+            _currentJointSet = BodyJointSet.None;
+        }
+
+        return version >= OVRP_1_78_0.version &&
+            OVRP_1_78_0.ovrp_StopBodyTracking() == Result.Success;
+#endif // OVRPLUGIN_UNSUPPORTED_PLATFORM
+    }
+
 
     public static int GetLocalTrackingSpaceRecenterCount()
     {
@@ -10093,6 +11083,16 @@ public static partial class OVRPlugin
             Success = 2,
             Fail = 3,
             Cancel = 4
+        }
+
+        public static void SetConsent(Bool consent)
+        {
+#if OVRPLUGIN_UNSUPPORTED_PLATFORM
+            return;
+#else
+            if (version < OVRP_1_92_0.version) return;
+            OVRP_1_92_0.ovrp_QplSetConsent(consent);
+#endif
         }
 
         public static void MarkerStart(int markerId, int instanceKey = DefaultInstanceKey,
@@ -11712,8 +12712,6 @@ public static partial class OVRPlugin
 
 
 
-
-
         [DllImport(pluginName, CallingConvention = CallingConvention.Cdecl)]
         public static extern Result ovrp_GetSpaceTriangleMesh(ref UInt64 space,
             ref TriangleMeshInternal triangleMeshInternal);
@@ -11851,6 +12849,45 @@ public static partial class OVRPlugin
         public static readonly System.Version version = new System.Version(1, 91, 0);
 
 
+    }
+
+    private static class OVRP_1_92_0
+    {
+        public static readonly System.Version version = new System.Version(1, 92, 0);
+
+        [DllImport(pluginName, CallingConvention = CallingConvention.Cdecl)]
+        public static extern Result ovrp_GetFaceState2(Step stepId, int frameIndex, out FaceState2Internal faceState);
+        [DllImport(pluginName, CallingConvention = CallingConvention.Cdecl)]
+        public static extern Result ovrp_StartFaceTracking2(FaceTrackingDataSource[] requestedDataSources, uint requestedDataSourcesCount);
+        [DllImport(pluginName, CallingConvention = CallingConvention.Cdecl)]
+        public static extern Result ovrp_StopFaceTracking2();
+        [DllImport(pluginName, CallingConvention = CallingConvention.Cdecl)]
+        public static extern Result ovrp_GetFaceTracking2Enabled(out Bool faceTracking2Enabled);
+        [DllImport(pluginName, CallingConvention = CallingConvention.Cdecl)]
+        public static extern Result ovrp_GetFaceTracking2Supported(out Bool faceTracking2Enabled);
+
+
+
+        [DllImport(pluginName, CallingConvention = CallingConvention.Cdecl)]
+        public static extern Result ovrp_RequestBodyTrackingFidelity(BodyTrackingFidelity2 fidelity);
+
+        [DllImport(pluginName, CallingConvention = CallingConvention.Cdecl)]
+        public static extern Result ovrp_SuggestBodyTrackingCalibrationOverride(BodyTrackingCalibrationInfo calibrationInfo);
+
+        [DllImport(pluginName, CallingConvention = CallingConvention.Cdecl)]
+        public static extern Result ovrp_ResetBodyTrackingCalibration();
+
+        [DllImport(pluginName, CallingConvention = CallingConvention.Cdecl)]
+        public static extern Result ovrp_GetBodyState4(Step stepId, int frameIndex, out BodyState4Internal bodyState);
+
+        [DllImport(pluginName, CallingConvention = CallingConvention.Cdecl)]
+        public static extern Result ovrp_GetSkeleton3(SkeletonType skeletonType, out Skeleton3Internal skeleton);
+
+        [DllImport(pluginName, CallingConvention = CallingConvention.Cdecl)]
+        public static extern Result ovrp_StartBodyTracking2(BodyJointSet jointSet);
+
+        [DllImport(pluginName, CallingConvention = CallingConvention.Cdecl)]
+        public static extern Result ovrp_QplSetConsent(Bool consent);
     }
     /* INSERT NEW OVRP CLASS ABOVE THIS LINE */
     // After modify this file, run `fbpython arvr/projects/integrations/codegen/generate_mockovrplugin.py` to update OculusInternal/Tests/MockOVRPlugin.cs

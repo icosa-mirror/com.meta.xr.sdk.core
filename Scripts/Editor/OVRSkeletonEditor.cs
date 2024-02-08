@@ -37,9 +37,10 @@ public class OVRSkeletonEditor : Editor
         if (!IsSkeletonProperlyConfigured(skeleton))
         {
             if (OVREditorUIElements.RenderWarningWithButton(
-                    "OVRBody is required.", "Add OVRBody component"))
+                    $"An OVRBody component with the `{skeleton.GetRequiredBodyJointSet()}` joint set is required.",
+                    "Add OVRBody component"))
             {
-                FixOVRBodyConfiguration(skeleton);
+                FixOVRBodyConfiguration(skeleton, skeleton.GetRequiredBodyJointSet());
             }
         }
 
@@ -52,14 +53,16 @@ public class OVRSkeletonEditor : Editor
                skeleton.SearchSkeletonDataProvider() != null;
     }
 
-    internal static void FixOVRBodyConfiguration(OVRSkeleton skeleton)
+    internal static void FixOVRBodyConfiguration(OVRSkeleton skeleton, OVRPlugin.BodyJointSet jointSet)
     {
         var gameObject = skeleton.gameObject;
         Undo.IncrementCurrentGroup();
         var body = gameObject.AddComponent<OVRBody>();
+        body.ProvidedSkeletonType = jointSet;
         Undo.RegisterCreatedObjectUndo(body, "Add OVRBody component");
         EditorUtility.SetDirty(body);
         EditorSceneManager.MarkSceneDirty(gameObject.scene);
         Undo.SetCurrentGroupName("Add OVRBody component");
     }
+
 }

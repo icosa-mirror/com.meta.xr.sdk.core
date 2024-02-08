@@ -351,7 +351,7 @@ public class OVRGLTFLoader
         }
     }
 
-    private bool ValidateGLB(Stream glbStream)
+    static public bool ValidateGLB(Stream glbStream)
     {
         if (glbStream == null)
         {
@@ -391,7 +391,7 @@ public class OVRGLTFLoader
         return true;
     }
 
-    private byte[] ReadChunk(Stream glbStream, OVRChunkType type)
+    public static byte[] ReadChunk(Stream glbStream, OVRChunkType type)
     {
         uint chunkLength;
         if (ValidateChunk(glbStream, type, out chunkLength))
@@ -404,7 +404,7 @@ public class OVRGLTFLoader
         return null;
     }
 
-    private bool ValidateChunk(Stream glbStream, OVRChunkType type, out uint chunkLength)
+    public static bool ValidateChunk(Stream glbStream, OVRChunkType type, out uint chunkLength)
     {
         int uint32Size = sizeof(uint);
         byte[] buffer = new byte[uint32Size];

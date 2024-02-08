@@ -180,7 +180,7 @@ public class OVRCameraRig : MonoBehaviour
     protected Camera _leftEyeCamera;
     protected Camera _rightEyeCamera;
 
-    private Matrix4x4 _previousTrackingSpaceTransform;
+    protected Matrix4x4 _previousTrackingSpaceTransform;
 
     #region Unity Messages
 
@@ -695,7 +695,7 @@ public class OVRCameraRig : MonoBehaviour
         return ret;
     }
 
-    private void CheckForAnchorsInParent()
+    protected void CheckForAnchorsInParent()
     {
         void Check<T>(Transform node) where T : MonoBehaviour
         {

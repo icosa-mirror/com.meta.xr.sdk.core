@@ -20,11 +20,14 @@
 
 using System;
 using UnityEngine;
+#if UNITY_EDITOR
+using UnityEditor;
+#endif
 
 
 namespace Meta.XR.BuildingBlocks
 {
-    [DisallowMultipleComponent]
+    [DisallowMultipleComponent, ExecuteInEditMode]
     public class BuildingBlock : MonoBehaviour
     {
         [SerializeField, OVRReadOnly] internal string blockId;
@@ -36,11 +39,46 @@ namespace Meta.XR.BuildingBlocks
         [SerializeField, OVRReadOnly] internal int version = 1;
         public int Version => version;
 
+        private void Awake()
+        {
+            if (Application.isPlaying)
+            {
+                return;
+            }
+
+            if (HasDuplicateInstanceId())
+            {
+                ResetInstanceId();
+            }
+        }
+
+        private void ResetInstanceId()
+        {
+            instanceId = Guid.NewGuid().ToString();
+
+#if UNITY_EDITOR
+            EditorUtility.SetDirty(this);
+#endif
+        }
+
+        private bool HasDuplicateInstanceId()
+        {
+            foreach (var block in FindObjectsByType<BuildingBlock>(FindObjectsSortMode.InstanceID))
+            {
+                if (block != this && block.InstanceId == InstanceId)
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
         private void Start()
         {
             OVRTelemetry.Start(OVRTelemetryConstants.BB.MarkerId.RunBlock)
                 .AddBlockInfo(this)
-                .Send();
+                .SendIf(Application.isPlaying);
         }
     }
 }

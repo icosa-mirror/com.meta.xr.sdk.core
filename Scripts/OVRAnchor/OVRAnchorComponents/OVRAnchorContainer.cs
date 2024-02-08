@@ -36,7 +36,7 @@ public readonly partial struct OVRAnchorContainer : IOVRAnchorComponent<OVRAncho
     /// <summary>
     /// Uuids of the anchors contained by this Anchor Container.
     /// </summary>
-    /// <seealso cref="OVRAnchor.FetchAnchorsAsync"/>
+    /// <seealso cref="OVRAnchor.FetchAnchorsAsync(System.Collections.Generic.IEnumerable{System.Guid},System.Collections.Generic.IList{OVRAnchor},OVRSpace.StorageLocation,double)"/>
     /// <exception cref="InvalidOperationException">If it fails to retrieve the Uuids, which could happen if the component is not supported or enabled.</exception>
     public Guid[] Uuids => OVRPlugin.GetSpaceContainer(Handle, out var containerUuids)
         ? containerUuids

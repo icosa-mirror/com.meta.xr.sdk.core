@@ -33,7 +33,6 @@ public class OVRBody : MonoBehaviour,
     OVRSkeleton.IOVRSkeletonDataProvider,
     OVRSkeletonRenderer.IOVRSkeletonRendererDataProvider
 {
-
     private OVRPlugin.BodyState _bodyState;
 
     private OVRPlugin.Quatf[] _boneRotations;
@@ -48,6 +47,16 @@ public class OVRBody : MonoBehaviour,
         OVRPermissionsRequester.Permission.BodyTracking;
 
     private Action<string> _onPermissionGranted;
+
+    [SerializeField]
+    [Tooltip("The skeleton data type to be provided. Should be sync with OVRSkeleton. For selecting the tracking mode on the device, check settings in OVRManager.")]
+    private OVRPlugin.BodyJointSet _providedSkeletonType = OVRPlugin.BodyJointSet.UpperBody;
+
+    public OVRPlugin.BodyJointSet ProvidedSkeletonType
+    {
+        get => _providedSkeletonType;
+        set => _providedSkeletonType = value;
+    }
 
     private static int _trackingInstanceCount;
 
@@ -66,13 +75,19 @@ public class OVRBody : MonoBehaviour,
         _dataChangedSinceLastQuery = false;
         _hasData = false;
 
+        if (_providedSkeletonType == OVRPlugin.BodyJointSet.FullBody &&
+            OVRRuntimeSettings.GetRuntimeSettings().BodyTrackingJointSet == OVRPlugin.BodyJointSet.UpperBody)
+        {
+            Debug.LogWarning(
+                $"[{nameof(OVRBody)}] Full body skeleton is used, but Full body tracking is disabled. Check settings in OVRManager.");
+        }
+
         _trackingInstanceCount++;
         if (!StartBodyTracking())
         {
             enabled = false;
             return;
         }
-
 
         if (OVRPlugin.nativeXrApi == OVRPlugin.XrApi.OpenXR)
         {
@@ -94,19 +109,22 @@ public class OVRBody : MonoBehaviour,
         }
     }
 
-    private bool StartBodyTracking()
+    private static bool StartBodyTracking()
     {
-        if (!OVRPermissionsRequester.IsPermissionGranted(BodyTrackingPermission))
+        OVRPlugin.BodyJointSet jointSet = OVRRuntimeSettings.GetRuntimeSettings().BodyTrackingJointSet;
+        if (!OVRPlugin.StartBodyTracking2(jointSet))
         {
-            OVRPermissionsRequester.PermissionGranted -= _onPermissionGranted;
-            OVRPermissionsRequester.PermissionGranted += _onPermissionGranted;
+            Debug.LogWarning(
+                $"[{nameof(OVRBody)}] Failed to start body tracking with joint set {jointSet}.");
             return false;
         }
 
-        if (!OVRPlugin.StartBodyTracking())
+        OVRPlugin.BodyTrackingFidelity2 fidelity = OVRRuntimeSettings.GetRuntimeSettings().BodyTrackingFidelity;
+        bool fidelityChangeSuccessful = OVRPlugin.RequestBodyTrackingFidelity(fidelity);
+        if (!fidelityChangeSuccessful)
         {
-            Debug.LogWarning($"[{nameof(OVRBody)}] Failed to start body tracking.");
-            return false;
+            // Fidelity suggestion failed but body tracking might still work.
+            Debug.LogWarning($"[{nameof(OVRBody)}] Failed to set Body Tracking fidelity to: {fidelity}");
         }
 
         return true;
@@ -114,6 +132,7 @@ public class OVRBody : MonoBehaviour,
 
     private void OnDisable()
     {
+
         if (--_trackingInstanceCount == 0)
         {
             OVRPlugin.StopBodyTracking();
@@ -127,11 +146,37 @@ public class OVRBody : MonoBehaviour,
 
     private void Update() => GetBodyState(OVRPlugin.Step.Render);
 
+    public static bool SetRequestedJointSet(OVRPlugin.BodyJointSet jointSet)
+    {
+        var activeJointSet = OVRRuntimeSettings.GetRuntimeSettings().BodyTrackingJointSet;
+        if (jointSet != activeJointSet)
+        {
+            OVRRuntimeSettings.GetRuntimeSettings().BodyTrackingJointSet = jointSet;
+            if (_trackingInstanceCount > 0)
+            {
+                OVRPlugin.StopBodyTracking();
+                return StartBodyTracking();
+            }
+        }
 
+        return true;
+    }
+
+
+    public static bool SuggestBodyTrackingCalibrationOverride(float height) =>
+        OVRPlugin.SuggestBodyTrackingCalibrationOverride(new OVRPlugin.BodyTrackingCalibrationInfo { BodyHeight = height });
+    public static bool ResetBodyTrackingCalibration() => OVRPlugin.ResetBodyTrackingCalibration();
+
+    public OVRPlugin.BodyTrackingCalibrationState GetBodyTrackingCalibrationStatus() => _bodyState.CalibrationStatus;
+
+    public OVRPlugin.BodyTrackingFidelity2 GetBodyTrackingFidelityStatus()
+    {
+        return _bodyState.Fidelity;
+    }
 
     private void GetBodyState(OVRPlugin.Step step)
     {
-        if (OVRPlugin.GetBodyState(step, ref _bodyState))
+        if (OVRPlugin.GetBodyState4(step, _providedSkeletonType, ref _bodyState))
         {
             _hasData = true;
             _dataChangedSinceLastQuery = true;
@@ -140,9 +185,18 @@ public class OVRBody : MonoBehaviour,
         {
             _hasData = false;
         }
+
     }
 
-    OVRSkeleton.SkeletonType OVRSkeleton.IOVRSkeletonDataProvider.GetSkeletonType() => OVRSkeleton.SkeletonType.Body;
+    OVRSkeleton.SkeletonType OVRSkeleton.IOVRSkeletonDataProvider.GetSkeletonType()
+    {
+        return _providedSkeletonType switch
+        {
+            OVRPlugin.BodyJointSet.UpperBody => OVRSkeleton.SkeletonType.Body,
+            OVRPlugin.BodyJointSet.FullBody => OVRSkeleton.SkeletonType.FullBody,
+            _ => OVRSkeleton.SkeletonType.None,
+        };
+    }
 
     OVRSkeleton.SkeletonPoseData OVRSkeleton.IOVRSkeletonDataProvider.GetSkeletonPoseData()
     {
@@ -195,4 +249,17 @@ public class OVRBody : MonoBehaviour,
             ShouldUseSystemGestureMaterial = false,
         }
         : default;
+
+    /// <summary>
+    /// Body Tracking Fidelity defines the quality of the tracking
+    /// </summary>
+    public static OVRPlugin.BodyTrackingFidelity2 Fidelity
+    {
+        get => OVRRuntimeSettings.GetRuntimeSettings().BodyTrackingFidelity;
+        set
+        {
+            OVRRuntimeSettings.GetRuntimeSettings().BodyTrackingFidelity = value;
+            OVRPlugin.RequestBodyTrackingFidelity(value);
+        }
+    }
 }

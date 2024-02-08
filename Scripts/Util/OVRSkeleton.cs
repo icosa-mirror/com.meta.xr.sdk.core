@@ -47,7 +47,9 @@ public class OVRSkeleton : MonoBehaviour
         None = OVRPlugin.SkeletonType.None,
         HandLeft = OVRPlugin.SkeletonType.HandLeft,
         HandRight = OVRPlugin.SkeletonType.HandRight,
+        [InspectorName("Body (Upper Body)")]
         Body = OVRPlugin.SkeletonType.Body,
+        FullBody = OVRPlugin.SkeletonType.FullBody,
     }
 
     public enum BoneId
@@ -160,6 +162,93 @@ public class OVRSkeleton : MonoBehaviour
         Body_RightHandLittleTip = OVRPlugin.BoneId.Body_RightHandLittleTip,
         Body_End = OVRPlugin.BoneId.Body_End,
 
+        // Full body bones
+        FullBody_Start = OVRPlugin.BoneId.FullBody_Start,
+        FullBody_Root = OVRPlugin.BoneId.FullBody_Root,
+        FullBody_Hips = OVRPlugin.BoneId.FullBody_Hips,
+        FullBody_SpineLower = OVRPlugin.BoneId.FullBody_SpineLower,
+        FullBody_SpineMiddle = OVRPlugin.BoneId.FullBody_SpineMiddle,
+        FullBody_SpineUpper = OVRPlugin.BoneId.FullBody_SpineUpper,
+        FullBody_Chest = OVRPlugin.BoneId.FullBody_Chest,
+        FullBody_Neck = OVRPlugin.BoneId.FullBody_Neck,
+        FullBody_Head = OVRPlugin.BoneId.FullBody_Head,
+        FullBody_LeftShoulder = OVRPlugin.BoneId.FullBody_LeftShoulder,
+        FullBody_LeftScapula = OVRPlugin.BoneId.FullBody_LeftScapula,
+        FullBody_LeftArmUpper = OVRPlugin.BoneId.FullBody_LeftArmUpper,
+        FullBody_LeftArmLower = OVRPlugin.BoneId.FullBody_LeftArmLower,
+        FullBody_LeftHandWristTwist = OVRPlugin.BoneId.FullBody_LeftHandWristTwist,
+        FullBody_RightShoulder = OVRPlugin.BoneId.FullBody_RightShoulder,
+        FullBody_RightScapula = OVRPlugin.BoneId.FullBody_RightScapula,
+        FullBody_RightArmUpper = OVRPlugin.BoneId.FullBody_RightArmUpper,
+        FullBody_RightArmLower = OVRPlugin.BoneId.FullBody_RightArmLower,
+        FullBody_RightHandWristTwist = OVRPlugin.BoneId.FullBody_RightHandWristTwist,
+        FullBody_LeftHandPalm = OVRPlugin.BoneId.FullBody_LeftHandPalm,
+        FullBody_LeftHandWrist = OVRPlugin.BoneId.FullBody_LeftHandWrist,
+        FullBody_LeftHandThumbMetacarpal = OVRPlugin.BoneId.FullBody_LeftHandThumbMetacarpal,
+        FullBody_LeftHandThumbProximal = OVRPlugin.BoneId.FullBody_LeftHandThumbProximal,
+        FullBody_LeftHandThumbDistal = OVRPlugin.BoneId.FullBody_LeftHandThumbDistal,
+        FullBody_LeftHandThumbTip = OVRPlugin.BoneId.FullBody_LeftHandThumbTip,
+        FullBody_LeftHandIndexMetacarpal = OVRPlugin.BoneId.FullBody_LeftHandIndexMetacarpal,
+        FullBody_LeftHandIndexProximal = OVRPlugin.BoneId.FullBody_LeftHandIndexProximal,
+        FullBody_LeftHandIndexIntermediate = OVRPlugin.BoneId.FullBody_LeftHandIndexIntermediate,
+        FullBody_LeftHandIndexDistal = OVRPlugin.BoneId.FullBody_LeftHandIndexDistal,
+        FullBody_LeftHandIndexTip = OVRPlugin.BoneId.FullBody_LeftHandIndexTip,
+        FullBody_LeftHandMiddleMetacarpal = OVRPlugin.BoneId.FullBody_LeftHandMiddleMetacarpal,
+        FullBody_LeftHandMiddleProximal = OVRPlugin.BoneId.FullBody_LeftHandMiddleProximal,
+        FullBody_LeftHandMiddleIntermediate = OVRPlugin.BoneId.FullBody_LeftHandMiddleIntermediate,
+        FullBody_LeftHandMiddleDistal = OVRPlugin.BoneId.FullBody_LeftHandMiddleDistal,
+        FullBody_LeftHandMiddleTip = OVRPlugin.BoneId.FullBody_LeftHandMiddleTip,
+        FullBody_LeftHandRingMetacarpal = OVRPlugin.BoneId.FullBody_LeftHandRingMetacarpal,
+        FullBody_LeftHandRingProximal = OVRPlugin.BoneId.FullBody_LeftHandRingProximal,
+        FullBody_LeftHandRingIntermediate = OVRPlugin.BoneId.FullBody_LeftHandRingIntermediate,
+        FullBody_LeftHandRingDistal = OVRPlugin.BoneId.FullBody_LeftHandRingDistal,
+        FullBody_LeftHandRingTip = OVRPlugin.BoneId.FullBody_LeftHandRingTip,
+        FullBody_LeftHandLittleMetacarpal = OVRPlugin.BoneId.FullBody_LeftHandLittleMetacarpal,
+        FullBody_LeftHandLittleProximal = OVRPlugin.BoneId.FullBody_LeftHandLittleProximal,
+        FullBody_LeftHandLittleIntermediate = OVRPlugin.BoneId.FullBody_LeftHandLittleIntermediate,
+        FullBody_LeftHandLittleDistal = OVRPlugin.BoneId.FullBody_LeftHandLittleDistal,
+        FullBody_LeftHandLittleTip = OVRPlugin.BoneId.FullBody_LeftHandLittleTip,
+        FullBody_RightHandPalm = OVRPlugin.BoneId.FullBody_RightHandPalm,
+        FullBody_RightHandWrist = OVRPlugin.BoneId.FullBody_RightHandWrist,
+        FullBody_RightHandThumbMetacarpal = OVRPlugin.BoneId.FullBody_RightHandThumbMetacarpal,
+        FullBody_RightHandThumbProximal = OVRPlugin.BoneId.FullBody_RightHandThumbProximal,
+        FullBody_RightHandThumbDistal = OVRPlugin.BoneId.FullBody_RightHandThumbDistal,
+        FullBody_RightHandThumbTip = OVRPlugin.BoneId.FullBody_RightHandThumbTip,
+        FullBody_RightHandIndexMetacarpal = OVRPlugin.BoneId.FullBody_RightHandIndexMetacarpal,
+        FullBody_RightHandIndexProximal = OVRPlugin.BoneId.FullBody_RightHandIndexProximal,
+        FullBody_RightHandIndexIntermediate = OVRPlugin.BoneId.FullBody_RightHandIndexIntermediate,
+        FullBody_RightHandIndexDistal = OVRPlugin.BoneId.FullBody_RightHandIndexDistal,
+        FullBody_RightHandIndexTip = OVRPlugin.BoneId.FullBody_RightHandIndexTip,
+        FullBody_RightHandMiddleMetacarpal = OVRPlugin.BoneId.FullBody_RightHandMiddleMetacarpal,
+        FullBody_RightHandMiddleProximal = OVRPlugin.BoneId.FullBody_RightHandMiddleProximal,
+        FullBody_RightHandMiddleIntermediate = OVRPlugin.BoneId.FullBody_RightHandMiddleIntermediate,
+        FullBody_RightHandMiddleDistal = OVRPlugin.BoneId.FullBody_RightHandMiddleDistal,
+        FullBody_RightHandMiddleTip = OVRPlugin.BoneId.FullBody_RightHandMiddleTip,
+        FullBody_RightHandRingMetacarpal = OVRPlugin.BoneId.FullBody_RightHandRingMetacarpal,
+        FullBody_RightHandRingProximal = OVRPlugin.BoneId.FullBody_RightHandRingProximal,
+        FullBody_RightHandRingIntermediate = OVRPlugin.BoneId.FullBody_RightHandRingIntermediate,
+        FullBody_RightHandRingDistal = OVRPlugin.BoneId.FullBody_RightHandRingDistal,
+        FullBody_RightHandRingTip = OVRPlugin.BoneId.FullBody_RightHandRingTip,
+        FullBody_RightHandLittleMetacarpal = OVRPlugin.BoneId.FullBody_RightHandLittleMetacarpal,
+        FullBody_RightHandLittleProximal = OVRPlugin.BoneId.FullBody_RightHandLittleProximal,
+        FullBody_RightHandLittleIntermediate = OVRPlugin.BoneId.FullBody_RightHandLittleIntermediate,
+        FullBody_RightHandLittleDistal = OVRPlugin.BoneId.FullBody_RightHandLittleDistal,
+        FullBody_RightHandLittleTip = OVRPlugin.BoneId.FullBody_RightHandLittleTip,
+        FullBody_LeftUpperLeg = OVRPlugin.BoneId.FullBody_LeftUpperLeg,
+        FullBody_LeftLowerLeg = OVRPlugin.BoneId.FullBody_LeftLowerLeg,
+        FullBody_LeftFootAnkleTwist = OVRPlugin.BoneId.FullBody_LeftFootAnkleTwist,
+        FullBody_LeftFootAnkle = OVRPlugin.BoneId.FullBody_LeftFootAnkle,
+        FullBody_LeftFootSubtalar = OVRPlugin.BoneId.FullBody_LeftFootSubtalar,
+        FullBody_LeftFootTransverse = OVRPlugin.BoneId.FullBody_LeftFootTransverse,
+        FullBody_LeftFootBall = OVRPlugin.BoneId.FullBody_LeftFootBall,
+        FullBody_RightUpperLeg = OVRPlugin.BoneId.FullBody_RightUpperLeg,
+        FullBody_RightLowerLeg = OVRPlugin.BoneId.FullBody_RightLowerLeg,
+        FullBody_RightFootAnkleTwist = OVRPlugin.BoneId.FullBody_RightFootAnkleTwist,
+        FullBody_RightFootAnkle = OVRPlugin.BoneId.FullBody_RightFootAnkle,
+        FullBody_RightFootSubtalar = OVRPlugin.BoneId.FullBody_RightFootSubtalar,
+        FullBody_RightFootTransverse = OVRPlugin.BoneId.FullBody_RightFootTransverse,
+        FullBody_RightFootBall = OVRPlugin.BoneId.FullBody_RightFootBall,
+        FullBody_End = OVRPlugin.BoneId.FullBody_End,
 
         // add new bones here
 
@@ -212,6 +301,15 @@ public class OVRSkeleton : MonoBehaviour
         _skeletonType = type;
     }
 
+    internal OVRPlugin.BodyJointSet GetRequiredBodyJointSet()
+    {
+        return _skeletonType switch
+        {
+            SkeletonType.Body => OVRPlugin.BodyJointSet.UpperBody,
+            SkeletonType.FullBody => OVRPlugin.BodyJointSet.FullBody,
+            _ => OVRPlugin.BodyJointSet.None
+        };
+    }
 
     public bool IsValidBone(BoneId bone)
     {
@@ -648,6 +746,8 @@ public class OVRSkeleton : MonoBehaviour
                 return BoneId.Hand_Start;
             case SkeletonType.Body:
                 return BoneId.Body_Start;
+            case SkeletonType.FullBody:
+                return BoneId.FullBody_Start;
             case SkeletonType.None:
             default:
                 return BoneId.Invalid;
@@ -663,6 +763,8 @@ public class OVRSkeleton : MonoBehaviour
                 return BoneId.Hand_End;
             case SkeletonType.Body:
                 return BoneId.Body_End;
+            case SkeletonType.FullBody:
+                return BoneId.FullBody_End;
             case SkeletonType.None:
             default:
                 return BoneId.Invalid;
@@ -678,6 +780,8 @@ public class OVRSkeleton : MonoBehaviour
                 return BoneId.Hand_MaxSkinnable;
             case SkeletonType.Body:
                 return BoneId.Body_End;
+            case SkeletonType.FullBody:
+                return BoneId.FullBody_End;
             case SkeletonType.None:
             default:
                 return BoneId.Invalid;
@@ -691,6 +795,7 @@ public class OVRSkeleton : MonoBehaviour
             case SkeletonType.HandLeft:
             case SkeletonType.HandRight:
             case SkeletonType.Body:
+            case SkeletonType.FullBody:
                 return GetCurrentEndBoneId() - GetCurrentStartBoneId();
             case SkeletonType.None:
             default:
@@ -705,6 +810,7 @@ public class OVRSkeleton : MonoBehaviour
             case SkeletonType.HandLeft:
             case SkeletonType.HandRight:
             case SkeletonType.Body:
+            case SkeletonType.FullBody:
                 return GetCurrentMaxSkinnableBoneId() - GetCurrentStartBoneId();
             case SkeletonType.None:
             default:
@@ -863,6 +969,182 @@ public class OVRSkeleton : MonoBehaviour
                     return "Body_Unknown";
             }
         }
+        else if (skeletonType == SkeletonType.FullBody)
+        {
+            switch (boneId)
+            {
+                case BoneId.FullBody_Root:
+                    return "FullBody_Root";
+                case BoneId.FullBody_Hips:
+                    return "FullBody_Hips";
+                case BoneId.FullBody_SpineLower:
+                    return "FullBody_SpineLower";
+                case BoneId.FullBody_SpineMiddle:
+                    return "FullBody_SpineMiddle";
+                case BoneId.FullBody_SpineUpper:
+                    return "FullBody_SpineUpper";
+                case BoneId.FullBody_Chest:
+                    return "FullBody_Chest";
+                case BoneId.FullBody_Neck:
+                    return "FullBody_Neck";
+                case BoneId.FullBody_Head:
+                    return "FullBody_Head";
+                case BoneId.FullBody_LeftShoulder:
+                    return "FullBody_LeftShoulder";
+                case BoneId.FullBody_LeftScapula:
+                    return "FullBody_LeftScapula";
+                case BoneId.FullBody_LeftArmUpper:
+                    return "FullBody_LeftArmUpper";
+                case BoneId.FullBody_LeftArmLower:
+                    return "FullBody_LeftArmLower";
+                case BoneId.FullBody_LeftHandWristTwist:
+                    return "FullBody_LeftHandWristTwist";
+                case BoneId.FullBody_RightShoulder:
+                    return "FullBody_RightShoulder";
+                case BoneId.FullBody_RightScapula:
+                    return "FullBody_RightScapula";
+                case BoneId.FullBody_RightArmUpper:
+                    return "FullBody_RightArmUpper";
+                case BoneId.FullBody_RightArmLower:
+                    return "FullBody_RightArmLower";
+                case BoneId.FullBody_RightHandWristTwist:
+                    return "FullBody_RightHandWristTwist";
+                case BoneId.FullBody_LeftHandPalm:
+                    return "FullBody_LeftHandPalm";
+                case BoneId.FullBody_LeftHandWrist:
+                    return "FullBody_LeftHandWrist";
+                case BoneId.FullBody_LeftHandThumbMetacarpal:
+                    return "FullBody_LeftHandThumbMetacarpal";
+                case BoneId.FullBody_LeftHandThumbProximal:
+                    return "FullBody_LeftHandThumbProximal";
+                case BoneId.FullBody_LeftHandThumbDistal:
+                    return "FullBody_LeftHandThumbDistal";
+                case BoneId.FullBody_LeftHandThumbTip:
+                    return "FullBody_LeftHandThumbTip";
+                case BoneId.FullBody_LeftHandIndexMetacarpal:
+                    return "FullBody_LeftHandIndexMetacarpal";
+                case BoneId.FullBody_LeftHandIndexProximal:
+                    return "FullBody_LeftHandIndexProximal";
+                case BoneId.FullBody_LeftHandIndexIntermediate:
+                    return "FullBody_LeftHandIndexIntermediate";
+                case BoneId.FullBody_LeftHandIndexDistal:
+                    return "FullBody_LeftHandIndexDistal";
+                case BoneId.FullBody_LeftHandIndexTip:
+                    return "FullBody_LeftHandIndexTip";
+                case BoneId.FullBody_LeftHandMiddleMetacarpal:
+                    return "FullBody_LeftHandMiddleMetacarpal";
+                case BoneId.FullBody_LeftHandMiddleProximal:
+                    return "FullBody_LeftHandMiddleProximal";
+                case BoneId.FullBody_LeftHandMiddleIntermediate:
+                    return "FullBody_LeftHandMiddleIntermediate";
+                case BoneId.FullBody_LeftHandMiddleDistal:
+                    return "FullBody_LeftHandMiddleDistal";
+                case BoneId.FullBody_LeftHandMiddleTip:
+                    return "FullBody_LeftHandMiddleTip";
+                case BoneId.FullBody_LeftHandRingMetacarpal:
+                    return "FullBody_LeftHandRingMetacarpal";
+                case BoneId.FullBody_LeftHandRingProximal:
+                    return "FullBody_LeftHandRingProximal";
+                case BoneId.FullBody_LeftHandRingIntermediate:
+                    return "FullBody_LeftHandRingIntermediate";
+                case BoneId.FullBody_LeftHandRingDistal:
+                    return "FullBody_LeftHandRingDistal";
+                case BoneId.FullBody_LeftHandRingTip:
+                    return "FullBody_LeftHandRingTip";
+                case BoneId.FullBody_LeftHandLittleMetacarpal:
+                    return "FullBody_LeftHandLittleMetacarpal";
+                case BoneId.FullBody_LeftHandLittleProximal:
+                    return "FullBody_LeftHandLittleProximal";
+                case BoneId.FullBody_LeftHandLittleIntermediate:
+                    return "FullBody_LeftHandLittleIntermediate";
+                case BoneId.FullBody_LeftHandLittleDistal:
+                    return "FullBody_LeftHandLittleDistal";
+                case BoneId.FullBody_LeftHandLittleTip:
+                    return "FullBody_LeftHandLittleTip";
+                case BoneId.FullBody_RightHandPalm:
+                    return "FullBody_RightHandPalm";
+                case BoneId.FullBody_RightHandWrist:
+                    return "FullBody_RightHandWrist";
+                case BoneId.FullBody_RightHandThumbMetacarpal:
+                    return "FullBody_RightHandThumbMetacarpal";
+                case BoneId.FullBody_RightHandThumbProximal:
+                    return "FullBody_RightHandThumbProximal";
+                case BoneId.FullBody_RightHandThumbDistal:
+                    return "FullBody_RightHandThumbDistal";
+                case BoneId.FullBody_RightHandThumbTip:
+                    return "FullBody_RightHandThumbTip";
+                case BoneId.FullBody_RightHandIndexMetacarpal:
+                    return "FullBody_RightHandIndexMetacarpal";
+                case BoneId.FullBody_RightHandIndexProximal:
+                    return "FullBody_RightHandIndexProximal";
+                case BoneId.FullBody_RightHandIndexIntermediate:
+                    return "FullBody_RightHandIndexIntermediate";
+                case BoneId.FullBody_RightHandIndexDistal:
+                    return "FullBody_RightHandIndexDistal";
+                case BoneId.FullBody_RightHandIndexTip:
+                    return "FullBody_RightHandIndexTip";
+                case BoneId.FullBody_RightHandMiddleMetacarpal:
+                    return "FullBody_RightHandMiddleMetacarpal";
+                case BoneId.FullBody_RightHandMiddleProximal:
+                    return "FullBody_RightHandMiddleProximal";
+                case BoneId.FullBody_RightHandMiddleIntermediate:
+                    return "FullBody_RightHandMiddleIntermediate";
+                case BoneId.FullBody_RightHandMiddleDistal:
+                    return "FullBody_RightHandMiddleDistal";
+                case BoneId.FullBody_RightHandMiddleTip:
+                    return "FullBody_RightHandMiddleTip";
+                case BoneId.FullBody_RightHandRingMetacarpal:
+                    return "FullBody_RightHandRingMetacarpal";
+                case BoneId.FullBody_RightHandRingProximal:
+                    return "FullBody_RightHandRingProximal";
+                case BoneId.FullBody_RightHandRingIntermediate:
+                    return "FullBody_RightHandRingIntermediate";
+                case BoneId.FullBody_RightHandRingDistal:
+                    return "FullBody_RightHandRingDistal";
+                case BoneId.FullBody_RightHandRingTip:
+                    return "FullBody_RightHandRingTip";
+                case BoneId.FullBody_RightHandLittleMetacarpal:
+                    return "FullBody_RightHandLittleMetacarpal";
+                case BoneId.FullBody_RightHandLittleProximal:
+                    return "FullBody_RightHandLittleProximal";
+                case BoneId.FullBody_RightHandLittleIntermediate:
+                    return "FullBody_RightHandLittleIntermediate";
+                case BoneId.FullBody_RightHandLittleDistal:
+                    return "FullBody_RightHandLittleDistal";
+                case BoneId.FullBody_RightHandLittleTip:
+                    return "FullBody_RightHandLittleTip";
+                case BoneId.FullBody_LeftUpperLeg:
+                    return "FullBody_LeftUpperLeg";
+                case BoneId.FullBody_LeftLowerLeg:
+                    return "FullBody_LeftLowerLeg";
+                case BoneId.FullBody_LeftFootAnkleTwist:
+                    return "FullBody_LeftFootAnkleTwist";
+                case BoneId.FullBody_LeftFootAnkle:
+                    return "FullBody_LeftFootAnkle";
+                case BoneId.FullBody_LeftFootSubtalar:
+                    return "FullBody_LeftFootSubtalar";
+                case BoneId.FullBody_LeftFootTransverse:
+                    return "FullBody_LeftFootTransverse";
+                case BoneId.FullBody_LeftFootBall:
+                    return "FullBody_LeftFootBall";
+                case BoneId.FullBody_RightUpperLeg:
+                    return "FullBody_RightUpperLeg";
+                case BoneId.FullBody_RightLowerLeg:
+                    return "FullBody_RightLowerLeg";
+                case BoneId.FullBody_RightFootAnkleTwist:
+                    return "FullBody_RightFootAnkleTwist";
+                case BoneId.FullBody_RightFootAnkle:
+                    return "FullBody_RightFootAnkle";
+                case BoneId.FullBody_RightFootSubtalar:
+                    return "FullBody_RightFootSubtalar";
+                case BoneId.FullBody_RightFootTransverse:
+                    return "FullBody_RightFootTransverse";
+                case BoneId.FullBody_RightFootBall:
+                    return "FullBody_RightFootBall";
+                default:
+                    return "FullBody_Unknown";
+            }
+        }
         else if (IsHandSkeleton(skeletonType))
         {
             switch (boneId)
@@ -925,7 +1207,9 @@ public class OVRSkeleton : MonoBehaviour
         }
     }
 
-    internal static bool IsBodySkeleton(SkeletonType type) => type == SkeletonType.Body;
+    internal static bool IsBodySkeleton(SkeletonType type) =>
+        type == SkeletonType.Body || type == SkeletonType.FullBody;
+
     private static bool IsHandSkeleton(SkeletonType type) =>
         type == SkeletonType.HandLeft || type == SkeletonType.HandRight;
 }

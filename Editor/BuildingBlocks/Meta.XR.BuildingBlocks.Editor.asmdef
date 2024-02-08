@@ -5,7 +5,8 @@
         "Oculus.VR",
         "Oculus.VR.Editor",
         "Meta.XR.BuildingBlocks",
-        "Meta.XR.Editor.Tags"
+        "Meta.XR.Editor.Tags",
+        "Oculus.VR.Scripts.Editor"
     ],
     "includePlatforms": [
         "Editor"

@@ -59,7 +59,7 @@ class SerializedSurfaceGeometryPropertyDrawer : PropertyDrawer
 [CustomEditor(typeof(OVRPassthroughLayer))]
 public class OVRPassthroughLayerEditor : Editor
 {
-    private readonly static string[] _colorMapNames =
+    internal static readonly string[] ColorMapNames =
     {
         "None",
         "Color Adjustment",
@@ -70,17 +70,17 @@ public class OVRPassthroughLayerEditor : Editor
         "Custom"
     };
 
-    private readonly static string[] _selectableColorMapNames =
+    internal static readonly string[] SelectableColorMapNames =
     {
-        _colorMapNames[0],
-        _colorMapNames[1],
-        _colorMapNames[2],
-        _colorMapNames[3],
-        _colorMapNames[4],
-        _colorMapNames[5]
+        ColorMapNames[0],
+        ColorMapNames[1],
+        ColorMapNames[2],
+        ColorMapNames[3],
+        ColorMapNames[4],
+        ColorMapNames[5]
     };
 
-    private ColorMapEditorType[] _colorMapTypes =
+    internal static readonly ColorMapEditorType[] ColorMapTypes =
     {
         ColorMapEditorType.None,
         ColorMapEditorType.ColorAdjustment,
@@ -182,7 +182,7 @@ public class OVRPassthroughLayerEditor : Editor
         EditorGUILayout.Space();
 
         // Custom popup for color map type to control order, names, and visibility of types
-        int colorMapTypeIndex = Array.IndexOf(_colorMapTypes, layer.colorMapEditorType);
+        int colorMapTypeIndex = Array.IndexOf(ColorMapTypes, layer.colorMapEditorType);
         if (colorMapTypeIndex == -1)
         {
             Debug.LogWarning("Invalid color map type encountered");
@@ -191,8 +191,8 @@ public class OVRPassthroughLayerEditor : Editor
 
         // Dropdown list contains "Custom" only if it is currently selected.
         string[] colorMapNames = layer.colorMapEditorType == ColorMapEditorType.Custom
-            ? _colorMapNames
-            : _selectableColorMapNames;
+            ? ColorMapNames
+            : SelectableColorMapNames;
         GUIContent[] colorMapLabels = new GUIContent[colorMapNames.Length];
         for (int i = 0; i < colorMapNames.Length; i++)
             colorMapLabels[i] = new GUIContent(colorMapNames[i]);
@@ -201,7 +201,7 @@ public class OVRPassthroughLayerEditor : Editor
             new GUIContent("Color Control", "The type of color controls applied to this layer"), ref colorMapTypeIndex,
             colorMapLabels,
             ref modified);
-        layer.colorMapEditorType = _colorMapTypes[colorMapTypeIndex];
+        layer.colorMapEditorType = ColorMapTypes[colorMapTypeIndex];
 
         if (layer.colorMapEditorType == ColorMapEditorType.Grayscale
             || layer.colorMapEditorType == ColorMapEditorType.GrayscaleToColor
@@ -258,7 +258,7 @@ public class OVRPassthroughLayerEditor : Editor
         serializedObject.ApplyModifiedProperties();
     }
 
-    private void PerformLutTextureCheck(Texture2D texture)
+    internal static void PerformLutTextureCheck(Texture2D texture)
     {
         if (texture != null)
         {
@@ -271,7 +271,7 @@ public class OVRPassthroughLayerEditor : Editor
         }
     }
 
-    private void CheckLutImportSettings(Texture lut)
+    private static void CheckLutImportSettings(Texture lut)
     {
         if (lut != null)
         {
@@ -296,7 +296,7 @@ public class OVRPassthroughLayerEditor : Editor
         }
     }
 
-    private void SetLutImportSettings(TextureImporter importer)
+    private static void SetLutImportSettings(TextureImporter importer)
     {
         importer.isReadable = true;
         importer.textureCompression = TextureImporterCompression.Uncompressed;
@@ -304,7 +304,7 @@ public class OVRPassthroughLayerEditor : Editor
         AssetDatabase.Refresh();
     }
 
-    private void DrawFixMeBox(string text, Action action)
+    private static void DrawFixMeBox(string text, Action action)
     {
         EditorGUILayout.HelpBox(text, MessageType.Warning);
 

@@ -150,6 +150,26 @@ public partial class OVRUnityHumanoidSkeletonRetargeter
             BuildBoneDataSkeleton(skeleton, useBindPose, customBoneIdToHumanBodyBone);
         }
 
+        /// <summary>
+        /// Constructor for OVRSkeleton.
+        /// </summary>
+        /// <param name="skeleton">Skeleton to build meta data from.</param>
+        /// <param name="useBindPose">Whether to use bind pose (T-pose) or not.</param>
+        /// <param name="customBoneIdToHumanBodyBone">Custom bone ID to human body bone mapping.</param>
+        /// <param name="useFullBody">Whether to use full body or not.</param>
+        public OVRSkeletonMetadata(OVRSkeleton skeleton, bool useBindPose,
+            Dictionary<OVRSkeleton.BoneId, HumanBodyBones> customBoneIdToHumanBodyBone,
+            bool useFullBody)
+        {
+            if (useFullBody)
+            {
+                BuildBoneDataSkeletonFullBody(skeleton, useBindPose, customBoneIdToHumanBodyBone);
+            }
+            else
+            {
+                BuildBoneDataSkeleton(skeleton, useBindPose, customBoneIdToHumanBodyBone);
+            }
+        }
 
         /// <summary>
         /// Builds body to bone data with the OVRSkeleton.
@@ -163,10 +183,22 @@ public partial class OVRUnityHumanoidSkeletonRetargeter
             AssembleSkeleton(skeleton, useBindPose, customBoneIdToHumanBodyBone);
         }
 
+        /// <summary>
+        /// Builds full body to bone data with the OVRSkeleton.
+        /// </summary>
+        /// <param name="skeleton">The OVRSkeleton.</param>
+        /// <param name="useBindPose">If true, use the bind pose.</param>
+        /// <param name="customBoneIdToHumanBodyBone">Custom bone ID to human body bone mapping.</param>
+        public void BuildBoneDataSkeletonFullBody(OVRSkeleton skeleton, bool useBindPose,
+            Dictionary<OVRSkeleton.BoneId, HumanBodyBones> customBoneIdToHumanBodyBone)
+        {
+            AssembleSkeleton(skeleton, useBindPose, customBoneIdToHumanBodyBone, true);
+        }
 
         private void AssembleSkeleton(OVRSkeleton skeleton, bool useBindPose,
             Dictionary<OVRSkeleton.BoneId, HumanBodyBones> customBoneIdToHumanBodyBone
-            )
+            , bool useFullBody = false)
+
         {
             if (BodyToBoneData.Count != 0)
             {
@@ -188,14 +220,27 @@ public partial class OVRUnityHumanoidSkeletonRetargeter
                 var boneData = new BoneData();
                 boneData.OriginalJoint = bone.Transform;
 
-                if (!OVRHumanBodyBonesMappings.BoneIdToJointPair.ContainsKey(bone.Id))
+                if (useFullBody)
                 {
-                    Debug.LogError($"Can't find {bone.Id} in bone Id to joint pair map!");
-                    continue;
+                    if (!OVRHumanBodyBonesMappings.FullBoneIdToJointPair.ContainsKey(bone.Id))
+                    {
+                        Debug.LogError($"Can't find {bone.Id} in bone Id to joint pair map!");
+                        continue;
+                    }
+                }
+                else
+                {
+                    if (!OVRHumanBodyBonesMappings.BoneIdToJointPair.ContainsKey(bone.Id))
+                    {
+                        Debug.LogError($"Can't find {bone.Id} in bone Id to joint pair map!");
+                        continue;
+                    }
                 }
 
                 var jointPair =
-                    OVRHumanBodyBonesMappings.BoneIdToJointPair[bone.Id];
+                    useFullBody
+                        ? OVRHumanBodyBonesMappings.FullBoneIdToJointPair[bone.Id]
+                        : OVRHumanBodyBonesMappings.BoneIdToJointPair[bone.Id];
                 var startOfPair = jointPair.Item1;
                 var endofPair = jointPair.Item2;
 
@@ -252,6 +297,15 @@ public partial class OVRUnityHumanoidSkeletonRetargeter
                 {
                     continue;
                 }
+                if (animator.avatar == null)
+                {
+                    Debug.LogWarning($"{animator} has no avatar.");
+                }
+                if (animator.avatar != null && !animator.avatar.isHuman)
+                {
+                    Debug.LogWarning($"{animator} does not have have a " +
+                        $"valid human description!");
+                }
 
                 var currTransform = animator.GetBoneTransform(humanBodyBone);
                 if (currTransform == null)
@@ -284,7 +338,8 @@ public partial class OVRUnityHumanoidSkeletonRetargeter
 
                 if (boneData.JointPairStart == null)
                 {
-                    Debug.LogWarning($"{key} has invalid start joint.");
+                    Debug.LogWarning($"{key} has invalid start joint, setting to {boneData.OriginalJoint}.");
+                    boneData.JointPairStart = boneData.OriginalJoint;
                 }
 
                 if (boneData.JointPairEnd == null)
@@ -328,16 +383,30 @@ public partial class OVRUnityHumanoidSkeletonRetargeter
                 // flat, and the right vector should point to a thumb bone.
                 if (key == HumanBodyBones.LeftHand || key == HumanBodyBones.RightHand)
                 {
+                    jointPairEndPosition = FixJointPairEndPositionHand(jointPairEndPosition, key);
                     var jointToCreateRightVecWith = key == HumanBodyBones.LeftHand
                         ? HumanBodyBones.LeftThumbIntermediate
                         : HumanBodyBones.RightThumbIntermediate;
-                    var rightVec = BodyToBoneData[jointToCreateRightVecWith].OriginalJoint.position -
-                                   jointPairStartPosition;
-                    boneData.JointPairOrientation =
-                        CreateQuaternionForBoneDataWithRightVec(
-                            jointPairStartPosition,
-                            jointPairEndPosition,
-                            rightVec);
+                    // if missing any finger joints, report that.
+                    if (!BodyToBoneData.ContainsKey(jointToCreateRightVecWith))
+                    {
+                        Debug.LogWarning($"Character is missing bone corresponding to {jointToCreateRightVecWith}," +
+                            $" used for creating right vector. Using backup approach.");
+                        boneData.JointPairOrientation =
+                            CreateQuaternionForBoneData(
+                                jointPairStartPosition,
+                                jointPairEndPosition);
+                    }
+                    else
+                    {
+                        var rightVec = BodyToBoneData[jointToCreateRightVecWith].OriginalJoint.position -
+                                       jointPairStartPosition;
+                        boneData.JointPairOrientation =
+                            CreateQuaternionForBoneDataWithRightVec(
+                                jointPairStartPosition,
+                                jointPairEndPosition,
+                                rightVec);
+                    }
                 }
                 else
                 {
@@ -352,6 +421,44 @@ public partial class OVRUnityHumanoidSkeletonRetargeter
                 boneData.ToPosition = position +
                                       (jointPairEndPosition - jointPairStartPosition);
             }
+        }
+
+        private Vector3 FixJointPairEndPositionHand(
+            Vector3 jointPairEndPosition,
+            HumanBodyBones humanBodyBone)
+        {
+            Vector3 finalJointPairEndPosition = jointPairEndPosition;
+
+            if (humanBodyBone == HumanBodyBones.LeftHand &&
+                BodyToBoneData.ContainsKey(HumanBodyBones.LeftThumbProximal) &&
+                BodyToBoneData.ContainsKey(HumanBodyBones.LeftIndexProximal) &&
+                BodyToBoneData.ContainsKey(HumanBodyBones.LeftMiddleProximal) &&
+                BodyToBoneData.ContainsKey(HumanBodyBones.LeftRingProximal) &&
+                BodyToBoneData.ContainsKey(HumanBodyBones.LeftLittleProximal))
+            {
+                var thumbPos = BodyToBoneData[HumanBodyBones.LeftThumbProximal].OriginalJoint.position;
+                var indexPos = BodyToBoneData[HumanBodyBones.LeftIndexProximal].OriginalJoint.position;
+                var middlePos = BodyToBoneData[HumanBodyBones.LeftMiddleProximal].OriginalJoint.position;
+                var ringPos = BodyToBoneData[HumanBodyBones.LeftRingProximal].OriginalJoint.position;
+                var pinkyPos = BodyToBoneData[HumanBodyBones.LeftLittleProximal].OriginalJoint.position;
+                finalJointPairEndPosition = (thumbPos + indexPos + middlePos + ringPos + pinkyPos) / 5;
+            }
+            if (humanBodyBone == HumanBodyBones.RightHand &&
+                BodyToBoneData.ContainsKey(HumanBodyBones.RightThumbProximal) &&
+                BodyToBoneData.ContainsKey(HumanBodyBones.RightIndexProximal) &&
+                BodyToBoneData.ContainsKey(HumanBodyBones.RightMiddleProximal) &&
+                BodyToBoneData.ContainsKey(HumanBodyBones.RightRingProximal) &&
+                BodyToBoneData.ContainsKey(HumanBodyBones.RightLittleProximal))
+            {
+                var thumbPos = BodyToBoneData[HumanBodyBones.RightThumbProximal].OriginalJoint.position;
+                var indexPos = BodyToBoneData[HumanBodyBones.RightIndexProximal].OriginalJoint.position;
+                var middlePos = BodyToBoneData[HumanBodyBones.RightMiddleProximal].OriginalJoint.position;
+                var ringPos = BodyToBoneData[HumanBodyBones.RightRingProximal].OriginalJoint.position;
+                var pinkyPos = BodyToBoneData[HumanBodyBones.RightLittleProximal].OriginalJoint.position;
+                finalJointPairEndPosition = (thumbPos + indexPos + middlePos + ringPos + pinkyPos) / 5;
+            }
+
+            return finalJointPairEndPosition;
         }
 
         private static Transform FindFirstChild(

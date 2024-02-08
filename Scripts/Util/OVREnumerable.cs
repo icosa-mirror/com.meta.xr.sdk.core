@@ -41,11 +41,33 @@ internal readonly struct OVREnumerable<T> : IEnumerable<T>
 
     IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
 
+    public int GetCount()
+    {
+        switch (_enumerable)
+        {
+            case null: return 0;
+            case List<T> list: return list.Count;
+            case IReadOnlyList<T> readOnlyList: return readOnlyList.Count;
+            case HashSet<T> hashSet: return hashSet.Count;
+            case Queue<T> queue: return queue.Count;
+            default:
+            {
+                var count = 0;
+                foreach (var item in _enumerable)
+                {
+                    count++;
+                }
+                return count;
+            }
+        }
+    }
+
     public struct Enumerator : IEnumerator<T>
     {
         enum CollectionType
         {
             None,
+            ReadOnlyList,
             List,
             Set,
             Queue,
@@ -56,25 +78,34 @@ internal readonly struct OVREnumerable<T> : IEnumerable<T>
         readonly CollectionType _type;
         readonly int _listCount;
         readonly IEnumerator<T> _enumerator;
-        readonly IReadOnlyList<T> _list;
+        readonly IReadOnlyList<T> _readOnlyList;
         HashSet<T>.Enumerator _setEnumerator;
         Queue<T>.Enumerator _queueEnumerator;
+        List<T>.Enumerator _listEnumerator;
 
         public Enumerator(IEnumerable<T> enumerable)
         {
             _setEnumerator = default;
             _queueEnumerator = default;
+            _listEnumerator = default;
             _enumerator = null;
-            _list = null;
+            _readOnlyList = null;
             _listIndex = -1;
             _listCount = 0;
 
             switch (enumerable)
             {
-                case IReadOnlyList<T> list:
-                    _list = list;
-                    _listCount = list.Count;
+                case null:
+                    _type = CollectionType.None;
+                    break;
+                case List<T> list:
+                    _listEnumerator = list.GetEnumerator();
                     _type = CollectionType.List;
+                    break;
+                case IReadOnlyList<T> readOnlyList:
+                    _readOnlyList = readOnlyList;
+                    _listCount = readOnlyList.Count;
+                    _type = CollectionType.ReadOnlyList;
                     break;
                 case HashSet<T> set:
                     _setEnumerator = set.GetEnumerator();
@@ -94,14 +125,16 @@ internal readonly struct OVREnumerable<T> : IEnumerable<T>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public bool MoveNext() => _type switch
         {
-            CollectionType.List => MoveNextList(),
+            CollectionType.None => false,
+            CollectionType.List => _listEnumerator.MoveNext(),
+            CollectionType.ReadOnlyList => MoveNextReadOnlyList(),
             CollectionType.Set => _setEnumerator.MoveNext(),
             CollectionType.Queue => _queueEnumerator.MoveNext(),
             CollectionType.Enumerable => _enumerator.MoveNext(),
             _ => throw new InvalidOperationException($"Unsupported collection type {_type}.")
         };
 
-        bool MoveNextList()
+        bool MoveNextReadOnlyList()
         {
             ValidateAndThrow();
             return ++_listIndex < _listCount;
@@ -111,12 +144,13 @@ internal readonly struct OVREnumerable<T> : IEnumerable<T>
         {
             switch (_type)
             {
-                case CollectionType.List:
+                case CollectionType.ReadOnlyList:
                     ValidateAndThrow();
                     _listIndex = -1;
                     break;
                 case CollectionType.Set:
                 case CollectionType.Queue:
+                case CollectionType.List:
                     break;
                 case CollectionType.Enumerable:
                     _enumerator.Reset();
@@ -129,7 +163,8 @@ internal readonly struct OVREnumerable<T> : IEnumerable<T>
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             get => _type switch
             {
-                CollectionType.List => _list[_listIndex],
+                CollectionType.List => _listEnumerator.Current,
+                CollectionType.ReadOnlyList => _readOnlyList[_listIndex],
                 CollectionType.Set => _setEnumerator.Current,
                 CollectionType.Queue => _queueEnumerator.Current,
                 CollectionType.Enumerable => _enumerator.Current,
@@ -144,6 +179,9 @@ internal readonly struct OVREnumerable<T> : IEnumerable<T>
             switch (_type)
             {
                 case CollectionType.List:
+                    _listEnumerator.Dispose();
+                    break;
+                case CollectionType.ReadOnlyList:
                     break;
                 case CollectionType.Set:
                     _setEnumerator.Dispose();
@@ -160,7 +198,7 @@ internal readonly struct OVREnumerable<T> : IEnumerable<T>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         void ValidateAndThrow()
         {
-            if (_listCount != _list.Count)
+            if (_listCount != _readOnlyList.Count)
                 throw new InvalidOperationException($"The list changed length during enumeration.");
         }
     }

@@ -30,9 +30,15 @@ public class OVRProjectSetupSettings : ScriptableObject
     {
     }
 
+    [Serializable]
+    public class IntProperties : SerializableDictionary<string, int>
+    {
+    }
+
     private const string AssetName = "OculusProjectSetupSettings.asset";
 
     [SerializeField] private BoolProperties boolProperties = new BoolProperties();
+    [SerializeField] private IntProperties intProperties = new IntProperties();
 
     private static OVRProjectSetupSettings _config = null;
     private static string _configPath = null;
@@ -62,6 +68,28 @@ public class OVRProjectSetupSettings : ScriptableObject
     public void RemoveProjectSetupBool(string key)
     {
         boolProperties.Remove(key);
+        EditorUtility.SetDirty(this);
+    }
+
+    public int GetProjectSetupInt(string key, int defaultValue)
+    {
+        if (!intProperties.TryGetValue(key, out var value))
+        {
+            value = defaultValue;
+        }
+
+        return value;
+    }
+
+    public void SetProjectSetupInt(string key, int value)
+    {
+        intProperties[key] = value;
+        EditorUtility.SetDirty(this);
+    }
+
+    public void RemoveProjectSetupInt(string key)
+    {
+        intProperties.Remove(key);
         EditorUtility.SetDirty(this);
     }
 

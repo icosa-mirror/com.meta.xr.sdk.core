@@ -226,7 +226,7 @@ public partial class OVRManager : MonoBehaviour, OVRMixedRealityCaptureConfigura
     /// </summary>
     public static OVRRuntimeSettings runtimeSettings { get; private set; }
 
-    private static OVRProfile _profile;
+    protected static OVRProfile _profile;
 
     /// <summary>
     /// Gets the current profile, which contains information about the user's settings and body dimensions.
@@ -242,8 +242,7 @@ public partial class OVRManager : MonoBehaviour, OVRMixedRealityCaptureConfigura
         }
     }
 
-    private IEnumerable<Camera> disabledCameras;
-    float prevTimeScale;
+    protected IEnumerable<Camera> disabledCameras;
 
     /// <summary>
     /// Occurs when an HMD attached.
@@ -365,7 +364,6 @@ public partial class OVRManager : MonoBehaviour, OVRMixedRealityCaptureConfigura
     /// @params (UInt64 requestId, bool result)
     /// </summary>
     public static event Action<UInt64, bool> SceneCaptureComplete;
-
 
 
 
@@ -1191,6 +1189,11 @@ public partial class OVRManager : MonoBehaviour, OVRMixedRealityCaptureConfigura
     [SerializeField, HideInInspector]
     internal bool requestScenePermissionOnStartup;
 
+    /// <summary>
+    /// Specify if the app will request audio recording permission on startup.
+    /// </summary>
+    [SerializeField, HideInInspector]
+    internal bool requestRecordAudioPermissionOnStartup;
     #endregion
 
     /// <summary>
@@ -1471,7 +1474,7 @@ public partial class OVRManager : MonoBehaviour, OVRMixedRealityCaptureConfigura
         }
     }
 
-    private static void OnPermissionGranted(string permissionId)
+    protected static void OnPermissionGranted(string permissionId)
     {
         if (permissionId == OVRPermissionsRequester.GetPermissionId(OVRPermissionsRequester.Permission.EyeTracking))
         {
@@ -1602,10 +1605,10 @@ public partial class OVRManager : MonoBehaviour, OVRMixedRealityCaptureConfigura
     }
 
     //Series of offsets that line up the virtual controllers to the phsyical world.
-    private static Vector3 OpenVRTouchRotationOffsetEulerLeft = new Vector3(40.0f, 0.0f, 0.0f);
-    private static Vector3 OpenVRTouchRotationOffsetEulerRight = new Vector3(40.0f, 0.0f, 0.0f);
-    private static Vector3 OpenVRTouchPositionOffsetLeft = new Vector3(0.0075f, -0.005f, -0.0525f);
-    private static Vector3 OpenVRTouchPositionOffsetRight = new Vector3(-0.0075f, -0.005f, -0.0525f);
+    protected static Vector3 OpenVRTouchRotationOffsetEulerLeft = new Vector3(40.0f, 0.0f, 0.0f);
+    protected static Vector3 OpenVRTouchRotationOffsetEulerRight = new Vector3(40.0f, 0.0f, 0.0f);
+    protected static Vector3 OpenVRTouchPositionOffsetLeft = new Vector3(0.0075f, -0.005f, -0.0525f);
+    protected static Vector3 OpenVRTouchPositionOffsetRight = new Vector3(-0.0075f, -0.005f, -0.0525f);
 
     /// <summary>
     /// Specifies the pose offset required to make an OpenVR controller's reported pose match the virtual pose.
@@ -1657,9 +1660,9 @@ public partial class OVRManager : MonoBehaviour, OVRMixedRealityCaptureConfigura
         m_SpaceWarpEnabled = enabled;
     }
 
-    private static bool m_SpaceWarpEnabled;
-    private static Transform m_AppSpaceTransform;
-    private static DepthTextureMode m_CachedDepthTextureMode;
+    protected static bool m_SpaceWarpEnabled;
+    protected static Transform m_AppSpaceTransform;
+    protected static DepthTextureMode m_CachedDepthTextureMode;
 
     public static bool GetSpaceWarp()
     {
@@ -2211,7 +2214,13 @@ public partial class OVRManager : MonoBehaviour, OVRMixedRealityCaptureConfigura
 
 #if USING_XR_SDK
         if (enableDynamicResolution)
+        {
             XRSettings.eyeTextureResolutionScale = maxDynamicResolutionScale;
+#if USING_URP
+        if (GraphicsSettings.currentRenderPipeline is UnityEngine.Rendering.Universal.UniversalRenderPipelineAsset urpPipelineAsset)
+           urpPipelineAsset.renderScale = maxDynamicResolutionScale;
+#endif
+        }
 #endif
 
         OVRManagerinitialized = true;
@@ -2239,6 +2248,11 @@ public partial class OVRManager : MonoBehaviour, OVRMixedRealityCaptureConfigura
         if (requestScenePermissionOnStartup)
         {
             permissions.Add(OVRPermissionsRequester.Permission.Scene);
+        }
+
+        if (requestRecordAudioPermissionOnStartup)
+        {
+            permissions.Add(OVRPermissionsRequester.Permission.RecordAudio);
         }
 
         OVRPermissionsRequester.Request(permissions);
@@ -2417,6 +2431,7 @@ public partial class OVRManager : MonoBehaviour, OVRMixedRealityCaptureConfigura
                 scalingFactor = Math.Min(scalingFactor, 1.0f);
 
                 XRSettings.renderViewportScale = scalingFactor;
+                ScalableBufferManager.ResizeBuffers(scalingFactor, scalingFactor);
             }
         }
 #endif

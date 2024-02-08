@@ -42,6 +42,12 @@ namespace Meta.XR.BuildingBlocks.Editor
 
         private static readonly IReadOnlyList<BlockData> EmptyBlockList = new List<BlockData>();
 
+        [SerializeField] internal List<string> packageDependencies;
+
+        public IReadOnlyList<string> PackageDependencies => packageDependencies ?? EmptyPackageList;
+
+        private static readonly IReadOnlyList<string> EmptyPackageList = new List<string>();
+
         [Tooltip("Indicates whether only one instance of this block can be installed per scene.")]
         [SerializeField]
         internal bool isSingleton;
@@ -82,6 +88,7 @@ namespace Meta.XR.BuildingBlocks.Editor
             try
             {
 
+                InstallPackageDependencies();
                 var installedObjects = InstallWithDependencies(selectedGameObject);
                 SaveScene();
                 FixSetupRules();
@@ -141,6 +148,30 @@ namespace Meta.XR.BuildingBlocks.Editor
         internal override bool CanBeAdded => !HasMissingDependencies && !IsSingletonAndAlreadyPresent;
         private bool HasMissingDependencies => Dependencies.Any(dependency => dependency == null);
         private bool IsSingletonAndAlreadyPresent => IsSingleton && IsBlockPresentInScene(Id);
+
+        private void InstallPackageDependencies()
+        {
+            foreach (var packageId in PackageDependencies)
+            {
+                InstallPackage(packageId);
+            }
+        }
+
+        private void InstallPackage(string packageId)
+        {
+            if (OVRProjectSetupUtils.IsPackageInstalled(packageId))
+            {
+                return;
+            }
+
+            var success = OVRProjectSetupUtils.InstallPackage(packageId);
+
+            if (!success)
+            {
+                throw new InvalidOperationException(
+                    $"Installation of package dependency {packageId} failed for block {BlockName}.");
+            }
+        }
 
         internal List<GameObject> InstallWithDependencies(GameObject selectedGameObject = null)
         {

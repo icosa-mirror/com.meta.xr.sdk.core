@@ -31,6 +31,15 @@ using Unity.Collections.LowLevel.Unsafe;
 [AttributeUsage(AttributeTargets.Enum)]
 internal class OVRResultStatus : Attribute { }
 
+static class OVRResult
+{
+    public static OVRResult<TStatus> From<TStatus>(TStatus status) where TStatus : struct, Enum, IConvertible
+        => OVRResult<TStatus>.From(status);
+
+    public static OVRResult<TResult, TStatus> From<TResult, TStatus>(TResult result, TStatus status)
+        where TStatus : struct, Enum, IConvertible
+        => OVRResult<TResult, TStatus>.From(result, status);
+}
 
 /// <summary>
 /// Represents a result with a status code of type <typeparamref name="TStatus"/>.

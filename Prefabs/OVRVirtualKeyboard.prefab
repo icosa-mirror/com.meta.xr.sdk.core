@@ -10,6 +10,7 @@ GameObject:
   m_Component:
   - component: {fileID: 2563431155123992766}
   - component: {fileID: 3631170893708523032}
+  - component: {fileID: 4657916616331644310}
   m_Layer: 0
   m_Name: OVRVirtualKeyboard
   m_TagString: Untagged
@@ -46,6 +47,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   InitialPosition: 1
   textCommitField: {fileID: 0}
+  textHandler: {fileID: 4657916616331644310}
   leftControllerRootTransform: {fileID: 0}
   leftControllerDirectTransform: {fileID: 0}
   rightControllerRootTransform: {fileID: 0}
@@ -76,3 +78,16 @@ MonoBehaviour:
   KeyboardHiddenEvent:
     m_PersistentCalls:
       m_Calls: []
+--- !u!114 &4657916616331644310
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2844263358417267744}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: fb623c314fd69ef4b9c55ca02bbbb57b, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  inputField: {fileID: 0}

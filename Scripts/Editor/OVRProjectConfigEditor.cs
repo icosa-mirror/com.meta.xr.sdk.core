@@ -261,6 +261,11 @@ public class OVRProjectConfigEditor : Editor
                     hasModified = true;
                 }
 
+                // Passthrough support
+                OVREditorUtil.SetupEnumField(projectConfig, new GUIContent("Passthrough Support",
+                        "Allows the application to use passthrough functionality. This option must be enabled at build time, otherwise initializing passthrough and creating passthrough layers in application scenes will fail."),
+                    ref projectConfig._insightPassthroughSupport, ref hasModified);
+
                 // Body Tracking Support
                 OVREditorUtil.SetupEnumField(projectConfig, "Body Tracking Support",
                     ref projectConfig.bodyTrackingSupport, ref hasModified);
@@ -326,23 +331,45 @@ public class OVRProjectConfigEditor : Editor
                     ref hasModified
                 );
 
-                if (projectConfig.systemSplashScreenType ==
-                    OVRProjectConfig.SystemSplashScreenType.Stereo)
+                if (projectConfig.systemSplashScreenType == OVRProjectConfig.SystemSplashScreenType.Stereo)
                 {
                     EditorGUILayout.HelpBox(
                         "For stereoscopic splash screen, the image needs to be double-wide with left-to-right texture pair.",
                         MessageType.Info);
                 }
 
+                // System Splash Screen Background: Black vs ContextualPassthrough
+                OVREditorUtil.SetupEnumField(
+                    projectConfig,
+                    new GUIContent(
+                        text: "System Splash Screen Background",
+                        tooltip: "Background shown by the Operating System during system splash screens:\n" +
+                                 "  \"Black\" - always black.\n" +
+                                 "  \"Passthrough (Contextual)\" - Passthrough, if the user has passthrough active in home. Black otherwise."),
+                    ref projectConfig._systemLoadingScreenBackground,
+                    ref hasModified
+                );
+
+                if (projectConfig.systemLoadingScreenBackground == OVRProjectConfig.SystemLoadingScreenBackground.ContextualPassthrough)
+                {
+                    if (PlayerSettings.virtualRealitySplashScreen != null)
+                    {
+                        EditorGUILayout.HelpBox(
+                            "Virtual Reality Splash Screen (in Player Settings) is active, this will result in an inconsistent experience.",
+                            MessageType.Info);
+                    }
+                    else if (PlayerSettings.SplashScreen.show)
+                    {
+                        EditorGUILayout.HelpBox(
+                            "Show Splash Screen (in Player Settings) is on, this will result in an inconsistent experience.",
+                            MessageType.Info);
+                    }
+                }
+
                 // Allow optional 3-dof head-tracking
                 OVREditorUtil.SetupBoolField(projectConfig, new GUIContent("Allow Optional 3DoF Head Tracking",
                         "If checked, application can work in both 6DoF and 3DoF modes. It's highly recommended to keep it unchecked unless your project strongly needs the 3DoF head tracking."),
                     ref projectConfig.allowOptional3DofHeadTracking, ref hasModified);
-
-                // Passthrough support
-                OVREditorUtil.SetupEnumField(projectConfig, new GUIContent("Passthrough Support",
-                        "Allows the application to use passthrough functionality. This option must be enabled at build time, otherwise initializing passthrough and creating passthrough layers in application scenes will fail."),
-                    ref projectConfig._insightPassthroughSupport, ref hasModified);
 
                 // Processor favor (cpu/gpu level trading)
                 OVREditorUtil.SetupEnumField(projectConfig, new GUIContent("Processor Favor",

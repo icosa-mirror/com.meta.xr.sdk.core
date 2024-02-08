@@ -28,7 +28,14 @@ internal class OVREditorStart
 
     static OVREditorStart()
     {
+        Meta.XR.Editor.Callbacks.InitializeOnLoad.Register(OnEditorReady);
+    }
+
+    private static void OnEditorReady()
+    {
         if (!OVREditorUtils.IsMainEditor()) return;
+
+        OVRPlugin.Qpl.SetConsent(OVRRuntimeSettings.Instance.TelemetryEnabled ? OVRPlugin.Bool.True : OVRPlugin.Bool.False);
 
         if (InitSession.Value)
         {

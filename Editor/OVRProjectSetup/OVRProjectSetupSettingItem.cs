@@ -285,3 +285,35 @@ internal class OVRProjectSetupConstSettingBool : OVRProjectSetupSettingBool
     {
     }
 }
+
+internal class OVRProjectSetupProjectSettingInt : OVRProjectSetupSettingItem<int>
+{
+    public OVRProjectSetupProjectSettingInt(string uid, int defaultValue, string label = null)
+        : base(uid, defaultValue, label)
+    {
+    }
+
+    public override int Value
+    {
+        get => OVRProjectSetupSettings.GetProjectConfig(create: false)?.GetProjectSetupInt(Key, Default) ?? Default;
+        set
+        {
+            if (value == Default)
+            {
+                // If back to Default, we remove it from the dictionary to avoid clutter
+                OVRProjectSetupSettings.GetProjectConfig()?.RemoveProjectSetupInt(Key);
+            }
+            else
+            {
+                OVRProjectSetupSettings.GetProjectConfig()?.SetProjectSetupInt(Key, value);
+            }
+
+            OnSet();
+        }
+    }
+
+    public override void AppendToMenu(GenericMenu menu, Action callback = null)
+    {
+        // Not appending to menu.
+    }
+}

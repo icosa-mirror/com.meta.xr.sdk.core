@@ -405,6 +405,12 @@ PrefabInstance:
       propertyPath: m_IsActive
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 40514386640382618, guid: deed68a7fd2e9234899298cf80fae7ad,
+        type: 3}
+      propertyPath: m_Materials.Array.data[0]
+      value: 
+      objectReference: {fileID: 8525165401333341520, guid: bbb35201095f6bf499fe2cd30ef3b6c7,
+        type: 3}
     - target: {fileID: 919132149155446097, guid: deed68a7fd2e9234899298cf80fae7ad,
         type: 3}
       propertyPath: m_Name
@@ -690,6 +696,12 @@ PrefabInstance:
       propertyPath: m_Name
       value: MetaQuestTouchPlus_Left
       objectReference: {fileID: 0}
+    - target: {fileID: 5270214396347484653, guid: 2b1aaafc31655024394d83dc00911c1c,
+        type: 3}
+      propertyPath: m_Materials.Array.data[0]
+      value: 
+      objectReference: {fileID: -4540382836535262998, guid: 2ea89d6e4d9c45940908e3f337989a9a,
+        type: 3}
     - target: {fileID: 5866666021909216657, guid: 2b1aaafc31655024394d83dc00911c1c,
         type: 3}
       propertyPath: m_Controller

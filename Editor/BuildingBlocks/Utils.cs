@@ -24,7 +24,9 @@ using System.Linq;
 using Meta.XR.Editor.Tags;
 using UnityEditor;
 using UnityEngine;
+using UnityEngine.SceneManagement;
 using Object = UnityEngine.Object;
+
 
 namespace Meta.XR.BuildingBlocks.Editor
 {
@@ -122,6 +124,7 @@ namespace Meta.XR.BuildingBlocks.Editor
 
             EditorApplication.projectChanged -= OnProjectChanged;
             EditorApplication.projectChanged += OnProjectChanged;
+
         }
 
         public static void OnProjectChanged()
@@ -287,6 +290,13 @@ namespace Meta.XR.BuildingBlocks.Editor
         public static int ComputeNumberOfBlocksInScene(this BlockData blockData)
         {
             return Object.FindObjectsOfType<BuildingBlock>().Count(x => x.BlockId == blockData.Id);
+        }
+
+        public static T FindComponentInScene<T>() where T : Component
+        {
+            var scene = SceneManager.GetActiveScene();
+            var rootGameObjects = scene.GetRootGameObjects();
+            return rootGameObjects.FirstOrDefault(go => go.GetComponentInChildren<T>())?.GetComponentInChildren<T>();
         }
 
 

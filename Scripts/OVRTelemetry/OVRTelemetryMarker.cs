@@ -91,6 +91,8 @@ internal struct OVRTelemetryMarker : IDisposable
         return string.IsNullOrEmpty(annotationValue) ? this : AddAnnotation(annotationKey, annotationValue);
     }
 
+    private static string _applicationIdentifier;
+    private static string ApplicationIdentifier => _applicationIdentifier ??= Application.identifier;
 
     private static string _unityVersion;
     private static string UnityVersion => _unityVersion ??= Application.unityVersion;
@@ -98,6 +100,11 @@ internal struct OVRTelemetryMarker : IDisposable
     public OVRTelemetryMarker Send()
     {
 
+        if (OVRTelemetry.IsActive)
+        {
+            AddAnnotation(OVRTelemetryConstants.OVRManager.AnnotationTypes.ProjectName, ApplicationIdentifier);
+        }
+        AddAnnotation(OVRTelemetryConstants.OVRManager.AnnotationTypes.ProjectGuid, OVRRuntimeSettings.Instance.TelemetryProjectGuid);
         AddAnnotation(OVRTelemetryConstants.OVRManager.AnnotationTypes.EngineVersion, UnityVersion);
 
         State = new OVRTelemetryMarkerState(true, Result);

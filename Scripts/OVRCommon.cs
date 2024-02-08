@@ -720,9 +720,9 @@ public struct OVRPose
 /// </summary>
 public class OVRNativeBuffer : IDisposable
 {
-    private bool disposed = false;
-    private int m_numBytes = 0;
-    private IntPtr m_ptr = IntPtr.Zero;
+    protected bool disposed = false;
+    protected int m_numBytes = 0;
+    protected IntPtr m_ptr = IntPtr.Zero;
 
     /// <summary>
     /// Creates a buffer of the specified size.
@@ -780,7 +780,7 @@ public class OVRNativeBuffer : IDisposable
         GC.SuppressFinalize(this);
     }
 
-    private void Dispose(bool disposing)
+    protected void Dispose(bool disposing)
     {
         if (disposed)
             return;
@@ -796,7 +796,7 @@ public class OVRNativeBuffer : IDisposable
         disposed = true;
     }
 
-    private void Reallocate(int numBytes)
+    protected void Reallocate(int numBytes)
     {
         Release();
 
@@ -812,7 +812,7 @@ public class OVRNativeBuffer : IDisposable
         }
     }
 
-    private void Release()
+    protected void Release()
     {
         if (m_ptr != IntPtr.Zero)
         {

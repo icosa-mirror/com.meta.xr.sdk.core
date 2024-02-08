@@ -23,92 +23,93 @@ using UnityEngine;
 
 public class OVRGLTFAnimationNodeMorphTargetHandler
 {
-    public OVRMeshData MeshData { get; private set; }
+    private OVRMeshData _meshData;
     public float[] Weights;
 
-    private bool modified = false;
+    private bool _modified = false;
+
+    private OVRMeshAttributes _meshModifiableData;
 
     public OVRGLTFAnimationNodeMorphTargetHandler(OVRMeshData meshData)
     {
-        this.MeshData = meshData;
+        _meshData = meshData;
+
+        _meshModifiableData.vertices = new Vector3[_meshData.baseAttributes.vertices.Length];
+        _meshModifiableData.texcoords = new Vector2[_meshData.baseAttributes.texcoords.Length];
     }
 
     public void Update()
     {
-        if (!modified)
+        if (!_modified)
         {
             return;
         }
 
-        var meshDataBase = new OVRMeshAttributes();
-        for (var i = 0; i < MeshData.morphTargets.Length; i++)
-        {
-            if (MeshData.morphTargets[i].vertices != null)
-            {
-                if (meshDataBase.vertices == null)
-                {
-                    meshDataBase.vertices = new Vector3[MeshData.baseAttributes.vertices.Length];
-                    Array.Copy(MeshData.baseAttributes.vertices, meshDataBase.vertices,
-                        MeshData.baseAttributes.vertices.Length);
-                }
+        // reset _meshModifiableData to the base;
+        Array.Copy(_meshData.baseAttributes.vertices, _meshModifiableData.vertices,
+            _meshData.baseAttributes.vertices.Length);
+        Array.Copy(_meshData.baseAttributes.texcoords, _meshModifiableData.texcoords,
+            _meshData.baseAttributes.texcoords.Length);
 
+        var updatedVertices = false;
+        var updatedTexcoords = false;
+
+        for (var i = 0; i < _meshData.morphTargets.Length; i++)
+        {
+            if (_meshData.morphTargets[i].vertices != null)
+            {
+                updatedVertices = true;
                 var vi = i / 2;
                 if (i % 2 == 0)
                 {
-                    var morphedData = MeshData.morphTargets[i].vertices[vi].x *
+                    var morphedData = _meshData.morphTargets[i].vertices[vi].x *
                                       Weights[i];
-                    meshDataBase.vertices[vi].x += morphedData;
+                    _meshModifiableData.vertices[vi].x += morphedData;
                 }
                 else
                 {
-                    var morphedData = MeshData.morphTargets[i].vertices[vi].y *
+                    var morphedData = _meshData.morphTargets[i].vertices[vi].y *
                                       Weights[i];
-                    meshDataBase.vertices[vi].y += morphedData;
+                    _meshModifiableData.vertices[vi].y += morphedData;
                 }
             }
 
-            if (MeshData.morphTargets[i].texcoords != null)
+            if (_meshData.morphTargets[i].texcoords != null)
             {
-                if (meshDataBase.texcoords == null)
-                {
-                    meshDataBase.texcoords = new Vector2[MeshData.baseAttributes.texcoords.Length];
-                    Array.Copy(MeshData.baseAttributes.texcoords, meshDataBase.texcoords,
-                        MeshData.baseAttributes.texcoords.Length);
-                }
-
-
+                updatedTexcoords = true;
                 var ti = i - 8;
                 var tii = ti / 2;
                 if (i % 2 == 0)
                 {
-                    meshDataBase.texcoords[tii].x += MeshData.morphTargets[i].texcoords[tii].x *
-                                                     Weights[i];
+                    _meshModifiableData.texcoords[tii].x += _meshData.morphTargets[i].texcoords[tii].x *
+                                                      Weights[i];
                 }
                 else
                 {
-                    meshDataBase.texcoords[tii].y += MeshData.morphTargets[i].texcoords[tii].y *
-                                                     Weights[i];
+                    _meshModifiableData.texcoords[tii].y += _meshData.morphTargets[i].texcoords[tii].y *
+                                                      Weights[i];
                 }
             }
         }
 
-        if (meshDataBase.vertices != null)
+        if (updatedVertices)
         {
-            MeshData.mesh.vertices = meshDataBase.vertices;
-            MeshData.mesh.RecalculateBounds();
+            _meshData.mesh.vertices = _meshModifiableData.vertices;
+            _meshData.mesh.RecalculateBounds();
         }
-
-        if (meshDataBase.texcoords != null)
+        if (updatedTexcoords)
         {
-            MeshData.mesh.uv = meshDataBase.texcoords;
+            _meshData.mesh.uv = _meshModifiableData.texcoords;
         }
-
-        MeshData.mesh.MarkModified();
-        modified = false;
+        if (updatedVertices || updatedTexcoords)
+        {
+            _meshData.mesh.MarkModified();
+        }
+        _modified = false;
     }
 
     public void MarkModified()
     {
-        modified = true;
+        _modified = true;
     }
 }

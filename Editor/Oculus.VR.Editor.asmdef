@@ -9,7 +9,9 @@
         "Unity.XR.Management",
         "Unity.XR.Management.Editor",
         "Unity.RenderPipelines.Universal.Runtime",
-        "Unity.XR.CoreUtils.Editor"
+        "Unity.XR.CoreUtils.Editor",
+        "Meta.XR.BuildingBlocks",
+        "Meta.XR.Editor.Callbacks"
     ],
     "includePlatforms": [
         "Editor"

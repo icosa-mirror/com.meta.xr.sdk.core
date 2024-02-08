@@ -26,7 +26,7 @@ using UnityEngine.Android;
 /// <summary>
 /// This class handles android permission requests for the capabilities listed in <see cref = "Permission"/>.
 /// </summary>
-internal static class OVRPermissionsRequester
+public static class OVRPermissionsRequester
 {
     /// <summary>
     /// Occurs when a <see cref="Permission"/> is granted.
@@ -57,12 +57,18 @@ internal static class OVRPermissionsRequester
         /// Represents the Scene capability.
         /// </summary>
         Scene,
+
+        /// <summary>
+        /// Represents the Audio Recording permission (required for audio based Face Tracking capability).
+        /// </summary>
+        RecordAudio,
     }
 
-    private const string FaceTrackingPermission = "com.oculus.permission.FACE_TRACKING";
-    private const string EyeTrackingPermission = "com.oculus.permission.EYE_TRACKING";
-    private const string BodyTrackingPermission = "com.oculus.permission.BODY_TRACKING";
-    private const string ScenePermission = "com.oculus.permission.USE_SCENE";
+    public const string FaceTrackingPermission = "com.oculus.permission.FACE_TRACKING";
+    public const string EyeTrackingPermission = "com.oculus.permission.EYE_TRACKING";
+    public const string BodyTrackingPermission = "com.oculus.permission.BODY_TRACKING";
+    public const string ScenePermission = "com.oculus.permission.USE_SCENE";
+    public const string RecordAudioPermission = "android.permission.RECORD_AUDIO";
 
     /// <summary>
     /// Returns the permission ID of the given <see cref="Permission"/> to be requested from the user.
@@ -78,6 +84,7 @@ internal static class OVRPermissionsRequester
             Permission.BodyTracking => BodyTrackingPermission,
             Permission.EyeTracking => EyeTrackingPermission,
             Permission.Scene => ScenePermission,
+            Permission.RecordAudio => RecordAudioPermission,
             _ => throw new ArgumentOutOfRangeException(nameof(permission), permission, null)
         };
     }
@@ -86,11 +93,12 @@ internal static class OVRPermissionsRequester
     {
         return permission switch
         {
-            Permission.FaceTracking => OVRPlugin.faceTrackingSupported,
+            Permission.FaceTracking => OVRPlugin.faceTrackingSupported || OVRPlugin.faceTracking2Supported,
             Permission.BodyTracking => OVRPlugin.bodyTrackingSupported,
             Permission.EyeTracking => OVRPlugin.eyeTrackingSupported,
             // Scene is a no-op on unsupported platforms, but the request can always be made
             Permission.Scene => true,
+            Permission.RecordAudio => true,
             _ => throw new ArgumentOutOfRangeException(nameof(permission), permission, null)
         };
     }

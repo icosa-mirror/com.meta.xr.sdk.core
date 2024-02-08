@@ -52,6 +52,9 @@ internal static class OVRTask
     {
         var task = Get<TResult>(id);
         task.AddToPending();
+#if UNITY_EDITOR
+        RegisterType<TResult>();
+#endif
         return task;
     }
 
@@ -64,6 +67,23 @@ internal static class OVRTask
         *((ulong*)&guid + 1) = hashModifier2;
         return guid;
     }
+
+#if UNITY_EDITOR
+    private static readonly HashSet<Action> DomainReloadMethods = new HashSet<Action>();
+
+    private static void RegisterType<TResult>() => DomainReloadMethods.Add(OVRTask<TResult>.Clear);
+
+    [UnityEditor.InitializeOnEnterPlayMode]
+    internal static void OnEnterPlayMode()
+    {
+        foreach (var method in DomainReloadMethods)
+        {
+            method();
+        }
+
+        DomainReloadMethods.Clear();
+    }
+#endif
 }
 
 /// <summary>
@@ -111,7 +131,43 @@ public readonly struct OVRTask<TResult> : IEquatable<OVRTask<TResult>>, IDisposa
 
     private static readonly HashSet<Action> SubscriberClearers = new HashSet<Action>();
 
+    /// <summary>
+    /// Clears internal state for all tasks of type <typeparamref name="TResult"/>.
+    /// </summary>
+    /// <remarks>
+    /// This is called by the testing framework and to handle Play in Editor when domain reload is disabled.
+    /// </remarks>
+    internal static void Clear()
+    {
+        Results.Clear();
+        Continuations.Clear();
+        Pending.Clear();
 
+        CallbackInvokers.Clear();
+        foreach (var clearer in CallbackClearers)
+        {
+            clearer();
+        }
+
+        CallbackClearers.Clear();
+        CallbackRemovers.Clear();
+
+        foreach (var internalDataClearer in InternalDataClearers)
+        {
+            internalDataClearer();
+        }
+
+        InternalDataClearers.Clear();
+        InternalDataRemovers.Clear();
+
+        foreach (var clearer in SubscriberClearers)
+        {
+            clearer();
+        }
+
+        SubscriberClearers.Clear();
+        SubscriberRemovers.Clear();
+    }
 
     #endregion
 

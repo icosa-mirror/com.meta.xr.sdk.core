@@ -189,7 +189,7 @@ public class OVRSpatialAnchor : MonoBehaviour
     /// This operation fully succeeds or fails; that is, either all anchors are successfully saved,
     /// or the operation fails.
     /// </remarks>
-    /// <param name="saveOptions">Options how the anchor is saved. whether local or cloud.</param>
+    /// <param name="saveOptions">Save options, e.g., whether local or cloud.</param>
     /// <param name="onComplete">
     /// Invoked when the save operation completes. May be null. Parameters are
     /// - <see cref="OVRSpatialAnchor"/>: The anchor being saved.
@@ -252,7 +252,7 @@ public class OVRSpatialAnchor : MonoBehaviour
     /// <see cref="Uuid"/> to identify the same <see cref="OVRSpatialAnchor"/> at a future time.
     /// </remarks>
     /// <param name="anchors">Collection of anchors</param>
-    /// <param name="saveOptions">Options how the anchors are saved whether local or cloud.</param>
+    /// <param name="saveOptions">Save options, e.g., whether local or cloud.</param>
     /// <param name="onComplete">
     /// Invoked when the save operation completes. May be null. <paramref name="onComplete"/> receives two parameters:
     /// - `ICollection&lt;OVRSpatialAnchor&gt;`: The same collection as in <paramref name="anchors"/> parameter
@@ -740,7 +740,9 @@ public class OVRSpatialAnchor : MonoBehaviour
                 continue;
             }
 
+#pragma warning disable CS0618
             Save(pair.Value, new SaveOptions { Storage = pair.Key });
+#pragma warning restore
             pair.Value.Clear();
         }
     }
@@ -997,7 +999,6 @@ public class OVRSpatialAnchor : MonoBehaviour
     /// <code>
     /// OVRSpatialAnchor.LoadOptions options = new OVRSpatialAnchor.LoadOptions
     /// {
-    ///     StorageLocation = OVRSpace.StorageLocation.Local,
     ///     Timeout = 0,
     ///     Uuids = savedAnchorUuids
     /// };
@@ -1070,8 +1071,8 @@ public class OVRSpatialAnchor : MonoBehaviour
 
         internal OVRSpaceQuery.Options ToQueryOptions() => new OVRSpaceQuery.Options
         {
-            Location = StorageLocation,
 #pragma warning disable CS0618
+            Location = StorageLocation,
             MaxResults = MaxAnchorCount == 0 ? Uuids?.Count ?? 0 : MaxAnchorCount,
 #pragma warning restore CS0618
             Timeout = Timeout,
@@ -1330,6 +1331,41 @@ public class OVRSpatialAnchor : MonoBehaviour
         return OVRTask.FromRequest<UnboundAnchor[]>(requestId);
     }
 
+    /// <summary>
+    /// Create an unbound spatial anchor from an <seealso cref="OVRAnchor"/>.
+    /// </summary>
+    /// <remarks>
+    /// Only spatial anchors retrieved as <seealso cref="OVRAnchors"/>s should use
+    /// this method. Using this function on system-managed scene anchors will
+    /// succeed, but certain functions will not work.
+    /// </remarks>
+    /// <param name="anchor">The <seealso cref="OVRAnchor"/> to create the unbound anchor for.</param>
+    /// <param name="unboundAnchor">The created unboundAnchor.</param>
+    /// <returns>True if the anchor was successfully created, false otherwise.</returns>
+    public static bool FromOVRAnchor(OVRAnchor anchor, out UnboundAnchor unboundAnchor)
+    {
+        if (anchor == OVRAnchor.Null) throw new ArgumentNullException(nameof(anchor));
+
+        var success = false;
+        unboundAnchor = new UnboundAnchor();
+
+        if (SpatialAnchors.ContainsKey(anchor.Uuid))
+            return success;
+
+        PopulateUnbound(anchor.Uuid, anchor.Handle);
+
+        if (UnboundAnchorBuffer.Count > 0)
+        {
+            var lastAnchor = UnboundAnchorBuffer[UnboundAnchorBuffer.Count - 1];
+            if (lastAnchor.Uuid == anchor.Uuid)
+            {
+                success = true;
+                unboundAnchor = lastAnchor;
+            }
+        }
+
+        return success;
+    }
 
     private static void OnSpaceQueryComplete(ulong requestId, bool queryResult)
     {
@@ -1431,7 +1467,6 @@ public class OVRSpatialAnchor : MonoBehaviour
 
         UnboundAnchorBuffer.Add(new UnboundAnchor(space, uuid));
     }
-
 
     private static void OnSpaceSetComponentStatusComplete(ulong requestId, bool result, OVRSpace space, Guid uuid,
         OVRPlugin.SpaceComponentType componentType, bool enabled)
@@ -1561,7 +1596,6 @@ public class OVRSpatialAnchor : MonoBehaviour
 
         /// <summary>Network operation failed.</summary>
         Failure_SpaceNetworkRequestFailed = -2004,
-
     }
 
     /// <summary>
@@ -1593,7 +1627,6 @@ public class OVRSpatialAnchor : MonoBehaviour
             task.ContinueWith(Delegate, new InvertedCapture<TResult, TCapture>(onCompleted, state));
         }
     }
-
 }
 
 public static class OperationResultExtensions

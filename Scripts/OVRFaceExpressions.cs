@@ -35,7 +35,7 @@ public class OVRFaceExpressions : MonoBehaviour, IReadOnlyCollection<float>, OVR
     /// <summary>
     /// True if face tracking is enabled, otherwise false.
     /// </summary>
-    public bool FaceTrackingEnabled => OVRPlugin.faceTrackingEnabled;
+    public bool FaceTrackingEnabled => OVRPlugin.faceTracking2Enabled;
 
     public interface WeightProvider
     {
@@ -90,6 +90,8 @@ public class OVRFaceExpressions : MonoBehaviour, IReadOnlyCollection<float>, OVR
 
     private const OVRPermissionsRequester.Permission FaceTrackingPermission =
         OVRPermissionsRequester.Permission.FaceTracking;
+    private const OVRPermissionsRequester.Permission RecordAudioPermission =
+        OVRPermissionsRequester.Permission.RecordAudio;
 
     private Action<string> _onPermissionGranted;
     private static int _trackingInstanceCount;
@@ -111,23 +113,46 @@ public class OVRFaceExpressions : MonoBehaviour, IReadOnlyCollection<float>, OVR
 
     private void OnPermissionGranted(string permissionId)
     {
-        if (permissionId == OVRPermissionsRequester.GetPermissionId(FaceTrackingPermission))
+        if (permissionId == OVRPermissionsRequester.GetPermissionId(FaceTrackingPermission) ||
+            permissionId == OVRPermissionsRequester.GetPermissionId(RecordAudioPermission))
         {
             OVRPermissionsRequester.PermissionGranted -= _onPermissionGranted;
             enabled = true;
         }
     }
 
+    private OVRPlugin.FaceTrackingDataSource[] GetRequestedFaceTrackingDataSources()
+    {
+        var runtimeSettings = OVRRuntimeSettings.GetRuntimeSettings();
+        if (runtimeSettings.RequestsAudioFaceTracking && runtimeSettings.RequestsVisualFaceTracking)
+        {
+            return new OVRPlugin.FaceTrackingDataSource[] { OVRPlugin.FaceTrackingDataSource.Visual, OVRPlugin.FaceTrackingDataSource.Audio };
+        }
+        else if (runtimeSettings.RequestsVisualFaceTracking)
+        {
+            return new OVRPlugin.FaceTrackingDataSource[] { OVRPlugin.FaceTrackingDataSource.Visual };
+        }
+        else if (runtimeSettings.RequestsAudioFaceTracking)
+        {
+            return new OVRPlugin.FaceTrackingDataSource[] { OVRPlugin.FaceTrackingDataSource.Audio };
+        }
+        else
+        {
+            return new OVRPlugin.FaceTrackingDataSource[] { };
+        }
+    }
+
     private bool StartFaceTracking()
     {
-        if (!OVRPermissionsRequester.IsPermissionGranted(FaceTrackingPermission))
+        if (!OVRPermissionsRequester.IsPermissionGranted(FaceTrackingPermission) &&
+            !OVRPermissionsRequester.IsPermissionGranted(RecordAudioPermission))
         {
             OVRPermissionsRequester.PermissionGranted -= _onPermissionGranted;
             OVRPermissionsRequester.PermissionGranted += _onPermissionGranted;
             return false;
         }
 
-        if (!OVRPlugin.StartFaceTracking())
+        if (!OVRPlugin.StartFaceTracking2(GetRequestedFaceTrackingDataSources()))
         {
             Debug.LogWarning($"[{nameof(OVRFaceExpressions)}] Failed to start face tracking.");
             return false;
@@ -140,7 +165,7 @@ public class OVRFaceExpressions : MonoBehaviour, IReadOnlyCollection<float>, OVR
     {
         if (--_trackingInstanceCount == 0)
         {
-            OVRPlugin.StopFaceTracking();
+            OVRPlugin.StopFaceTracking2();
         }
     }
 
@@ -151,8 +176,9 @@ public class OVRFaceExpressions : MonoBehaviour, IReadOnlyCollection<float>, OVR
 
     private void Update()
     {
-        ValidExpressions = OVRPlugin.GetFaceState(OVRPlugin.Step.Render, -1, ref _currentFaceState) &&
-                           _currentFaceState.Status.IsValid;
+        ValidExpressions =
+            OVRPlugin.GetFaceState2(OVRPlugin.Step.Render, -1, ref _currentFaceState)
+            && _currentFaceState.Status.IsValid;
 
         EyeFollowingBlendshapesValid = ValidExpressions && _currentFaceState.Status.IsEyeFollowingBlendshapesValid;
     }
@@ -244,6 +270,20 @@ public class OVRFaceExpressions : MonoBehaviour, IReadOnlyCollection<float>, OVR
         return true;
     }
 
+    public enum FaceTrackingDataSource
+    {
+        Visual = OVRPlugin.FaceTrackingDataSource.Visual,
+        Audio = OVRPlugin.FaceTrackingDataSource.Audio,
+        [InspectorName(null)]
+        Count = OVRPlugin.FaceTrackingDataSource.Count,
+    }
+
+    public bool TryGetFaceTrackingDataSource(out FaceTrackingDataSource dataSource)
+    {
+        dataSource = (FaceTrackingDataSource)_currentFaceState.DataSource;
+        return ValidExpressions;
+    }
+
     internal void CheckValidity()
     {
         if (!ValidExpressions)
@@ -314,75 +354,82 @@ public class OVRFaceExpressions : MonoBehaviour, IReadOnlyCollection<float>, OVR
     public enum FaceExpression
     {
         [InspectorName("None")]
-        Invalid = OVRPlugin.FaceExpression.Invalid,
-        BrowLowererL = OVRPlugin.FaceExpression.Brow_Lowerer_L,
-        BrowLowererR = OVRPlugin.FaceExpression.Brow_Lowerer_R,
-        CheekPuffL = OVRPlugin.FaceExpression.Cheek_Puff_L,
-        CheekPuffR = OVRPlugin.FaceExpression.Cheek_Puff_R,
-        CheekRaiserL = OVRPlugin.FaceExpression.Cheek_Raiser_L,
-        CheekRaiserR = OVRPlugin.FaceExpression.Cheek_Raiser_R,
-        CheekSuckL = OVRPlugin.FaceExpression.Cheek_Suck_L,
-        CheekSuckR = OVRPlugin.FaceExpression.Cheek_Suck_R,
-        ChinRaiserB = OVRPlugin.FaceExpression.Chin_Raiser_B,
-        ChinRaiserT = OVRPlugin.FaceExpression.Chin_Raiser_T,
-        DimplerL = OVRPlugin.FaceExpression.Dimpler_L,
-        DimplerR = OVRPlugin.FaceExpression.Dimpler_R,
-        EyesClosedL = OVRPlugin.FaceExpression.Eyes_Closed_L,
-        EyesClosedR = OVRPlugin.FaceExpression.Eyes_Closed_R,
-        EyesLookDownL = OVRPlugin.FaceExpression.Eyes_Look_Down_L,
-        EyesLookDownR = OVRPlugin.FaceExpression.Eyes_Look_Down_R,
-        EyesLookLeftL = OVRPlugin.FaceExpression.Eyes_Look_Left_L,
-        EyesLookLeftR = OVRPlugin.FaceExpression.Eyes_Look_Left_R,
-        EyesLookRightL = OVRPlugin.FaceExpression.Eyes_Look_Right_L,
-        EyesLookRightR = OVRPlugin.FaceExpression.Eyes_Look_Right_R,
-        EyesLookUpL = OVRPlugin.FaceExpression.Eyes_Look_Up_L,
-        EyesLookUpR = OVRPlugin.FaceExpression.Eyes_Look_Up_R,
-        InnerBrowRaiserL = OVRPlugin.FaceExpression.Inner_Brow_Raiser_L,
-        InnerBrowRaiserR = OVRPlugin.FaceExpression.Inner_Brow_Raiser_R,
-        JawDrop = OVRPlugin.FaceExpression.Jaw_Drop,
-        JawSidewaysLeft = OVRPlugin.FaceExpression.Jaw_Sideways_Left,
-        JawSidewaysRight = OVRPlugin.FaceExpression.Jaw_Sideways_Right,
-        JawThrust = OVRPlugin.FaceExpression.Jaw_Thrust,
-        LidTightenerL = OVRPlugin.FaceExpression.Lid_Tightener_L,
-        LidTightenerR = OVRPlugin.FaceExpression.Lid_Tightener_R,
-        LipCornerDepressorL = OVRPlugin.FaceExpression.Lip_Corner_Depressor_L,
-        LipCornerDepressorR = OVRPlugin.FaceExpression.Lip_Corner_Depressor_R,
-        LipCornerPullerL = OVRPlugin.FaceExpression.Lip_Corner_Puller_L,
-        LipCornerPullerR = OVRPlugin.FaceExpression.Lip_Corner_Puller_R,
-        LipFunnelerLB = OVRPlugin.FaceExpression.Lip_Funneler_LB,
-        LipFunnelerLT = OVRPlugin.FaceExpression.Lip_Funneler_LT,
-        LipFunnelerRB = OVRPlugin.FaceExpression.Lip_Funneler_RB,
-        LipFunnelerRT = OVRPlugin.FaceExpression.Lip_Funneler_RT,
-        LipPressorL = OVRPlugin.FaceExpression.Lip_Pressor_L,
-        LipPressorR = OVRPlugin.FaceExpression.Lip_Pressor_R,
-        LipPuckerL = OVRPlugin.FaceExpression.Lip_Pucker_L,
-        LipPuckerR = OVRPlugin.FaceExpression.Lip_Pucker_R,
-        LipStretcherL = OVRPlugin.FaceExpression.Lip_Stretcher_L,
-        LipStretcherR = OVRPlugin.FaceExpression.Lip_Stretcher_R,
-        LipSuckLB = OVRPlugin.FaceExpression.Lip_Suck_LB,
-        LipSuckLT = OVRPlugin.FaceExpression.Lip_Suck_LT,
-        LipSuckRB = OVRPlugin.FaceExpression.Lip_Suck_RB,
-        LipSuckRT = OVRPlugin.FaceExpression.Lip_Suck_RT,
-        LipTightenerL = OVRPlugin.FaceExpression.Lip_Tightener_L,
-        LipTightenerR = OVRPlugin.FaceExpression.Lip_Tightener_R,
-        LipsToward = OVRPlugin.FaceExpression.Lips_Toward,
-        LowerLipDepressorL = OVRPlugin.FaceExpression.Lower_Lip_Depressor_L,
-        LowerLipDepressorR = OVRPlugin.FaceExpression.Lower_Lip_Depressor_R,
-        MouthLeft = OVRPlugin.FaceExpression.Mouth_Left,
-        MouthRight = OVRPlugin.FaceExpression.Mouth_Right,
-        NoseWrinklerL = OVRPlugin.FaceExpression.Nose_Wrinkler_L,
-        NoseWrinklerR = OVRPlugin.FaceExpression.Nose_Wrinkler_R,
-        OuterBrowRaiserL = OVRPlugin.FaceExpression.Outer_Brow_Raiser_L,
-        OuterBrowRaiserR = OVRPlugin.FaceExpression.Outer_Brow_Raiser_R,
-        UpperLidRaiserL = OVRPlugin.FaceExpression.Upper_Lid_Raiser_L,
-        UpperLidRaiserR = OVRPlugin.FaceExpression.Upper_Lid_Raiser_R,
-        UpperLipRaiserL = OVRPlugin.FaceExpression.Upper_Lip_Raiser_L,
-        UpperLipRaiserR = OVRPlugin.FaceExpression.Upper_Lip_Raiser_R,
+        Invalid = OVRPlugin.FaceExpression2.Invalid,
+        BrowLowererL = OVRPlugin.FaceExpression2.Brow_Lowerer_L,
+        BrowLowererR = OVRPlugin.FaceExpression2.Brow_Lowerer_R,
+        CheekPuffL = OVRPlugin.FaceExpression2.Cheek_Puff_L,
+        CheekPuffR = OVRPlugin.FaceExpression2.Cheek_Puff_R,
+        CheekRaiserL = OVRPlugin.FaceExpression2.Cheek_Raiser_L,
+        CheekRaiserR = OVRPlugin.FaceExpression2.Cheek_Raiser_R,
+        CheekSuckL = OVRPlugin.FaceExpression2.Cheek_Suck_L,
+        CheekSuckR = OVRPlugin.FaceExpression2.Cheek_Suck_R,
+        ChinRaiserB = OVRPlugin.FaceExpression2.Chin_Raiser_B,
+        ChinRaiserT = OVRPlugin.FaceExpression2.Chin_Raiser_T,
+        DimplerL = OVRPlugin.FaceExpression2.Dimpler_L,
+        DimplerR = OVRPlugin.FaceExpression2.Dimpler_R,
+        EyesClosedL = OVRPlugin.FaceExpression2.Eyes_Closed_L,
+        EyesClosedR = OVRPlugin.FaceExpression2.Eyes_Closed_R,
+        EyesLookDownL = OVRPlugin.FaceExpression2.Eyes_Look_Down_L,
+        EyesLookDownR = OVRPlugin.FaceExpression2.Eyes_Look_Down_R,
+        EyesLookLeftL = OVRPlugin.FaceExpression2.Eyes_Look_Left_L,
+        EyesLookLeftR = OVRPlugin.FaceExpression2.Eyes_Look_Left_R,
+        EyesLookRightL = OVRPlugin.FaceExpression2.Eyes_Look_Right_L,
+        EyesLookRightR = OVRPlugin.FaceExpression2.Eyes_Look_Right_R,
+        EyesLookUpL = OVRPlugin.FaceExpression2.Eyes_Look_Up_L,
+        EyesLookUpR = OVRPlugin.FaceExpression2.Eyes_Look_Up_R,
+        InnerBrowRaiserL = OVRPlugin.FaceExpression2.Inner_Brow_Raiser_L,
+        InnerBrowRaiserR = OVRPlugin.FaceExpression2.Inner_Brow_Raiser_R,
+        JawDrop = OVRPlugin.FaceExpression2.Jaw_Drop,
+        JawSidewaysLeft = OVRPlugin.FaceExpression2.Jaw_Sideways_Left,
+        JawSidewaysRight = OVRPlugin.FaceExpression2.Jaw_Sideways_Right,
+        JawThrust = OVRPlugin.FaceExpression2.Jaw_Thrust,
+        LidTightenerL = OVRPlugin.FaceExpression2.Lid_Tightener_L,
+        LidTightenerR = OVRPlugin.FaceExpression2.Lid_Tightener_R,
+        LipCornerDepressorL = OVRPlugin.FaceExpression2.Lip_Corner_Depressor_L,
+        LipCornerDepressorR = OVRPlugin.FaceExpression2.Lip_Corner_Depressor_R,
+        LipCornerPullerL = OVRPlugin.FaceExpression2.Lip_Corner_Puller_L,
+        LipCornerPullerR = OVRPlugin.FaceExpression2.Lip_Corner_Puller_R,
+        LipFunnelerLB = OVRPlugin.FaceExpression2.Lip_Funneler_LB,
+        LipFunnelerLT = OVRPlugin.FaceExpression2.Lip_Funneler_LT,
+        LipFunnelerRB = OVRPlugin.FaceExpression2.Lip_Funneler_RB,
+        LipFunnelerRT = OVRPlugin.FaceExpression2.Lip_Funneler_RT,
+        LipPressorL = OVRPlugin.FaceExpression2.Lip_Pressor_L,
+        LipPressorR = OVRPlugin.FaceExpression2.Lip_Pressor_R,
+        LipPuckerL = OVRPlugin.FaceExpression2.Lip_Pucker_L,
+        LipPuckerR = OVRPlugin.FaceExpression2.Lip_Pucker_R,
+        LipStretcherL = OVRPlugin.FaceExpression2.Lip_Stretcher_L,
+        LipStretcherR = OVRPlugin.FaceExpression2.Lip_Stretcher_R,
+        LipSuckLB = OVRPlugin.FaceExpression2.Lip_Suck_LB,
+        LipSuckLT = OVRPlugin.FaceExpression2.Lip_Suck_LT,
+        LipSuckRB = OVRPlugin.FaceExpression2.Lip_Suck_RB,
+        LipSuckRT = OVRPlugin.FaceExpression2.Lip_Suck_RT,
+        LipTightenerL = OVRPlugin.FaceExpression2.Lip_Tightener_L,
+        LipTightenerR = OVRPlugin.FaceExpression2.Lip_Tightener_R,
+        LipsToward = OVRPlugin.FaceExpression2.Lips_Toward,
+        LowerLipDepressorL = OVRPlugin.FaceExpression2.Lower_Lip_Depressor_L,
+        LowerLipDepressorR = OVRPlugin.FaceExpression2.Lower_Lip_Depressor_R,
+        MouthLeft = OVRPlugin.FaceExpression2.Mouth_Left,
+        MouthRight = OVRPlugin.FaceExpression2.Mouth_Right,
+        NoseWrinklerL = OVRPlugin.FaceExpression2.Nose_Wrinkler_L,
+        NoseWrinklerR = OVRPlugin.FaceExpression2.Nose_Wrinkler_R,
+        OuterBrowRaiserL = OVRPlugin.FaceExpression2.Outer_Brow_Raiser_L,
+        OuterBrowRaiserR = OVRPlugin.FaceExpression2.Outer_Brow_Raiser_R,
+        UpperLidRaiserL = OVRPlugin.FaceExpression2.Upper_Lid_Raiser_L,
+        UpperLidRaiserR = OVRPlugin.FaceExpression2.Upper_Lid_Raiser_R,
+        UpperLipRaiserL = OVRPlugin.FaceExpression2.Upper_Lip_Raiser_L,
+        UpperLipRaiserR = OVRPlugin.FaceExpression2.Upper_Lip_Raiser_R,
+        TongueTipInterdental = OVRPlugin.FaceExpression2.Tongue_Tip_Interdental,
+        TongueTipAlveolar = OVRPlugin.FaceExpression2.Tongue_Tip_Alveolar,
+        TongueFrontDorsalPalate = OVRPlugin.FaceExpression2.Tongue_Front_Dorsal_Palate,
+        TongueMidDorsalPalate = OVRPlugin.FaceExpression2.Tongue_Mid_Dorsal_Palate,
+        TongueBackDorsalVelar = OVRPlugin.FaceExpression2.Tongue_Back_Dorsal_Velar,
+        TongueOut = OVRPlugin.FaceExpression2.Tongue_Out,
+        TongueRetreat = OVRPlugin.FaceExpression2.Tongue_Retreat,
         [InspectorName(null)]
-        Max = OVRPlugin.FaceExpression.Max
+        Max = OVRPlugin.FaceExpression2.Max,
     }
 
-    #region Face expressions enumerator
+#region Face expressions enumerator
 
     public FaceExpressionsEnumerator GetEnumerator() =>
         new FaceExpressionsEnumerator(_currentFaceState.ExpressionWeights);
@@ -421,5 +468,6 @@ public class OVRFaceExpressions : MonoBehaviour, IReadOnlyCollection<float>, OVR
         }
     }
 
-    #endregion
+#endregion
+
 }

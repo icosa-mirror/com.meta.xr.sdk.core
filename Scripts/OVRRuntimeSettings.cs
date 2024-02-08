@@ -31,7 +31,7 @@ public class OVRRuntimeSettings : ScriptableObject
 {
     private static OVRRuntimeSettings _instance;
 
-    internal static OVRRuntimeSettings Instance
+    public static OVRRuntimeSettings Instance
     {
         get
         {
@@ -44,18 +44,27 @@ public class OVRRuntimeSettings : ScriptableObject
         }
     }
 
-    private void OnEnable()
+    public OVRManager.ColorSpace colorSpace = OVRManager.ColorSpace.P3;
+
+    [SerializeField] private bool requestsVisualFaceTracking = true;
+    public bool RequestsVisualFaceTracking
     {
-        _instance = this;
+        get => requestsVisualFaceTracking;
+        set => requestsVisualFaceTracking = value;
     }
 
-    public OVRManager.ColorSpace colorSpace = OVRManager.ColorSpace.P3;
+    [SerializeField] private bool requestsAudioFaceTracking = true;
+    public bool RequestsAudioFaceTracking
+    {
+        get => requestsAudioFaceTracking;
+        set => requestsAudioFaceTracking = value;
+    }
 
     [SerializeField] private bool hasSentConsentEvent;
     [SerializeField] private bool hasSetTelemetryEnabled;
     [SerializeField] private bool telemetryEnabled;
 
-    internal bool HasSetTelemetryEnabled => hasSetTelemetryEnabled;
+    public bool HasSetTelemetryEnabled => hasSetTelemetryEnabled;
 
     /// <summary>
     /// Specify if PRE (Performance, Reliability and Efficiency) telemetry can be collected.
@@ -74,13 +83,45 @@ public class OVRRuntimeSettings : ScriptableObject
         }
     }
 
+    [SerializeField] private string telemetryProjectGuid;
+    internal string TelemetryProjectGuid
+    {
+        get
+        {
+            if (string.IsNullOrEmpty(telemetryProjectGuid))
+            {
+                telemetryProjectGuid = Guid.NewGuid().ToString();
+#if UNITY_EDITOR
+                CommitRuntimeSettings(this);
+#endif
+            }
+            return telemetryProjectGuid;
+        }
+    }
 
     internal Action<bool> OnTelemetrySet;
+
+    [SerializeField] private OVRPlugin.BodyTrackingFidelity2 bodyTrackingFidelity = OVRPlugin.BodyTrackingFidelity2.Low;
+
+    public OVRPlugin.BodyTrackingFidelity2 BodyTrackingFidelity
+    {
+        get => bodyTrackingFidelity;
+        set => bodyTrackingFidelity = value;
+    }
+
+    [SerializeField] private OVRPlugin.BodyJointSet bodyTrackingJointSet = OVRPlugin.BodyJointSet.UpperBody;
+
+    public OVRPlugin.BodyJointSet BodyTrackingJointSet
+    {
+        get => bodyTrackingJointSet;
+        set => bodyTrackingJointSet = value;
+    }
 
 #if UNITY_EDITOR
     internal void SetTelemetryEnabled(bool enabled, OVRTelemetryConstants.OVRManager.ConsentOrigins origin)
     {
         telemetryEnabled = enabled;
+        OVRPlugin.Qpl.SetConsent(enabled ? OVRPlugin.Bool.True : OVRPlugin.Bool.False);
         hasSetTelemetryEnabled = true;
         SendConsentEvent(origin);
         CommitRuntimeSettings(this);
@@ -100,6 +141,7 @@ public class OVRRuntimeSettings : ScriptableObject
         }
 
 
+
         // Send Consent Event
         new OVRTelemetryMarker(
                 OVRTelemetry.ActiveClient,
@@ -112,7 +154,7 @@ public class OVRRuntimeSettings : ScriptableObject
         CommitRuntimeSettings(this);
     }
 
-    private static string GetOculusRuntimeSettingsAssetPath()
+    public static string GetOculusRuntimeSettingsAssetPath()
     {
         string resourcesPath = Path.Combine(Application.dataPath, "Resources");
         if (!Directory.Exists(resourcesPath))
@@ -140,7 +182,7 @@ public class OVRRuntimeSettings : ScriptableObject
         EditorUtility.SetDirty(runtimeSettings);
     }
 
-    internal void AddToPreloadedAssets()
+    public void AddToPreloadedAssets()
     {
         var preloadedAssets = PlayerSettings.GetPreloadedAssets().ToList();
 
@@ -151,6 +193,9 @@ public class OVRRuntimeSettings : ScriptableObject
         }
     }
 #endif
+
+
+
 
     public static OVRRuntimeSettings GetRuntimeSettings()
     {
@@ -183,6 +228,8 @@ public class OVRRuntimeSettings : ScriptableObject
             settings = ScriptableObject.CreateInstance<OVRRuntimeSettings>();
         }
 #endif
+
+
         return settings;
     }
 }
