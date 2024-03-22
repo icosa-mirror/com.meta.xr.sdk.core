@@ -41,12 +41,12 @@ public class OVRSceneChangeListener
 
     private static void OnEditorReady()
     {
-        if (OVRRuntimeSettings.Instance.TelemetryEnabled)
+        if (OVRTelemetryConsent.TelemetryEnabled)
         {
             RegisterCallback();
         }
 
-        OVRRuntimeSettings.Instance.OnTelemetrySet += OnTelemetrySet;
+        OVRTelemetryConsent.OnTelemetrySet += OnTelemetrySet;
     }
 
     private static void OnTelemetrySet(bool enabled)

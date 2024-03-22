@@ -22,13 +22,15 @@ using UnityEngine;
 using System.IO;
 using System;
 
+
 #if UNITY_EDITOR
 using UnityEditor;
 using System.Linq;
 #endif
 
-public class OVRRuntimeSettings : ScriptableObject
+public class OVRRuntimeSettings : OVRRuntimeAssetsBase
 {
+    private const string _assetName = "OculusRuntimeSettings";
     private static OVRRuntimeSettings _instance;
 
     public static OVRRuntimeSettings Instance
@@ -59,6 +61,7 @@ public class OVRRuntimeSettings : ScriptableObject
         get => requestsAudioFaceTracking;
         set => requestsAudioFaceTracking = value;
     }
+
 
     [SerializeField] private bool hasSentConsentEvent;
     [SerializeField] private bool hasSetTelemetryEnabled;
@@ -99,8 +102,6 @@ public class OVRRuntimeSettings : ScriptableObject
         }
     }
 
-    internal Action<bool> OnTelemetrySet;
-
     [SerializeField] private OVRPlugin.BodyTrackingFidelity2 bodyTrackingFidelity = OVRPlugin.BodyTrackingFidelity2.Low;
 
     public OVRPlugin.BodyTrackingFidelity2 BodyTrackingFidelity
@@ -118,56 +119,9 @@ public class OVRRuntimeSettings : ScriptableObject
     }
 
 #if UNITY_EDITOR
-    internal void SetTelemetryEnabled(bool enabled, OVRTelemetryConstants.OVRManager.ConsentOrigins origin)
-    {
-        telemetryEnabled = enabled;
-        OVRPlugin.Qpl.SetConsent(enabled ? OVRPlugin.Bool.True : OVRPlugin.Bool.False);
-        hasSetTelemetryEnabled = true;
-        SendConsentEvent(origin);
-        CommitRuntimeSettings(this);
-        OnTelemetrySet?.Invoke(enabled);
-    }
-
-    internal void SendConsentEvent(OVRTelemetryConstants.OVRManager.ConsentOrigins origin)
-    {
-        if (hasSentConsentEvent && origin != OVRTelemetryConstants.OVRManager.ConsentOrigins.Settings)
-        {
-            return;
-        }
-
-        if (!hasSetTelemetryEnabled)
-        {
-            return;
-        }
-
-
-
-        // Send Consent Event
-        new OVRTelemetryMarker(
-                OVRTelemetry.ActiveClient,
-                OVRTelemetryConstants.OVRManager.MarkerId.Consent)
-            .AddAnnotation(OVRTelemetryConstants.OVRManager.AnnotationTypes.Origin, origin.ToString())
-            .SetResult(telemetryEnabled ? OVRPlugin.Qpl.ResultType.Success : OVRPlugin.Qpl.ResultType.Fail)
-            .Send();
-
-        hasSentConsentEvent = true;
-        CommitRuntimeSettings(this);
-    }
-
     public static string GetOculusRuntimeSettingsAssetPath()
     {
-        string resourcesPath = Path.Combine(Application.dataPath, "Resources");
-        if (!Directory.Exists(resourcesPath))
-        {
-            Directory.CreateDirectory(resourcesPath);
-        }
-
-        string settingsAssetPath = Path.GetFullPath(Path.Combine(resourcesPath, "OculusRuntimeSettings.asset"));
-        Uri configUri = new Uri(settingsAssetPath);
-        Uri projectUri = new Uri(Application.dataPath);
-        Uri relativeUri = projectUri.MakeRelativeUri(configUri);
-
-        return relativeUri.ToString();
+        return GetAssetPath(_assetName);
     }
 
     public static void CommitRuntimeSettings(OVRRuntimeSettings runtimeSettings)
@@ -181,55 +135,18 @@ public class OVRRuntimeSettings : ScriptableObject
 
         EditorUtility.SetDirty(runtimeSettings);
     }
-
-    public void AddToPreloadedAssets()
-    {
-        var preloadedAssets = PlayerSettings.GetPreloadedAssets().ToList();
-
-        if (!preloadedAssets.Contains(this))
-        {
-            preloadedAssets.Add(this);
-            PlayerSettings.SetPreloadedAssets(preloadedAssets.ToArray());
-        }
-    }
 #endif
-
-
-
 
     public static OVRRuntimeSettings GetRuntimeSettings()
     {
-        OVRRuntimeSettings settings = null;
-#if UNITY_EDITOR
-        string oculusRuntimeSettingsAssetPath = GetOculusRuntimeSettingsAssetPath();
-        try
-        {
-            settings =
-                AssetDatabase.LoadAssetAtPath(oculusRuntimeSettingsAssetPath, typeof(OVRRuntimeSettings)) as
-                    OVRRuntimeSettings;
-        }
-        catch (System.Exception e)
-        {
-            Debug.LogWarningFormat("Unable to load RuntimeSettings from {0}, error {1}", oculusRuntimeSettingsAssetPath,
-                e.Message);
-        }
-
-        if (settings == null && !BuildPipeline.isBuildingPlayer)
-        {
-            settings = ScriptableObject.CreateInstance<OVRRuntimeSettings>();
-
-            AssetDatabase.CreateAsset(settings, oculusRuntimeSettingsAssetPath);
-        }
-#else
-        settings = Resources.Load<OVRRuntimeSettings>("OculusRuntimeSettings");
+        LoadAsset(out OVRRuntimeSettings settings, _assetName);
+#if !UNITY_EDITOR
         if (settings == null)
         {
             Debug.LogWarning("Failed to load runtime settings. Using default runtime settings instead.");
             settings = ScriptableObject.CreateInstance<OVRRuntimeSettings>();
         }
 #endif
-
-
         return settings;
     }
 }

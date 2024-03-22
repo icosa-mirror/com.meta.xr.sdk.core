@@ -369,6 +369,8 @@ public partial class OVRManager : MonoBehaviour, OVRMixedRealityCaptureConfigura
 
 
 
+
+
     /// <summary>
     /// Occurs when Health & Safety Warning is dismissed.
     /// </summary>
@@ -381,6 +383,23 @@ public partial class OVRManager : MonoBehaviour, OVRMixedRealityCaptureConfigura
     private static bool _isHmdPresentCached = false;
     private static bool _isHmdPresent = false;
     private static bool _wasHmdPresent = false;
+
+    protected virtual void OnValidate()
+    {
+        // Block dual enablement of body API and simultaneous hands and controllers
+        if (requestBodyTrackingPermissionOnStartup && SimultaneousHandsAndControllersEnabled)
+        {
+            Debug.LogWarning("Currently, Body API and simultaneous hands and controllers cannot be enabled at the same time", this);
+            requestBodyTrackingPermissionOnStartup = false;
+            SimultaneousHandsAndControllersEnabled = false;
+        }
+
+        if (launchSimultaneousHandsControllersOnStartup && !SimultaneousHandsAndControllersEnabled)
+        {
+            Debug.LogWarning("Enabling simultaneous hands and controllers because launch on startup was selected for the feature", this);
+            SimultaneousHandsAndControllersEnabled = true;
+        }
+    }
 
     /// <summary>
     /// If true, a head-mounted display is connected and present.
@@ -1149,10 +1168,10 @@ public partial class OVRManager : MonoBehaviour, OVRMixedRealityCaptureConfigura
 #endif
 
     /// <summary>
-    /// Specify if concurrent hands and controllers should be enabled.
+    /// Specify if simultaneous hands and controllers should be enabled.
     /// </summary>
-    [HideInInspector, Tooltip("Specify if Concurrent Hands and Controllers should be enabled. ")]
-    public bool launchMultimodalHandsControllersOnStartup = false;
+    [HideInInspector, Tooltip("Specify if simultaneous hands and controllers should be enabled. ")]
+    public bool launchSimultaneousHandsControllersOnStartup = false;
 
     /// <summary>
     /// Specify if Insight Passthrough should be enabled.
@@ -1161,6 +1180,8 @@ public partial class OVRManager : MonoBehaviour, OVRMixedRealityCaptureConfigura
     [HideInInspector, Tooltip("Specify if Insight Passthrough should be enabled. " +
                               "Passthrough layers can only be used if passthrough is enabled.")]
     public bool isInsightPassthroughEnabled = false;
+
+
 
 
     #region Permissions
@@ -1814,10 +1835,18 @@ public partial class OVRManager : MonoBehaviour, OVRMixedRealityCaptureConfigura
     [Tooltip("Defines if hand poses can be populated by controller data.")]
     public OVRManager.ControllerDrivenHandPosesType controllerDrivenHandPosesType = OVRManager.ControllerDrivenHandPosesType.None;
 
+    [Tooltip("Allows the application to use simultaneous hands and controllers functionality. This option must be enabled at build time.")]
+    public bool SimultaneousHandsAndControllersEnabled = false;
+
+    [SerializeField]
+    [HideInInspector]
+    private bool _readOnlyWideMotionModeHandPosesEnabled = false;
+    [Tooltip("Defines if hand poses can leverage algorithms to retrieve hand poses outside of the normal tracking area.")]
+    public bool wideMotionModeHandPosesEnabled = false;
 
     public bool IsSimultaneousHandsAndControllersSupported
     {
-        get => (_readOnlyControllerDrivenHandPosesType != OVRManager.ControllerDrivenHandPosesType.None) || launchMultimodalHandsControllersOnStartup;
+        get => (_readOnlyControllerDrivenHandPosesType != OVRManager.ControllerDrivenHandPosesType.None) || launchSimultaneousHandsControllersOnStartup;
     }
 
     /// <summary>
@@ -1968,7 +1997,7 @@ public partial class OVRManager : MonoBehaviour, OVRMixedRealityCaptureConfigura
     public static string UnityAlphaOrBetaVersionWarningMessage =
         "WARNING: It's not recommended to use Unity alpha/beta release in Oculus development. Use a stable release if you encounter any issue.";
 
-#region Unity Messages
+    #region Unity Messages
 
 #if UNITY_EDITOR
     [AOT.MonoPInvokeCallback(typeof(OVRPlugin.LogCallback2DelegateType))]
@@ -2184,7 +2213,7 @@ public partial class OVRManager : MonoBehaviour, OVRMixedRealityCaptureConfigura
         OVRPlugin.occlusionMesh = true;
 #endif
 
-        if (launchMultimodalHandsControllersOnStartup)
+        if (launchSimultaneousHandsControllersOnStartup)
         {
             // Inform the plugin that multimodal mode is enabled
             if (!OVRPlugin.SetSimultaneousHandsAndControllersEnabled(true))
@@ -2210,7 +2239,6 @@ public partial class OVRManager : MonoBehaviour, OVRMixedRealityCaptureConfigura
         {
             OVRPlugin.localDimming = _localDimming;
         }
-
 
 #if USING_XR_SDK
         if (enableDynamicResolution)
@@ -2717,6 +2745,12 @@ public partial class OVRManager : MonoBehaviour, OVRMixedRealityCaptureConfigura
             }
         }
 
+        if (_readOnlyWideMotionModeHandPosesEnabled != wideMotionModeHandPosesEnabled)
+        {
+            _readOnlyWideMotionModeHandPosesEnabled = wideMotionModeHandPosesEnabled;
+            OVRPlugin.SetWideMotionModeHandPoses(_readOnlyWideMotionModeHandPosesEnabled);
+        }
+
 
         OVRInput.Update();
 
@@ -2754,8 +2788,8 @@ public partial class OVRManager : MonoBehaviour, OVRMixedRealityCaptureConfigura
                     OVRTask.SetResult(data.RequestId,
                         data.Result >= 0 ? new OVRAnchor(data.Space, data.Uuid) : OVRAnchor.Null);
                     SpatialAnchorCreateComplete?.Invoke(data.RequestId, data.Result >= 0, data.Space, data.Uuid);
+                    break;
                 }
-                break;
                 case OVRPlugin.EventType.SpaceSetComponentStatusComplete:
                 {
                     var data = OVRDeserialize
@@ -2765,8 +2799,9 @@ public partial class OVRManager : MonoBehaviour, OVRMixedRealityCaptureConfigura
                         data.ComponentType, data.Enabled != 0);
 
                     OVRTask.GetExisting<bool>(data.RequestId).SetResult(data.Result >= 0);
+                    OVRAnchor.OnSpaceSetComponentStatusComplete(data);
+                    break;
                 }
-                break;
                 case OVRPlugin.EventType.SpaceQueryResults:
                     if (SpaceQueryResults != null)
                     {
@@ -2783,8 +2818,8 @@ public partial class OVRManager : MonoBehaviour, OVRMixedRealityCaptureConfigura
                         eventDataBuffer.EventData);
                     SpaceQueryComplete?.Invoke(data.RequestId, data.Result >= 0);
                     OVRAnchor.OnSpaceQueryCompleteData(data);
+                    break;
                 }
-                break;
                 case OVRPlugin.EventType.SpaceSaveComplete:
                     if (SpaceSaveComplete != null)
                     {
@@ -3000,7 +3035,7 @@ public partial class OVRManager : MonoBehaviour, OVRMixedRealityCaptureConfigura
         Debug.Log("[OVRManager] OnApplicationQuit");
     }
 
-#endregion // Unity Messages
+    #endregion // Unity Messages
 
     /// <summary>
     /// Leaves the application/game and returns to the launcher/dashboard
@@ -3180,7 +3215,7 @@ public partial class OVRManager : MonoBehaviour, OVRMixedRealityCaptureConfigura
             _passthroughInitializationState.Value = PassthroughInitializationState.Failed;
 #if UNITY_EDITOR_WIN
             // Looks like the developer is trying to run PT over Link. One possible failure cause is missing PTOL setup.
-            string ptolDocLink = "https://developer.oculus.com/documentation/unity/unity-passthrough-over-link/";
+            string ptolDocLink = "https://developer.oculus.com/documentation/unity/unity-passthrough-gs/#prerequisites-1";
             string ptolDocLinkTag = $"<a href=\"{ptolDocLink}\">{ptolDocLink}</a>";
             Debug.LogError($"Failed to initialize Insight Passthrough. Please ensure that all prerequisites for " +
                            $"running Passthrough over Link are met: {ptolDocLinkTag}. " +
@@ -3270,8 +3305,9 @@ public partial class OVRManager : MonoBehaviour, OVRMixedRealityCaptureConfigura
 
     private static PassthroughCapabilities _passthroughCapabilities;
 
+
     /// <summary>
-    /// Checks whether concurrent hands and controllers is currently supported by the system.
+    /// Checks whether simultaneous hands and controllers is currently supported by the system.
     /// This method should only be called when the XR Plug-in is initialized.
     /// </summary>
     public static bool IsMultimodalHandsControllersSupported()
@@ -3377,7 +3413,7 @@ public partial class OVRManager : MonoBehaviour, OVRMixedRealityCaptureConfigura
         return (preferences.Flags & OVRPlugin.PassthroughPreferenceFlags.DefaultToActive) ==
             OVRPlugin.PassthroughPreferenceFlags.DefaultToActive;
     }
-#region Utils
+    #region Utils
 
     private class Observable<T>
     {
@@ -3415,5 +3451,5 @@ public partial class OVRManager : MonoBehaviour, OVRMixedRealityCaptureConfigura
         }
     }
 
-#endregion
+    #endregion
 }

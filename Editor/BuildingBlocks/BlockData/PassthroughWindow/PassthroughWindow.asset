@@ -31,6 +31,5 @@ MonoBehaviour:
     to use that GameObject as a Passthrough window.
 
 
-    If the selected GameObject
-    doesn''t have any MeshRenderer component or if the block imported in an empty
-    space, a Quad will be spawned to show Passthrough feed.'
+    If the block imported in
+    an empty space, a Quad will be spawned to show Passthrough feed.'

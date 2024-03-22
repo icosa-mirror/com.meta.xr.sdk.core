@@ -98,8 +98,7 @@ LightmapSettings:
     m_TrainingDataDestination: TrainingData
     m_LightProbeSampleCountMultiplier: 4
   m_LightingDataAsset: {fileID: 0}
-  m_LightingSettings: {fileID: 4890085278179872738, guid: 0578fab33c84ede468693dd2cc40ff60,
-    type: 2}
+  m_LightingSettings: {fileID: 0}
 --- !u!196 &4
 NavMeshSettings:
   serializedVersion: 2
@@ -202,8 +201,8 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: c012117ea5bda8c44bb9ac2ed6003b28, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
+  m_Name:
+  m_EditorClassIdentifier:
 --- !u!4 &96531353
 Transform:
   m_ObjectHideFlags: 0
@@ -331,8 +330,8 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 5f7201a12d95ffc409449d95f23cf332, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
+  m_Name:
+  m_EditorClassIdentifier:
   m_Material: {fileID: 0}
   m_Color: {r: 0.19607843, g: 0.19607843, b: 0.19607843, a: 1}
   m_RaycastTarget: 1
@@ -354,7 +353,7 @@ MonoBehaviour:
     m_HorizontalOverflow: 0
     m_VerticalOverflow: 0
     m_LineSpacing: 1
-  m_Text: 
+  m_Text:
 --- !u!222 &265337590
 CanvasRenderer:
   m_ObjectHideFlags: 0
@@ -373,8 +372,8 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 12a1e4a79af8fe849b7a2769ff0d3886, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
+  m_Name:
+  m_EditorClassIdentifier:
   uiText: {fileID: 265337589}
 --- !u!4 &312666934 stripped
 Transform:
@@ -461,8 +460,8 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: df8e1d778abf442e4bec449c360e9e1c, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
+  m_Name:
+  m_EditorClassIdentifier:
   fadeTime: 2
   fadeColor: {r: 0.01, g: 0.01, b: 0.01, a: 1}
   fadeOnStart: 1
@@ -600,7 +599,7 @@ PrefabInstance:
     - target: {fileID: 114428879332287356, guid: 835e735ca71bf78459fb2cababd74112,
         type: 3}
       propertyPath: _pointerPoseGO
-      value: 
+      value:
       objectReference: {fileID: 0}
     m_RemovedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 835e735ca71bf78459fb2cababd74112, type: 3}
@@ -726,8 +725,8 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 4f231c4fb786f3946a6b90b886c48677, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
+  m_Name:
+  m_EditorClassIdentifier:
   m_SendPointerHoverToParent: 1
   m_HorizontalAxis: Horizontal
   m_VerticalAxis: Vertical
@@ -746,8 +745,8 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 76c392e42b5098c458856cdf6ecaaaa1, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
+  m_Name:
+  m_EditorClassIdentifier:
   m_FirstSelected: {fileID: 0}
   m_sendNavigationEvents: 1
   m_DragThreshold: 5
@@ -808,122 +807,122 @@ PrefabInstance:
     - target: {fileID: 114674612155881938, guid: c6a74181d4000004887343fb87b3c53a,
         type: 3}
       propertyPath: _customBones_V2.Array.data[0]
-      value: 
+      value:
       objectReference: {fileID: 1008474998}
     - target: {fileID: 114674612155881938, guid: c6a74181d4000004887343fb87b3c53a,
         type: 3}
       propertyPath: _customBones_V2.Array.data[1]
-      value: 
+      value:
       objectReference: {fileID: 1008474999}
     - target: {fileID: 114674612155881938, guid: c6a74181d4000004887343fb87b3c53a,
         type: 3}
       propertyPath: _customBones_V2.Array.data[2]
-      value: 
+      value:
       objectReference: {fileID: 1008474997}
     - target: {fileID: 114674612155881938, guid: c6a74181d4000004887343fb87b3c53a,
         type: 3}
       propertyPath: _customBones_V2.Array.data[3]
-      value: 
+      value:
       objectReference: {fileID: 1008474996}
     - target: {fileID: 114674612155881938, guid: c6a74181d4000004887343fb87b3c53a,
         type: 3}
       propertyPath: _customBones_V2.Array.data[4]
-      value: 
+      value:
       objectReference: {fileID: 1008474995}
     - target: {fileID: 114674612155881938, guid: c6a74181d4000004887343fb87b3c53a,
         type: 3}
       propertyPath: _customBones_V2.Array.data[5]
-      value: 
+      value:
       objectReference: {fileID: 1008474993}
     - target: {fileID: 114674612155881938, guid: c6a74181d4000004887343fb87b3c53a,
         type: 3}
       propertyPath: _customBones_V2.Array.data[6]
-      value: 
+      value:
       objectReference: {fileID: 1008474992}
     - target: {fileID: 114674612155881938, guid: c6a74181d4000004887343fb87b3c53a,
         type: 3}
       propertyPath: _customBones_V2.Array.data[7]
-      value: 
+      value:
       objectReference: {fileID: 1008474991}
     - target: {fileID: 114674612155881938, guid: c6a74181d4000004887343fb87b3c53a,
         type: 3}
       propertyPath: _customBones_V2.Array.data[8]
-      value: 
+      value:
       objectReference: {fileID: 1008474989}
     - target: {fileID: 114674612155881938, guid: c6a74181d4000004887343fb87b3c53a,
         type: 3}
       propertyPath: _customBones_V2.Array.data[9]
-      value: 
+      value:
       objectReference: {fileID: 1008474988}
     - target: {fileID: 114674612155881938, guid: c6a74181d4000004887343fb87b3c53a,
         type: 3}
       propertyPath: _customBones_V2.Array.data[10]
-      value: 
+      value:
       objectReference: {fileID: 1008474987}
     - target: {fileID: 114674612155881938, guid: c6a74181d4000004887343fb87b3c53a,
         type: 3}
       propertyPath: _customBones_V2.Array.data[11]
-      value: 
+      value:
       objectReference: {fileID: 1008474985}
     - target: {fileID: 114674612155881938, guid: c6a74181d4000004887343fb87b3c53a,
         type: 3}
       propertyPath: _customBones_V2.Array.data[12]
-      value: 
+      value:
       objectReference: {fileID: 1008474984}
     - target: {fileID: 114674612155881938, guid: c6a74181d4000004887343fb87b3c53a,
         type: 3}
       propertyPath: _customBones_V2.Array.data[13]
-      value: 
+      value:
       objectReference: {fileID: 1008474983}
     - target: {fileID: 114674612155881938, guid: c6a74181d4000004887343fb87b3c53a,
         type: 3}
       propertyPath: _customBones_V2.Array.data[14]
-      value: 
+      value:
       objectReference: {fileID: 1008474981}
     - target: {fileID: 114674612155881938, guid: c6a74181d4000004887343fb87b3c53a,
         type: 3}
       propertyPath: _customBones_V2.Array.data[15]
-      value: 
+      value:
       objectReference: {fileID: 1008474980}
     - target: {fileID: 114674612155881938, guid: c6a74181d4000004887343fb87b3c53a,
         type: 3}
       propertyPath: _customBones_V2.Array.data[16]
-      value: 
+      value:
       objectReference: {fileID: 1008474979}
     - target: {fileID: 114674612155881938, guid: c6a74181d4000004887343fb87b3c53a,
         type: 3}
       propertyPath: _customBones_V2.Array.data[17]
-      value: 
+      value:
       objectReference: {fileID: 1008474978}
     - target: {fileID: 114674612155881938, guid: c6a74181d4000004887343fb87b3c53a,
         type: 3}
       propertyPath: _customBones_V2.Array.data[18]
-      value: 
+      value:
       objectReference: {fileID: 1008474976}
     - target: {fileID: 114674612155881938, guid: c6a74181d4000004887343fb87b3c53a,
         type: 3}
       propertyPath: _customBones_V2.Array.data[19]
-      value: 
+      value:
       objectReference: {fileID: 1008474994}
     - target: {fileID: 114674612155881938, guid: c6a74181d4000004887343fb87b3c53a,
         type: 3}
       propertyPath: _customBones_V2.Array.data[20]
-      value: 
+      value:
       objectReference: {fileID: 1008474990}
     - target: {fileID: 114674612155881938, guid: c6a74181d4000004887343fb87b3c53a,
         type: 3}
       propertyPath: _customBones_V2.Array.data[21]
-      value: 
+      value:
       objectReference: {fileID: 1008474986}
     - target: {fileID: 114674612155881938, guid: c6a74181d4000004887343fb87b3c53a,
         type: 3}
       propertyPath: _customBones_V2.Array.data[22]
-      value: 
+      value:
       objectReference: {fileID: 1008474982}
     - target: {fileID: 114674612155881938, guid: c6a74181d4000004887343fb87b3c53a,
         type: 3}
       propertyPath: _customBones_V2.Array.data[23]
-      value: 
+      value:
       objectReference: {fileID: 1008474977}
     m_RemovedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: c6a74181d4000004887343fb87b3c53a, type: 3}
@@ -1119,8 +1118,8 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: fe87c0e1cc204ed48ad3b37840f39efc, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
+  m_Name:
+  m_EditorClassIdentifier:
   m_Material: {fileID: 0}
   m_Color: {r: 1, g: 1, b: 1, a: 0.909}
   m_RaycastTarget: 1
@@ -1288,122 +1287,122 @@ PrefabInstance:
     - target: {fileID: 114460394679914766, guid: e201a24a09e942042b93390d0444d728,
         type: 3}
       propertyPath: _customBones_V2.Array.data[0]
-      value: 
+      value:
       objectReference: {fileID: 1411483292}
     - target: {fileID: 114460394679914766, guid: e201a24a09e942042b93390d0444d728,
         type: 3}
       propertyPath: _customBones_V2.Array.data[1]
-      value: 
+      value:
       objectReference: {fileID: 1411483293}
     - target: {fileID: 114460394679914766, guid: e201a24a09e942042b93390d0444d728,
         type: 3}
       propertyPath: _customBones_V2.Array.data[2]
-      value: 
+      value:
       objectReference: {fileID: 1411483291}
     - target: {fileID: 114460394679914766, guid: e201a24a09e942042b93390d0444d728,
         type: 3}
       propertyPath: _customBones_V2.Array.data[3]
-      value: 
+      value:
       objectReference: {fileID: 1411483290}
     - target: {fileID: 114460394679914766, guid: e201a24a09e942042b93390d0444d728,
         type: 3}
       propertyPath: _customBones_V2.Array.data[4]
-      value: 
+      value:
       objectReference: {fileID: 1411483289}
     - target: {fileID: 114460394679914766, guid: e201a24a09e942042b93390d0444d728,
         type: 3}
       propertyPath: _customBones_V2.Array.data[5]
-      value: 
+      value:
       objectReference: {fileID: 1411483287}
     - target: {fileID: 114460394679914766, guid: e201a24a09e942042b93390d0444d728,
         type: 3}
       propertyPath: _customBones_V2.Array.data[6]
-      value: 
+      value:
       objectReference: {fileID: 1411483286}
     - target: {fileID: 114460394679914766, guid: e201a24a09e942042b93390d0444d728,
         type: 3}
       propertyPath: _customBones_V2.Array.data[7]
-      value: 
+      value:
       objectReference: {fileID: 1411483285}
     - target: {fileID: 114460394679914766, guid: e201a24a09e942042b93390d0444d728,
         type: 3}
       propertyPath: _customBones_V2.Array.data[8]
-      value: 
+      value:
       objectReference: {fileID: 1411483283}
     - target: {fileID: 114460394679914766, guid: e201a24a09e942042b93390d0444d728,
         type: 3}
       propertyPath: _customBones_V2.Array.data[9]
-      value: 
+      value:
       objectReference: {fileID: 1411483282}
     - target: {fileID: 114460394679914766, guid: e201a24a09e942042b93390d0444d728,
         type: 3}
       propertyPath: _customBones_V2.Array.data[10]
-      value: 
+      value:
       objectReference: {fileID: 1411483281}
     - target: {fileID: 114460394679914766, guid: e201a24a09e942042b93390d0444d728,
         type: 3}
       propertyPath: _customBones_V2.Array.data[11]
-      value: 
+      value:
       objectReference: {fileID: 1411483279}
     - target: {fileID: 114460394679914766, guid: e201a24a09e942042b93390d0444d728,
         type: 3}
       propertyPath: _customBones_V2.Array.data[12]
-      value: 
+      value:
       objectReference: {fileID: 1411483278}
     - target: {fileID: 114460394679914766, guid: e201a24a09e942042b93390d0444d728,
         type: 3}
       propertyPath: _customBones_V2.Array.data[13]
-      value: 
+      value:
       objectReference: {fileID: 1411483277}
     - target: {fileID: 114460394679914766, guid: e201a24a09e942042b93390d0444d728,
         type: 3}
       propertyPath: _customBones_V2.Array.data[14]
-      value: 
+      value:
       objectReference: {fileID: 1411483275}
     - target: {fileID: 114460394679914766, guid: e201a24a09e942042b93390d0444d728,
         type: 3}
       propertyPath: _customBones_V2.Array.data[15]
-      value: 
+      value:
       objectReference: {fileID: 1411483274}
     - target: {fileID: 114460394679914766, guid: e201a24a09e942042b93390d0444d728,
         type: 3}
       propertyPath: _customBones_V2.Array.data[16]
-      value: 
+      value:
       objectReference: {fileID: 1411483273}
     - target: {fileID: 114460394679914766, guid: e201a24a09e942042b93390d0444d728,
         type: 3}
       propertyPath: _customBones_V2.Array.data[17]
-      value: 
+      value:
       objectReference: {fileID: 1411483272}
     - target: {fileID: 114460394679914766, guid: e201a24a09e942042b93390d0444d728,
         type: 3}
       propertyPath: _customBones_V2.Array.data[18]
-      value: 
+      value:
       objectReference: {fileID: 1411483270}
     - target: {fileID: 114460394679914766, guid: e201a24a09e942042b93390d0444d728,
         type: 3}
       propertyPath: _customBones_V2.Array.data[19]
-      value: 
+      value:
       objectReference: {fileID: 1411483288}
     - target: {fileID: 114460394679914766, guid: e201a24a09e942042b93390d0444d728,
         type: 3}
       propertyPath: _customBones_V2.Array.data[20]
-      value: 
+      value:
       objectReference: {fileID: 1411483284}
     - target: {fileID: 114460394679914766, guid: e201a24a09e942042b93390d0444d728,
         type: 3}
       propertyPath: _customBones_V2.Array.data[21]
-      value: 
+      value:
       objectReference: {fileID: 1411483280}
     - target: {fileID: 114460394679914766, guid: e201a24a09e942042b93390d0444d728,
         type: 3}
       propertyPath: _customBones_V2.Array.data[22]
-      value: 
+      value:
       objectReference: {fileID: 1411483276}
     - target: {fileID: 114460394679914766, guid: e201a24a09e942042b93390d0444d728,
         type: 3}
       propertyPath: _customBones_V2.Array.data[23]
-      value: 
+      value:
       objectReference: {fileID: 1411483271}
     m_RemovedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: e201a24a09e942042b93390d0444d728, type: 3}
@@ -1976,8 +1975,8 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 7e933e81d3c20c74ea6fdc708a67e3a5, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
+  m_Name:
+  m_EditorClassIdentifier:
   useRecommendedMSAALevel: 0
   _monoscopic: 0
   _sharpenType: 0
@@ -2021,7 +2020,7 @@ MonoBehaviour:
   virtualGreenScreenApplyDepthCulling: 0
   virtualGreenScreenDepthTolerance: 0.2
   mrcActivationMode: 0
-  launchMultimodalHandsControllersOnStartup: 0
+  launchSimultaneousHandsControllersOnStartup: 0
   isInsightPassthroughEnabled: 0
   isImmersiveDebuggerEnabled: 0
   expandFeatureFidelitySystemPropertySheet: 0
@@ -2077,8 +2076,8 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: df9f338034892c44ebb62d97894772f1, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
+  m_Name:
+  m_EditorClassIdentifier:
   usePerEyeCameras: 0
   useFixedUpdateForTracking: 0
   disableEyeAnchorCameras: 0
@@ -2282,8 +2281,8 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: dc42784cf147c0c48a680349fa168899, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
+  m_Name:
+  m_EditorClassIdentifier:
   m_IgnoreReversedGraphics: 1
   m_BlockingObjects: 0
   m_BlockingMask:
@@ -2299,8 +2298,8 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 0cd44c1031e13a943bb63640046fad76, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
+  m_Name:
+  m_EditorClassIdentifier:
   m_UiScaleMode: 0
   m_ReferencePixelsPerUnit: 100
   m_ScaleFactor: 1

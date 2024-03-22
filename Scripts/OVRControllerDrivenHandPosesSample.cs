@@ -44,10 +44,6 @@ public class OVRControllerDrivenHandPosesSample : MonoBehaviour
     private Button buttonConforming;
     [SerializeField]
     private Button buttonNatural;
-    [SerializeField]
-    private LineRenderer leftLinePointer;
-    [SerializeField]
-    private LineRenderer rightLinePointer;
 
     public OVRCameraRig cameraRig;
 
@@ -67,69 +63,6 @@ public class OVRControllerDrivenHandPosesSample : MonoBehaviour
                 break;
 
         }
-    }
-
-    void OnDestroy()
-    {
-
-    }
-
-    void OnEnable()
-    {
-
-    }
-
-    void OnDisable()
-    {
-
-    }
-
-
-    private void Update()
-    {
-        UpdateLineRenderer();
-    }
-
-    private void UpdateLineRenderer()
-    {
-        leftLinePointer.enabled = false;
-        rightLinePointer.enabled = false;
-
-        UpdateLineRendererForHand(false);
-        UpdateLineRendererForHand(true);
-    }
-
-    private void UpdateLineRendererForHand(bool isLeft)
-    {
-        Transform inputTransform = null;
-
-        if (isLeft)
-        {
-            if (OVRInput.IsControllerConnected(OVRInput.Controller.LTouch))
-            {
-                inputTransform = cameraRig.leftControllerAnchor;
-            }
-        }
-        else
-        {
-            if (OVRInput.IsControllerConnected(OVRInput.Controller.RTouch))
-            {
-                inputTransform = cameraRig.rightControllerAnchor;
-            }
-        }
-        if (inputTransform == null)
-        {
-            return;
-        }
-
-        var inputPosition = inputTransform.position;
-
-        LineRenderer linePointer = (isLeft) ? leftLinePointer : rightLinePointer;
-        var ray = new Ray(inputPosition, inputTransform.rotation * Vector3.forward);
-
-        linePointer.enabled = true;
-        linePointer.SetPosition(0, inputTransform.position + ray.direction * 0.05f);
-        linePointer.SetPosition(1, inputPosition + ray.direction * 2.5f);
     }
 
     public void SetControllerDrivenHandPosesTypeToNone()

@@ -19,11 +19,12 @@ MonoBehaviour:
   tags:
     array:
     - name: Passthrough
-  thumbnail: {fileID: 2800000, guid: 825e77e81aa18ae4eadc354d33d84a77, type: 3}
+  thumbnail: {fileID: 2800000, guid: aed137c3d795a864d81b421c25ec504e, type: 3}
   order: -7
   prefab: {fileID: 5018295258445772226, guid: d86075f5e938af942905e75439b41cb7, type: 3}
   dependencies:
   - e47682b9-c270-40b1-b16d-90b627a5ce1b
   - 40e08c51-14aa-4822-927d-5fe79943b5b4
+  packageDependencies: []
   isSingleton: 0
   usageInstructions: 

@@ -31,16 +31,44 @@ internal static class OVRProjectSetupSceneTasks
             level: OVRProjectSetup.TaskLevel.Required,
             group: Group,
             isDone: buildTargetGroup => OVRProjectSetupUtils.FindComponentInScene<OVRSceneManager>() == null ||
-                                        OVRProjectConfig.CachedProjectConfig.anchorSupport ==
-                                        OVRProjectConfig.AnchorSupport.Enabled,
+                                        OVRProjectConfig.CachedProjectConfig.sceneSupport != OVRProjectConfig.FeatureSupport.None,
             message: "When using Scene in your project it's required to enable its capability in the project config",
             fix: buildTargetGroup =>
             {
+                // we also need anchorSupport, but it's automatically enabled when sceneSupport is
                 var projectConfig = OVRProjectConfig.CachedProjectConfig;
-                projectConfig.anchorSupport = OVRProjectConfig.AnchorSupport.Enabled;
+                projectConfig.sceneSupport = OVRProjectConfig.FeatureSupport.Supported;
                 OVRProjectConfig.CommitProjectConfig(projectConfig);
             },
-            fixMessage: "Enable Anchor Support in the project config"
+            fixMessage: "Enable Scene Support in the project config"
+        );
+
+        OVRProjectSetup.AddTask(
+            level: OVRProjectSetup.TaskLevel.Optional,
+            group: Group,
+            isDone: buildTargetGroup =>
+            {
+                var usingScene = OVRProjectConfig.CachedProjectConfig.sceneSupport !=
+                    OVRProjectConfig.FeatureSupport.None;
+                if (!usingScene)
+                    return true;
+
+                var ovrManager = OVRProjectSetupUtils.FindComponentInScene<OVRManager>();
+                if (ovrManager == null)
+                    return true;
+
+                return ovrManager.requestScenePermissionOnStartup;
+            },
+            message: "When using Scene in your project, it's required to perform a runtime permission request. " +
+                "Hit Apply to have OVRManager request the permission automatically on app startup. It is " +
+                "recommended to hit Ignore and manage the runtime permission yourself.",
+            fix: buildTargetGroup =>
+            {
+                var ovrManager = OVRProjectSetupUtils.FindComponentInScene<OVRManager>();
+                if (ovrManager == null) return;
+                ovrManager.requestScenePermissionOnStartup = true;
+            },
+            fixMessage: "OVRManager will request Scene runtime permission on app startup"
         );
 
     }

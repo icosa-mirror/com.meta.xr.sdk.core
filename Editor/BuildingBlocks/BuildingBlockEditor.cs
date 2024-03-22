@@ -28,8 +28,8 @@ namespace Meta.XR.BuildingBlocks.Editor
     [CustomEditor(typeof(BuildingBlock))]
     public class BuildingBlockEditor : UnityEditor.Editor
     {
-        private BuildingBlock _block;
-        private BlockData _blockData;
+        internal BuildingBlock _block;
+        internal BlockData _blockData;
 
         private bool _foldoutInstruction = true;
 
@@ -43,6 +43,57 @@ namespace Meta.XR.BuildingBlocks.Editor
                 return;
             }
 
+            ShowThumbnail();
+            ShowBlock(_blockData, _block, false, false, true);
+            ShowTagList(_blockData.Tags, Tag.TagListType.Filters);
+            ShowBlockDataList("Dependencies", _blockData.GetAllDependencyDatas());
+            ShowBlockList("Used by", _blockData.GetUsingBlocksInScene());
+            ShowInstructions();
+
+        }
+
+        internal void ShowVersionInfo()
+        {
+            EditorGUILayout.LabelField("Version", EditorStyles.boldLabel);
+
+            var blockVersion = _block ? _block.Version : 0;
+            var currentVersionStr = $"Current version: {blockVersion}.";
+            if (_blockData.IsUpdateAvailableForBlock(_block))
+            {
+                EditorGUILayout.LabelField($"{currentVersionStr} Newest version: {_blockData.Version}.",
+                    Styles.InfoStyle);
+
+                if (GUILayout.Button($"Update to latest version ({_blockData.Version})"))
+                {
+                    if (EditorUtility.DisplayDialog("Confirmation",
+                            "Any changes done to this block will be lost. Do you want to proceed?", "Yes", "No"))
+                    {
+                        _blockData.UpdateBlockToLatestVersion(_block);
+                    }
+                }
+            }
+            else
+            {
+                EditorGUILayout.LabelField($"{currentVersionStr} Block is up to date", Styles.InfoStyle);
+            }
+        }
+
+        internal void ShowInstructions()
+        {
+            if (!string.IsNullOrEmpty(_blockData.UsageInstructions))
+            {
+                EditorGUILayout.Space();
+                _foldoutInstruction =
+                    EditorGUILayout.Foldout(_foldoutInstruction, "Block instructions", Styles.FoldoutBoldLabel);
+                if (_foldoutInstruction)
+                {
+                    EditorGUILayout.LabelField(_blockData.UsageInstructions, EditorStyles.helpBox);
+                }
+            }
+        }
+
+        internal void ShowThumbnail()
+        {
             var currentWidth = EditorGUIUtility.currentViewWidth;
             var expectedHeight = currentWidth / Styles.ThumbnailRatio;
             expectedHeight *= 0.5f;
@@ -66,27 +117,9 @@ namespace Meta.XR.BuildingBlocks.Editor
             rect.y -= 4;
             GUI.DrawTexture(rect, OVREditorUtils.MakeTexture(1, 1, Styles.Colors.AccentColor),
                 ScaleMode.ScaleAndCrop);
-
-            ShowBlock(_blockData, _block, false, false, true);
-            ShowTagList(_blockData.Tags, Tag.TagListType.Filters);
-            ShowBlockDataList("Dependencies", _blockData.GetAllDependencyDatas());
-            ShowBlockList("Used by", _blockData.GetUsingBlocksInScene());
-
-            // Instructions
-            if (!string.IsNullOrEmpty(_blockData.UsageInstructions))
-            {
-                EditorGUILayout.Space();
-                _foldoutInstruction =
-                    EditorGUILayout.Foldout(_foldoutInstruction, "Block instructions", Styles.FoldoutBoldLabel);
-                if (_foldoutInstruction)
-                {
-                    EditorGUILayout.LabelField(_blockData.UsageInstructions, EditorStyles.helpBox);
-                }
-            }
-
         }
 
-        private void ShowTagList(IEnumerable<Tag> tagArray, Tag.TagListType listType)
+        internal void ShowTagList(IEnumerable<Tag> tagArray, Tag.TagListType listType)
         {
             EditorGUILayout.BeginHorizontal();
             foreach (var tag in tagArray)
@@ -147,7 +180,7 @@ namespace Meta.XR.BuildingBlocks.Editor
             return hit;
         }
 
-        private void ShowBlockDataList(string name, List<BlockData> list)
+        internal void ShowBlockDataList(string name, List<BlockData> list)
         {
             EditorGUILayout.LabelField(name, EditorStyles.boldLabel);
 
@@ -164,7 +197,7 @@ namespace Meta.XR.BuildingBlocks.Editor
             }
         }
 
-        private void ShowBlockList(string name, List<BuildingBlock> list)
+        internal void ShowBlockList(string name, List<BuildingBlock> list)
         {
             EditorGUILayout.LabelField(name, EditorStyles.boldLabel);
 
@@ -181,7 +214,7 @@ namespace Meta.XR.BuildingBlocks.Editor
             }
         }
 
-        private void ShowBlock(BlockData data, BuildingBlock block, bool asGridItem,
+        internal void ShowBlock(BlockData data, BuildingBlock block, bool asGridItem,
             bool showAction, bool showBuildingBlock)
         {
             var previousIndent = EditorGUI.indentLevel;

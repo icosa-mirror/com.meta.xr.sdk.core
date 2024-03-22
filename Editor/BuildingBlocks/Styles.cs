@@ -207,7 +207,7 @@ namespace Meta.XR.BuildingBlocks.Editor
             fixedHeight = 18.0f,
             fixedWidth = 18.0f,
             margin = new RectOffset(2, 2, 2, 2),
-            padding = new RectOffset(1, 1, 1, 1)
+            padding = new RectOffset(2, 2, 2, 2)
         };
 
         public static readonly GUIStyle LargeButton = new GUIStyle(EditorStyles.miniButton)
@@ -234,6 +234,12 @@ namespace Meta.XR.BuildingBlocks.Editor
         };
 
         public static readonly GUIStyle LabelStyle = new GUIStyle(EditorStyles.boldLabel);
+
+        public static readonly GUIStyle LabelStyleWrapped = new GUIStyle(EditorStyles.boldLabel)
+        {
+            wordWrap = true,
+            richText = true
+        };
 
         public static readonly GUIStyle LabelHoverStyle = new GUIStyle(EditorStyles.boldLabel)
         {
@@ -363,13 +369,16 @@ namespace Meta.XR.BuildingBlocks.Editor
             OVREditorUtils.CreateContent("ovr_icon_link.png", OVRGUIContent.Source.BuildingBlocksIcons, "Select Block in current scene");
 
         public static readonly OVRGUIContent ConfigIcon =
-            OVREditorUtils.CreateContent("_Popup", OVRGUIContent.Source.BuiltIn, "Additional options");
+            OVREditorUtils.CreateContent("ovr_icon_cog.png", OVRGUIContent.Source.GenericIcons, "Additional options");
 
         public static readonly OVRGUIContent DocumentationIcon =
             OVREditorUtils.CreateContent("ovr_icon_documentation.png", OVRGUIContent.Source.GenericIcons, "Go to Documentation");
 
         public static readonly OVRGUIContent ErrorIcon =
             OVREditorUtils.CreateContent("ovr_error_greybg.png", OVRGUIContent.Source.BuildingBlocksIcons);
+
+        public static readonly OVRGUIContent InfoIcon =
+            OVREditorUtils.CreateContent("ovr_info_greybg.png", OVRGUIContent.Source.BuildingBlocksIcons);
 
         public static readonly OVRGUIContent SuccessIcon =
             OVREditorUtils.CreateContent("ovr_success_greybg.png", OVRGUIContent.Source.BuildingBlocksIcons);

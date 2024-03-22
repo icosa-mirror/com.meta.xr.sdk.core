@@ -21,6 +21,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text.RegularExpressions;
 using Meta.XR.Editor.Tags;
 using UnityEditor;
 using UnityEngine;
@@ -54,6 +55,37 @@ namespace Meta.XR.BuildingBlocks.Editor
                 Icon = ExperimentalIcon,
                 Order = 100,
                 ShowOverlay = true,
+                ToggleableVisibility = true,
+            }
+        };
+
+        internal const string PrototypingTagName = "Prototyping";
+        internal static readonly OVRGUIContent PrototypingIcon =
+            OVREditorUtils.CreateContent("ovr_icon_prototype.png", OVRGUIContent.Source.BuildingBlocksIcons, PrototypingTagName);
+        internal static Tag PrototypingTag = new Tag(PrototypingTagName)
+        {
+            Behavior =
+            {
+                Color = Styles.Colors.ExperimentalColor,
+                Icon = PrototypingIcon,
+                Order = 101,
+                ShowOverlay = true,
+                ToggleableVisibility = true,
+            }
+        };
+
+        internal const string DebugTagName = "Debug";
+        internal static readonly OVRGUIContent DebugIcon =
+            OVREditorUtils.CreateContent("ovr_icon_debug.png", OVRGUIContent.Source.BuildingBlocksIcons, DebugTagName);
+        internal static Tag DebugTag = new Tag(DebugTagName)
+        {
+            Behavior =
+            {
+                Color = Styles.Colors.InternalColor,
+                Icon = DebugIcon,
+                Order = 90,
+                ShowOverlay = true,
+                ToggleableVisibility = true,
             }
         };
 
@@ -62,7 +94,7 @@ namespace Meta.XR.BuildingBlocks.Editor
         {
             Behavior =
             {
-                Order = 101,
+                Order = 200,
                 Automated = true,
                 Show = false,
                 DefaultVisibility = false
@@ -74,8 +106,23 @@ namespace Meta.XR.BuildingBlocks.Editor
         {
             Behavior =
             {
-                Order = 102,
+                Order = 201,
                 Show = false,
+                DefaultVisibility = false,
+            }
+        };
+
+        private const string DeprecatedTagName = "Deprecated";
+        internal static Tag DeprecatedTag = new Tag(DeprecatedTagName)
+        {
+            Behavior =
+            {
+                Order = 203,
+                Color = Styles.Colors.ErrorColor,
+                Icon = OVREditorUtils.CreateContent("ovr_icon_deprecated.png", OVRGUIContent.Source.BuildingBlocksIcons, HiddenTagName),
+                Show = true,
+                ShowOverlay = true,
+                ToggleableVisibility = true,
                 DefaultVisibility = false,
             }
         };
@@ -86,7 +133,7 @@ namespace Meta.XR.BuildingBlocks.Editor
             Behavior =
             {
                 Automated = true,
-                Order = 103,
+                Order = 202,
                 Color = Styles.Colors.NewColor,
                 Icon = OVREditorUtils.CreateContent("ovr_icon_new.png", OVRGUIContent.Source.BuildingBlocksIcons, NewTagName),
                 Show = true,
@@ -101,10 +148,6 @@ namespace Meta.XR.BuildingBlocks.Editor
         private static bool _dirty = true;
 
 
-
-
-
-
         static Utils()
         {
             OVRGUIContent.RegisterContentPath(OVRGUIContent.Source.BuildingBlocksIcons, "BuildingBlocks/Icons");
@@ -116,7 +159,8 @@ namespace Meta.XR.BuildingBlocks.Editor
                 Name = BlocksPublicName,
                 Color = Styles.Colors.AccentColor,
                 Icon = StatusIcon,
-                InfoTextDelegate = ComputeMenuSubText,
+                InfoTextDelegate = ComputeInfoText,
+                PillIcon = GetPillIcon,
                 OnClickDelegate = OnStatusMenuClick,
                 Order = 1
             };
@@ -132,10 +176,32 @@ namespace Meta.XR.BuildingBlocks.Editor
             _dirty = true;
         }
 
-        public static string ComputeMenuSubText()
+        private static int ComputeNumberOfNewBlocks() => GetAllBlockDatas().Count(data => !data.Hidden && data.HasTag(NewTag));
+
+        private static (string, Color?) ComputeInfoText()
         {
-            var numberOfBlocks = GetBlocksInScene().Count;
-            return $"{numberOfBlocks} {OVREditorUtils.ChoosePlural(numberOfBlocks, "block", "blocks")} in current scene.";
+            var numberOfNewBlocks = ComputeNumberOfNewBlocks();
+            if (numberOfNewBlocks > 0)
+            {
+                return ($"There {OVREditorUtils.ChoosePlural(numberOfNewBlocks, "is", "are")} {numberOfNewBlocks} new {OVREditorUtils.ChoosePlural(numberOfNewBlocks, "block", "blocks")} available!", Styles.Colors.NewColor);
+            }
+            else
+            {
+                var numberOfBlocks = GetBlocksInScene().Count;
+                return ($"{numberOfBlocks} {OVREditorUtils.ChoosePlural(numberOfBlocks, "block", "blocks")} in current scene.", null);
+            }
+        }
+
+        private static (OVRGUIContent, Color?) GetPillIcon()
+        {
+            if (ComputeNumberOfNewBlocks() > 0)
+            {
+                return (NewTag.Behavior.Icon, Styles.Colors.NewColor);
+            }
+            else
+            {
+                return (null, null);
+            }
         }
 
         private static void OnStatusMenuClick()
@@ -185,7 +251,7 @@ namespace Meta.XR.BuildingBlocks.Editor
 
         public static BuildingBlock GetBlock(this BlockData data)
         {
-            return Object.FindObjectsOfType<BuildingBlock>().FirstOrDefault(x => x.BlockId == data.Id);
+            return Object.FindObjectsByType<BuildingBlock>(FindObjectsSortMode.None).FirstOrDefault(x => x.BlockId == data.Id);
         }
 
         public static BuildingBlock GetBlock(string blockId)
@@ -195,7 +261,7 @@ namespace Meta.XR.BuildingBlocks.Editor
 
         public static List<BuildingBlock> GetBlocks(this BlockData data)
         {
-            return Object.FindObjectsOfType<BuildingBlock>().Where(x => x.BlockId == data.Id).ToList();
+            return Object.FindObjectsByType<BuildingBlock>(FindObjectsSortMode.None).Where(x => x.BlockId == data.Id).ToList();
         }
 
         public static List<BuildingBlock> GetBlocks(string blockId)
@@ -205,7 +271,16 @@ namespace Meta.XR.BuildingBlocks.Editor
 
         public static List<T> GetBlocksWithType<T>() where T : Component
         {
-            return Object.FindObjectsOfType<T>().Where(controller => controller.GetComponent<BuildingBlock>() != null).ToList();
+            return Object.FindObjectsByType<T>(FindObjectsSortMode.None).Where(controller => controller.GetComponent<BuildingBlock>() != null).ToList();
+        }
+
+        public static List<T> GetBlocksWithBaseClassType<T>() where T : Component
+        {
+            var objects = GetBlocksWithType<T>();
+            return objects
+                .Select(obj => obj.GetComponent<T>())
+                .Where(component => component != null && component.GetType() == typeof(T))
+                .ToList();
         }
 
         public static bool IsRequiredBy(this BlockData data, BlockData other)
@@ -233,12 +308,12 @@ namespace Meta.XR.BuildingBlocks.Editor
 
         public static List<BuildingBlock> GetBlocksInScene()
         {
-            return Object.FindObjectsOfType<BuildingBlock>().ToList();
+            return Object.FindObjectsByType<BuildingBlock>(FindObjectsSortMode.InstanceID).ToList();
         }
 
         public static List<BuildingBlock> GetUsingBlocksInScene(this BlockData requiredData)
         {
-            return Object.FindObjectsOfType<BuildingBlock>().Where(x =>
+            return Object.FindObjectsByType<BuildingBlock>(FindObjectsSortMode.None).Where(x =>
             {
                 var data = x.GetBlockData();
                 return requiredData != data && requiredData.IsRequiredBy(data);
@@ -253,6 +328,7 @@ namespace Meta.XR.BuildingBlocks.Editor
         public static List<BlockData> GetAllDependencyDatas(this BlockData data)
         {
             return data.Dependencies
+                .Where(dependency => dependency != null)
                 .SelectMany(dependency => GetAllDependencyDatas(dependency).Concat(new[] { dependency }))
                 .Distinct()
                 .ToList();
@@ -289,7 +365,7 @@ namespace Meta.XR.BuildingBlocks.Editor
 
         public static int ComputeNumberOfBlocksInScene(this BlockData blockData)
         {
-            return Object.FindObjectsOfType<BuildingBlock>().Count(x => x.BlockId == blockData.Id);
+            return Object.FindObjectsByType<BuildingBlock>(FindObjectsSortMode.None).Count(x => x.BlockId == blockData.Id);
         }
 
         public static T FindComponentInScene<T>() where T : Component

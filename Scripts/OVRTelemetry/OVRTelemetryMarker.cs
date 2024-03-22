@@ -100,10 +100,7 @@ internal struct OVRTelemetryMarker : IDisposable
     public OVRTelemetryMarker Send()
     {
 
-        if (OVRTelemetry.IsActive)
-        {
-            AddAnnotation(OVRTelemetryConstants.OVRManager.AnnotationTypes.ProjectName, ApplicationIdentifier);
-        }
+        AddAnnotation(OVRTelemetryConstants.OVRManager.AnnotationTypes.ProjectName, ApplicationIdentifier);
         AddAnnotation(OVRTelemetryConstants.OVRManager.AnnotationTypes.ProjectGuid, OVRRuntimeSettings.Instance.TelemetryProjectGuid);
         AddAnnotation(OVRTelemetryConstants.OVRManager.AnnotationTypes.EngineVersion, UnityVersion);
 

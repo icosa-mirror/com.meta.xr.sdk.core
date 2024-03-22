@@ -19,6 +19,7 @@
  */
 
 using UnityEditor;
+using UnityEngine;
 
 [CustomEditor(typeof(OVRSceneManager))]
 internal class OVRSceneManagerEditor : Editor

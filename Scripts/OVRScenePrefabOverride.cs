@@ -19,10 +19,13 @@
  */
 
 using UnityEngine;
-using UnityEditor;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine.Serialization;
+
+#if UNITY_EDITOR
+using UnityEditor;
+#endif // UNITY_EDITOR
 
 /// <summary>
 /// Represents a prefab that overrides the <see cref="OVRSceneManager.PlanePrefab"/> or
@@ -59,6 +62,11 @@ public class OVRScenePrefabOverride : ISerializationCallbackReceiver
     }
 
     void ISerializationCallbackReceiver.OnAfterDeserialize()
+    {
+        UpdateEditorClassificationIndex();
+    }
+
+    internal void UpdateEditorClassificationIndex()
     {
         if (ClassificationLabel != "")
         {

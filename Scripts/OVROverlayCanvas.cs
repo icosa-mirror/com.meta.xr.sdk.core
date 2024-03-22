@@ -152,7 +152,7 @@ public class OVROverlayCanvas : OVRRayTransformer
         _overlay.enabled = false;
         _overlay.isDynamic = true;
         _overlay.noDepthBufferTesting = true;
-        _overlay.isAlphaPremultiplied = !Application.isMobilePlatform;
+        _overlay.isAlphaPremultiplied = true;
         _overlay.currentOverlayType = OVROverlay.OverlayType.Underlay;
 
         InitializeRenderTexture();
@@ -189,7 +189,7 @@ public class OVROverlayCanvas : OVRRayTransformer
                 DestroyImmediate(_renderTexture);
             }
 
-            _renderTexture = new RenderTexture(width, height, 0, RenderTextureFormat.ARGB32, RenderTextureReadWrite.Linear);
+            _renderTexture = new RenderTexture(width, height, 0, RenderTextureFormat.ARGB32, RenderTextureReadWrite.sRGB);
             // if we can't scale the viewport, generate mipmaps instead
             _renderTexture.useMipMap = !_scaleViewport;
             _renderTexture.filterMode = FilterMode.Trilinear;

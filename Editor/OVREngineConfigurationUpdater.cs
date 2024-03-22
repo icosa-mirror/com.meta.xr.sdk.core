@@ -143,7 +143,7 @@ class OVREngineConfigurationUpdater
 #pragma warning restore 618
             return;
 
-        var mgrs = GameObject.FindObjectsOfType<OVRManager>();
+        var mgrs = GameObject.FindObjectsByType<OVRManager>(FindObjectsSortMode.None);
         for (int i = 0; i < mgrs.Length; ++i)
         {
             if (mgrs[i].isActiveAndEnabled)

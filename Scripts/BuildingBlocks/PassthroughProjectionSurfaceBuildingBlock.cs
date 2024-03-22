@@ -30,7 +30,7 @@ namespace Meta.XR.BuildingBlocks
         // Start is called before the first frame update
         private void Start()
         {
-            var ptLayers = FindObjectsOfType<OVRPassthroughLayer>();
+            var ptLayers = FindObjectsByType<OVRPassthroughLayer>(FindObjectsSortMode.None);
             var foundLayer = false;
 
             foreach (var ptLayer in ptLayers)

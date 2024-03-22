@@ -253,7 +253,7 @@ public class OVRVirtualKeyboard : MonoBehaviour
 
         protected BaseInputSource()
         {
-            _rig = FindObjectOfType<OVRCameraRig>();
+            _rig = FindAnyObjectByType<OVRCameraRig>();
             if (_rig == null) return;
             _rig.UpdatedAnchors += OnUpdatedAnchors;
             _operatingWithoutOVRCameraRig = false;
@@ -846,9 +846,15 @@ public class OVRVirtualKeyboard : MonoBehaviour
                 break;
             default:
                 Debug.LogError("Unknown KeyboardInputMode: " + position);
-                break;
+                return;
         }
-
+        InitialPosition = position;
+        if (keyboardSpace_ == 0)
+        {
+            // If KB space is not yet created no need to update the runtime
+            return;
+        }
+        locationInfo.trackingOriginType = OVRPlugin.GetTrackingOriginType();
         var result = OVRPlugin.SuggestVirtualKeyboardLocation(locationInfo);
         if (result != OVRPlugin.Result.Success)
         {
@@ -1075,35 +1081,23 @@ public class OVRVirtualKeyboard : MonoBehaviour
             }
 
             isKeyboardCreated_ = true;
+        }
 
-            var createSpaceInfo = new OVRPlugin.VirtualKeyboardSpaceCreateInfo();
-            createSpaceInfo.pose = OVRPlugin.Posef.identity;
-            result = OVRPlugin.CreateVirtualKeyboardSpace(createSpaceInfo, out keyboardSpace_);
-            if (result != OVRPlugin.Result.Success)
-            {
-                Debug.LogError("Create failed to create keyboard space: " + result);
-                DestroyKeyboard();
-                return;
-            }
-
-            UseSuggestedLocation(InitialPosition);
-
-            // Initialize the keyboard model
-            if (modelInitialized_ != true)
-            {
-                modelInitialized_ = true;
-                LoadRuntimeVirtualKeyboardMesh();
-            }
-
-            // Should call this whenever the keyboard is created or when the text focus changes
-            if (TextHandler != null)
-            {
-                ChangeTextContextInternal(TextHandler.Text);
-            }
+        // Initialize the keyboard model
+        if (modelInitialized_ != true)
+        {
+            modelInitialized_ = true;
+            LoadRuntimeVirtualKeyboardMesh();
         }
         else
         {
             SetKeyboardVisibility(true);
+        }
+
+        // Should call this whenever the keyboard is enabled or when the text focus changes
+        if (TextHandler != null)
+        {
+            ChangeTextContextInternal(TextHandler.Text);
         }
     }
 
@@ -1126,17 +1120,14 @@ public class OVRVirtualKeyboard : MonoBehaviour
 
     private void HideKeyboard()
     {
-        if (!modelAvailable_)
+        if (modelInitialized_ && !modelAvailable_)
         {
-            // If model has not been loaded, completely uninitialize
-            DestroyKeyboard();
-            return;
+            UnloadModel();
         }
-
         SetKeyboardVisibility(false);
     }
 
-    private void DestroyKeyboard()
+    private void UnloadModel()
     {
         if (gltfModelCoroutine_ != null)
         {
@@ -1148,15 +1139,20 @@ public class OVRVirtualKeyboard : MonoBehaviour
             Destroy(_gltfLoader.scene.root);
             _gltfLoader = null;
         }
+        if (modelAvailable_)
+        {
+            GameObject.Destroy(virtualKeyboardScene_.root);
+            modelAvailable_ = false;
+        }
+        modelInitialized_ = false;
+    }
+
+    private void DestroyKeyboard()
+    {
+        UnloadModel();
         InputEnabled = false;
         if (isKeyboardCreated_)
         {
-            if (modelAvailable_)
-            {
-                GameObject.Destroy(virtualKeyboardScene_.root);
-                modelAvailable_ = false;
-                modelInitialized_ = false;
-            }
             var result = OVRPlugin.DestroyVirtualKeyboard();
             if (result != OVRPlugin.Result.Success)
             {
@@ -1221,6 +1217,7 @@ public class OVRVirtualKeyboard : MonoBehaviour
         bool isPressed, Transform interactorRootTransform = null)
     {
         var inputInfo = new OVRPlugin.VirtualKeyboardInputInfo();
+        inputInfo.inputTrackingOriginType = (OVRPlugin.TrackingOrigin)OVRManager.instance.trackingOriginType;
         inputInfo.inputSource = inputSource;
         inputInfo.inputPose = pose.ToPosef();
         inputInfo.inputState = (isPressed) ? OVRPlugin.VirtualKeyboardInputStateFlags.IsPressed : 0;
@@ -1278,10 +1275,31 @@ public class OVRVirtualKeyboard : MonoBehaviour
         }
     }
 
+    private ulong GetKeyboardSpace()
+    {
+        if (keyboardSpace_ != 0)
+        {
+            return keyboardSpace_;
+        }
+        var createSpaceInfo = new OVRPlugin.VirtualKeyboardSpaceCreateInfo();
+        var locationInfo = ComputeLocation(transform);
+        createSpaceInfo.locationType = locationInfo.locationType;
+        createSpaceInfo.trackingOriginType = OVRPlugin.GetTrackingOriginType();
+        createSpaceInfo.pose = locationInfo.pose;
+        var result = OVRPlugin.CreateVirtualKeyboardSpace(createSpaceInfo, out keyboardSpace_);
+        if (result != OVRPlugin.Result.Success)
+        {
+            Debug.LogError("Create failed to create keyboard space: " + result);
+            DestroyKeyboard();
+        }
+        UseSuggestedLocation(InitialPosition);
+        return keyboardSpace_;
+    }
+
     private void SyncKeyboardLocation()
     {
         // If unity transform has updated, sync with runtime
-        if (transform.hasChanged)
+        if (keyboardSpace_ != 0 && transform.hasChanged)
         {
             // ensure scale uniformity
             var scale = MaxElement(transform.localScale);
@@ -1291,7 +1309,7 @@ public class OVRVirtualKeyboard : MonoBehaviour
         }
 
         // query the runtime for the true position
-        if (!OVRPlugin.TryLocateSpace(keyboardSpace_, OVRPlugin.GetTrackingOriginType(), out var keyboardPose))
+        if (!OVRPlugin.TryLocateSpace(GetKeyboardSpace(), OVRPlugin.GetTrackingOriginType(), out var keyboardPose))
         {
             Debug.LogError("Failed to locate the virtual keyboard space.");
             return;
@@ -1499,6 +1517,60 @@ public class OVRVirtualKeyboard : MonoBehaviour
         if (modelAvailable_)
         {
             virtualKeyboardScene_.root.gameObject.SetActive(keyboardVisible_);
+        }
+    }
+
+    [ContextMenu("Autofill Input Roots")]
+    public void AutoPopulate()
+    {
+        OVRCameraRig camRig = GameObject.FindObjectOfType<OVRCameraRig>();
+        if (camRig == null)
+        {
+            Debug.LogWarning("Couldn't auto fill input transforms as we didn't have an OVRCameraRig.");
+            return;
+        }
+        if (handRight == null || handLeft == null)
+        {
+            OVRHand[] hands = camRig.GetComponentsInChildren<OVRHand>();
+            for (int i = 0; i < hands.Length; i++)
+            {
+                if (hands[i].HandType == OVRHand.Hand.HandLeft && handLeft == null)
+                {
+                    handLeft = hands[i];
+                }
+                if (hands[i].HandType == OVRHand.Hand.HandRight && handRight == null)
+                {
+                    handRight = hands[i];
+                }
+
+                if (handRight && handLeft)
+                {
+                    break;
+                }
+            }
+        }
+
+        if (leftControllerRootTransform == null || rightControllerRootTransform == null)
+        {
+            OVRControllerHelper[] controllers = camRig.GetComponentsInChildren<OVRControllerHelper>();
+
+            for (int i = 0; i < controllers.Length; i++)
+            {
+                if (leftControllerRootTransform == null && controllers[i].m_controller == OVRInput.Controller.LTouch)
+                {
+                    leftControllerRootTransform = controllers[i].transform;
+                }
+
+                if (rightControllerRootTransform == null && controllers[i].m_controller == OVRInput.Controller.RTouch)
+                {
+                    rightControllerRootTransform = controllers[i].transform;
+                }
+
+                if (leftControllerRootTransform && rightControllerRootTransform)
+                {
+                    break;
+                }
+            }
         }
     }
 }

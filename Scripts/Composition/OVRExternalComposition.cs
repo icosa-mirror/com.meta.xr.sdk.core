@@ -274,7 +274,7 @@ public class OVRExternalComposition : OVRComposition
             // fourth, search for all AudioListeners (very expensive)
             if (tmpAudioListener == null || !tmpAudioListener.enabled)
             {
-                Object[] allListeners = Object.FindObjectsOfType<AudioListener>();
+                Object[] allListeners = Object.FindObjectsByType<AudioListener>(FindObjectsSortMode.None);
                 foreach (var l in allListeners)
                 {
                     AudioListener al = l as AudioListener;

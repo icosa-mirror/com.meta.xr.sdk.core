@@ -67,6 +67,7 @@ MonoBehaviour:
   m_controller: 33554432
   m_showState: 1
   showWhenHandsArePoweredByNaturalControllerPoses: 0
+  RayHelper: {fileID: 0}
 --- !u!1001 &2114446122515373209
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -405,12 +406,11 @@ PrefabInstance:
       propertyPath: m_IsActive
       value: 0
       objectReference: {fileID: 0}
-    - target: {fileID: 40514386640382618, guid: deed68a7fd2e9234899298cf80fae7ad,
+    - target: {fileID: -1542374134873489460, guid: deed68a7fd2e9234899298cf80fae7ad,
         type: 3}
-      propertyPath: m_Materials.Array.data[0]
-      value: 
-      objectReference: {fileID: 8525165401333341520, guid: bbb35201095f6bf499fe2cd30ef3b6c7,
-        type: 3}
+      propertyPath: m_IsActive
+      value: 0
+      objectReference: {fileID: 0}
     - target: {fileID: 919132149155446097, guid: deed68a7fd2e9234899298cf80fae7ad,
         type: 3}
       propertyPath: m_Name
@@ -421,6 +421,12 @@ PrefabInstance:
       propertyPath: m_Controller
       value: 
       objectReference: {fileID: 9100000, guid: fc948f57db734e74094dc532bdbbc3e8, type: 2}
+    - target: {fileID: 7060216311055747358, guid: deed68a7fd2e9234899298cf80fae7ad,
+        type: 3}
+      propertyPath: m_Materials.Array.data[0]
+      value: 
+      objectReference: {fileID: 8525165401333341520, guid: bbb35201095f6bf499fe2cd30ef3b6c7,
+        type: 3}
     m_RemovedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: deed68a7fd2e9234899298cf80fae7ad, type: 3}
 --- !u!4 &2359860993657055876 stripped
@@ -696,17 +702,22 @@ PrefabInstance:
       propertyPath: m_Name
       value: MetaQuestTouchPlus_Left
       objectReference: {fileID: 0}
-    - target: {fileID: 5270214396347484653, guid: 2b1aaafc31655024394d83dc00911c1c,
-        type: 3}
-      propertyPath: m_Materials.Array.data[0]
-      value: 
-      objectReference: {fileID: -4540382836535262998, guid: 2ea89d6e4d9c45940908e3f337989a9a,
-        type: 3}
     - target: {fileID: 5866666021909216657, guid: 2b1aaafc31655024394d83dc00911c1c,
         type: 3}
       propertyPath: m_Controller
       value: 
       objectReference: {fileID: 9100000, guid: 12e0d551f2089fc4380c1368a69a3512, type: 2}
+    - target: {fileID: 6862367899150252811, guid: 2b1aaafc31655024394d83dc00911c1c,
+        type: 3}
+      propertyPath: m_IsActive
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 7783408114401906153, guid: 2b1aaafc31655024394d83dc00911c1c,
+        type: 3}
+      propertyPath: m_Materials.Array.data[0]
+      value: 
+      objectReference: {fileID: -4540382836535262998, guid: 2ea89d6e4d9c45940908e3f337989a9a,
+        type: 3}
     m_RemovedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 2b1aaafc31655024394d83dc00911c1c, type: 3}
 --- !u!4 &5142502600186143855 stripped

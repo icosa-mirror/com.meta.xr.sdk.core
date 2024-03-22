@@ -245,6 +245,8 @@ public class OVRManifestPreprocessor
             ApplyTargetDevicesManifestTags(doc, androidNamespaceURI, true /*modifyIfFound*/);
 #endif
 
+
+
             doc.Save(destinationFile);
         }
         catch (System.Exception e)
@@ -636,6 +638,7 @@ public class OVRManifestPreprocessor
             sceneEntryNeeded,
             modifyIfFound);
 
+
         //============================================================================
         // Processor Favor
         var processorFavor = OVRProjectConfig.GetProjectConfig().processorFavor;
@@ -650,6 +653,7 @@ public class OVRManifestPreprocessor
             modifyIfFound: true,
             "value", ((int)processorFavor).ToString());
     }
+
 
 
     private static void ApplyOculusXRManifestTags(XmlDocument doc, string androidNamespaceURI, bool modifyIfFound)

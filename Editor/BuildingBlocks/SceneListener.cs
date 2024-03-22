@@ -55,7 +55,7 @@ namespace Meta.XR.BuildingBlocks.Editor
         {
             EditorApplication.delayCall += () =>
             {
-                var sceneBlocks = Object.FindObjectsOfType<BuildingBlock>();
+                var sceneBlocks = Object.FindObjectsByType<BuildingBlock>(FindObjectsSortMode.None);
 
                 foreach (var block in sceneBlocks)
                 {

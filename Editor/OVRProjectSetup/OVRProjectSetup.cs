@@ -84,10 +84,11 @@ public static class OVRProjectSetup
         ProcessorQueue.OnProcessorCompleted += RefreshBuildStatusMenuSubText;
         var statusItem = new OVRStatusMenu.Item()
         {
-            Name = "Project Setup Tool",
+            Name = OVRProjectSetupUtils.ProjectSetupToolPublicName,
             Color = OVREditorUtils.HexToColor("#c4c4c4"),
             Icon = OVREditorUtils.CreateContent("ovr_icon_upst.png", OVRGUIContent.Source.ProjectSetupToolIcons),
-            InfoTextDelegate = GetMenuSubText,
+            InfoTextDelegate = ComputeInfoText,
+            PillIcon = ComputePillIcon,
             OnClickDelegate = OnStatusMenuClick,
             Order = 0
         };
@@ -95,15 +96,28 @@ public static class OVRProjectSetup
     }
 
     private static string _statusMenuSubText;
+    private static OVRConfigurationTaskUpdaterSummary _latestSummary;
 
     private static void RefreshBuildStatusMenuSubText(OVRConfigurationTaskProcessor processor)
     {
         var updater = processor as OVRConfigurationTaskUpdater;
         var summary = updater?.Summary;
         _statusMenuSubText = summary?.ComputeNoticeMessage();
+        _latestSummary = summary;
     }
 
-    public static string GetMenuSubText() => _statusMenuSubText;
+    private static (string, Color?) ComputeInfoText() => (_statusMenuSubText, null);
+
+    private static (OVRGUIContent, Color?) ComputePillIcon()
+    {
+        return _latestSummary?.HighestFixLevel switch
+        {
+            OVRProjectSetup.TaskLevel.Optional => (OVRProjectSetupDrawer.InfoIcon, OVRProjectSetupDrawer.Styles.InfoColor),
+            OVRProjectSetup.TaskLevel.Recommended => (OVRProjectSetupDrawer.WarningIcon, OVRProjectSetupDrawer.Styles.WarningColor),
+            OVRProjectSetup.TaskLevel.Required => (OVRProjectSetupDrawer.ErrorIcon, OVRProjectSetupDrawer.Styles.ErrorColor),
+            _ => (null, null)
+        };
+    }
 
     private static void OnStatusMenuClick()
     {

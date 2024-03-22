@@ -148,11 +148,6 @@ public class OVRProjectConfigEditor : Editor
                 OVREditorUtil.SetupEnumField(projectConfig, "Hand Tracking Version",
                     ref projectConfig.handTrackingVersion, ref hasModified);
 
-                // Concurrent hands and controllers support
-                OVREditorUtil.SetupEnumField(projectConfig, new GUIContent("Concurrent Hands/Controllers Support",
-                        "Allows the application to use concurrent hands and controllers functionality. This option must be enabled at build time."),
-                    ref projectConfig.multimodalHandsControllersSupport, ref hasModified);
-
                 // Enable Render Model Support
                 bool renderModelSupportAvailable = OVRPluginInfo.IsOVRPluginOpenXRActivated();
                 EditorGUI.BeginDisabledGroup(!renderModelSupportAvailable);
@@ -265,6 +260,7 @@ public class OVRProjectConfigEditor : Editor
                 OVREditorUtil.SetupEnumField(projectConfig, new GUIContent("Passthrough Support",
                         "Allows the application to use passthrough functionality. This option must be enabled at build time, otherwise initializing passthrough and creating passthrough layers in application scenes will fail."),
                     ref projectConfig._insightPassthroughSupport, ref hasModified);
+
 
                 // Body Tracking Support
                 OVREditorUtil.SetupEnumField(projectConfig, "Body Tracking Support",

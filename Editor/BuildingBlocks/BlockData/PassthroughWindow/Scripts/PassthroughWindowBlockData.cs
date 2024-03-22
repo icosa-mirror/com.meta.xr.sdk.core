@@ -40,14 +40,13 @@ public class PassthroughWindowBlockData : BlockData
             return base.InstallRoutine(selectedGameObject);
         }
 
-        if (!selectedGameObject.TryGetComponent<MeshRenderer>(out var meshRenderer))
+        if (!selectedGameObject.TryGetComponent<Renderer>(out var renderer))
         {
-            throw new Exception(
-                "MeshRenderer component is missing. Unable to use this surface as passthrough window.");
+            throw new Exception("A Renderer component is missing. Unable to use this surface as passthrough window.");
         }
 
         Undo.RegisterFullObjectHierarchyUndo(selectedGameObject, "Apply selective passthrough.");
-        meshRenderer.sharedMaterial = Prefab.GetComponentInChildren<MeshRenderer>().sharedMaterial;
+        renderer.sharedMaterial = Prefab.GetComponentInChildren<MeshRenderer>().sharedMaterial;
 
         if (!Utils.FindComponentInScene<EnableUnpremultipliedAlpha>())
         {

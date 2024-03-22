@@ -48,8 +48,15 @@ public class OVROverlayEditor : Editor
         Half = 2,
     }
 
+    public enum OverlayLayerSharpenType
+    {
+        None,
+        Normal,
+        Quality
+    }
+
     private OVRPlugin.LayerSuperSamplingType superSampleType = OVRPlugin.LayerSuperSamplingType.None;
-    private OVRPlugin.LayerSharpenType sharpenType = OVRPlugin.LayerSharpenType.None;
+    private OverlayLayerSharpenType sharpenType = OverlayLayerSharpenType.None;
 
     private bool sourceRectsVisible = false;
     private bool destRectsVisible = false;
@@ -233,9 +240,9 @@ public class OVROverlayEditor : Editor
             superSampleType = OVRPlugin.LayerSuperSamplingType.Quality;
 
         if (overlay.useEfficientSharpen)
-            sharpenType = OVRPlugin.LayerSharpenType.Normal;
+            sharpenType = OverlayLayerSharpenType.Normal;
         if (overlay.useExpensiveSharpen)
-            sharpenType = OVRPlugin.LayerSharpenType.Quality;
+            sharpenType = OverlayLayerSharpenType.Quality;
 
         OVREditorUtil.SetupEnumField(target, new GUIContent("Super Sample", "The super sample filter of this layer. This can help reduce flicker artifacts."), ref superSampleType, ref hasModified);
         OVREditorUtil.SetupEnumField(target, new GUIContent("Sharpen", "The sharpen filter of this layer. This amplifies contrast and fine details."), ref sharpenType, ref hasModified);
@@ -244,8 +251,8 @@ public class OVROverlayEditor : Editor
             overlay.useEfficientSupersample = superSampleType == OVRPlugin.LayerSuperSamplingType.Normal;
             overlay.useExpensiveSuperSample = superSampleType == OVRPlugin.LayerSuperSamplingType.Quality;
 
-            overlay.useEfficientSharpen = sharpenType == OVRPlugin.LayerSharpenType.Normal;
-            overlay.useExpensiveSharpen = sharpenType == OVRPlugin.LayerSharpenType.Quality;
+            overlay.useEfficientSharpen = sharpenType == OverlayLayerSharpenType.Normal;
+            overlay.useExpensiveSharpen = sharpenType == OverlayLayerSharpenType.Quality;
         }
 
         EditorGUILayout.Space();

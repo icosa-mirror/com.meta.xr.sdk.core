@@ -26,7 +26,7 @@ using UnityEngine;
 
 internal class OVRProjectSetupDrawer
 {
-    private class Styles
+    internal class Styles
     {
         private const float SmallIconSize = 16.0f;
         private const float FixButtonWidth = 64.0f;
@@ -129,7 +129,7 @@ internal class OVRProjectSetupDrawer
 
         internal readonly GUIStyle BoldStyle = new GUIStyle(EditorStyles.label)
         {
-            margin = new RectOffset(10, 0, 0, 0),
+            margin = new RectOffset(0, 0, 0, 0),
             stretchWidth = false,
             wordWrap = true,
             fontStyle = FontStyle.Bold
@@ -141,7 +141,7 @@ internal class OVRProjectSetupDrawer
             fixedHeight = 18.0f,
             fixedWidth = 18.0f,
             margin = new RectOffset(2, 2, 2, 2),
-            padding = new RectOffset(1, 1, 1, 1)
+            padding = new RectOffset(2, 2, 2, 2)
         };
 
         internal readonly GUIStyle Foldout = new GUIStyle(EditorStyles.foldoutHeader)
@@ -161,6 +161,13 @@ internal class OVRProjectSetupDrawer
             margin = new RectOffset(3, 3, 3, 3),
             padding = new RectOffset(3, 3, 3, 3)
         };
+
+        internal static readonly Color ErrorColor = OVREditorUtils.HexToColor("d55e5e");
+        internal static readonly Color WarningColor = OVREditorUtils.HexToColor("e9974e");
+        internal static readonly Color InfoColor = OVREditorUtils.HexToColor("c4c4c4");
+        internal static readonly Color SuccessColor = OVREditorUtils.HexToColor("4ee99e");
+        internal static readonly Color InternalColor = OVREditorUtils.HexToColor("66aaff");
+        internal static readonly Color LightGray = OVREditorUtils.HexToColor("aaaaaa");
     }
 
     private static Styles _styles;
@@ -178,7 +185,7 @@ internal class OVRProjectSetupDrawer
     private readonly OVRProjectSetupSettingBool _showIgnoredItems =
         new OVRProjectSetupUserSettingBool("ShowIgnoredItems", false);
 
-    private static readonly GUIContent Title = new GUIContent("Project Setup Tool");
+    private static readonly GUIContent Title = new GUIContent(OVRProjectSetupUtils.ProjectSetupToolPublicName);
 
     private static readonly GUIContent Description =
         new GUIContent("This tool maintains a checklist of required setup tasks as well as best practices to " +
@@ -207,19 +214,11 @@ internal class OVRProjectSetupDrawer
     private static readonly GUIContent GenerateReportButtonContent =
         new GUIContent("Generate report", "Generate a report of all the issues");
 
-    private static readonly OVRGUIContent WarningIcon = OVREditorUtils.CreateContent("ovr_icon_category_warning.png", OVRGUIContent.Source.ProjectSetupToolIcons);
-    private static readonly OVRGUIContent ErrorIcon = OVREditorUtils.CreateContent("ovr_icon_category_error.png", OVRGUIContent.Source.ProjectSetupToolIcons);
-
-    private static readonly OVRGUIContent InfoIcon = OVREditorUtils.CreateContent("ovr_icon_category_neutral.png", OVRGUIContent.Source.ProjectSetupToolIcons);
-    private static readonly OVRGUIContent TestPassedIcon =
+    internal static readonly OVRGUIContent WarningIcon = OVREditorUtils.CreateContent("ovr_icon_category_error.png", OVRGUIContent.Source.ProjectSetupToolIcons);
+    internal static readonly OVRGUIContent ErrorIcon = OVREditorUtils.CreateContent("ovr_icon_category_error.png", OVRGUIContent.Source.ProjectSetupToolIcons);
+    internal static readonly OVRGUIContent InfoIcon = OVREditorUtils.CreateContent("ovr_icon_category_neutral.png", OVRGUIContent.Source.ProjectSetupToolIcons);
+    internal static readonly OVRGUIContent TestPassedIcon =
         OVREditorUtils.CreateContent("ovr_icon_category_success.png", OVRGUIContent.Source.ProjectSetupToolIcons);
-
-    private static readonly OVRGUIContent ConfigIcon =
-        OVREditorUtils.CreateContent("_Popup", OVRGUIContent.Source.BuiltIn, "Additional options");
-
-
-    private static readonly OVRGUIContent DocumentationIcon =
-        OVREditorUtils.CreateContent("ovr_icon_documentation.png",  OVRGUIContent.Source.GenericIcons, "Go to Documentation");
 
     private const string OutstandingItems = "Outstanding Issues";
     private const string RecommendedItems = "Recommended Items";
@@ -233,8 +232,13 @@ internal class OVRProjectSetupDrawer
     private const string TasksRefreshErrorMessage = "Could not refresh the checklist.";
     private const string TasksRefreshSuccessMessage = "Tasks refreshed successfully.";
     private const string OkButton = "ok";
-    private const string DocumentationUrl =
-        "https://developer.oculus.com/documentation/unity/unity-upst-overview";
+
+    private static readonly OVRGUIContent ConfigIcon =
+        OVREditorUtils.CreateContent("ovr_icon_cog.png", OVRGUIContent.Source.GenericIcons, "Additional options");
+    private static readonly OVRGUIContent DocumentationIcon =
+        OVREditorUtils.CreateContent("ovr_icon_documentation.png",  OVRGUIContent.Source.GenericIcons, "Go to Documentation");
+
+    private const string DocumentationUrl ="https://developer.oculus.com/documentation/unity/unity-upst-overview";
 
 
     // Internals
@@ -310,19 +314,19 @@ internal class OVRProjectSetupDrawer
         return newValue;
     }
 
-    private OVRGUIContent GetTaskIcon(OVRConfigurationTask task, BuildTargetGroup buildTargetGroup)
+    private (OVRGUIContent, Color) GetTaskIcon(OVRConfigurationTask task, BuildTargetGroup buildTargetGroup)
     {
-        if (task.IsDone(buildTargetGroup))
-        {
-            return TestPassedIcon;
-        }
+        return task.IsDone(buildTargetGroup) ? (TestPassedIcon, Styles.SuccessColor) : GetTaskIcon(task.Level.GetValue(buildTargetGroup));
+    }
 
-        return task.Level.GetValue(buildTargetGroup) switch
+    private (OVRGUIContent, Color) GetTaskIcon(OVRProjectSetup.TaskLevel? taskLevel)
+    {
+        return taskLevel switch
         {
-            OVRProjectSetup.TaskLevel.Required => ErrorIcon,
-            OVRProjectSetup.TaskLevel.Recommended => WarningIcon,
-            OVRProjectSetup.TaskLevel.Optional => InfoIcon,
-            _ => throw new ArgumentOutOfRangeException()
+            OVRProjectSetup.TaskLevel.Required => (ErrorIcon, Styles.ErrorColor),
+            OVRProjectSetup.TaskLevel.Recommended => (WarningIcon, Styles.WarningColor),
+            OVRProjectSetup.TaskLevel.Optional => (InfoIcon, Styles.InfoColor),
+            _ => (TestPassedIcon, Styles.SuccessColor)
         };
     }
 
@@ -390,14 +394,18 @@ internal class OVRProjectSetupDrawer
 
     internal void OnTitleBarGUI()
     {
-        if (GUILayout.Button(ConfigIcon, styles.MiniButton))
+        using (new OVREditorUtils.OVRGUIColorScope(OVREditorUtils.OVRGUIColorScope.Scope.Content,
+                   Styles.LightGray))
         {
-            ShowSettingsMenu();
-        }
+            if (GUILayout.Button(ConfigIcon, styles.MiniButton))
+            {
+                ShowSettingsMenu();
+            }
 
-        if (GUILayout.Button(DocumentationIcon, styles.MiniButton))
-        {
-            Application.OpenURL(DocumentationUrl);
+            if (GUILayout.Button(DocumentationIcon, styles.MiniButton))
+            {
+                Application.OpenURL(DocumentationUrl);
+            }
         }
 
     }
@@ -410,7 +418,6 @@ internal class OVRProjectSetupDrawer
         // Short Description
         GUILayout.Label(Description, styles.SubtitleHelpText);
 
-
         EditorGUILayout.Space();
 
         var enabled = OVRProjectSetup.Enabled.Value;
@@ -422,12 +429,16 @@ internal class OVRProjectSetupDrawer
                 GUILayout.Label(SummaryLabel, styles.NormalStyle);
                 if (enabled)
                 {
-                    GUILayout.Label(OVRProjectSetupStatusIcon.ComputeIcon(_lastSummary), styles.InlinedIconStyle);
+                    var (icon, color) = GetTaskIcon(_lastSummary?.HighestFixLevel);
+                    using (new OVREditorUtils.OVRGUIColorScope(OVREditorUtils.OVRGUIColorScope.Scope.Content, color))
+                    {
+                        GUILayout.Label(icon, styles.InlinedIconStyle);
+                    }
                     GUILayout.Label(_lastSummary?.ComputeNoticeMessage() ?? "", styles.BoldStyle);
                 }
                 else
                 {
-                    GUILayout.Label("Setup Tool is disabled", styles.BoldStyle);
+                    GUILayout.Label($"{OVRProjectSetupUtils.ProjectSetupToolPublicName} is disabled", styles.BoldStyle);
                 }
             }
 
@@ -596,7 +607,11 @@ internal class OVRProjectSetupDrawer
         var clickArea = EditorGUILayout.BeginHorizontal(styles.ListLabel);
 
         // Icon
-        GUILayout.Label(GetTaskIcon(task, buildTargetGroup), styles.IconStyle);
+        var (icon, color) = GetTaskIcon(task, buildTargetGroup);
+        using (new OVREditorUtils.OVRGUIColorScope(OVREditorUtils.OVRGUIColorScope.Scope.Content, color))
+        {
+            GUILayout.Label(icon, styles.IconStyle);
+        }
 
         // Message
         GUILayout.Label(new GUIContent(task.Message.GetValue(buildTargetGroup)), styles.Wrap);

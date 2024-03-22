@@ -19,12 +19,14 @@
  */
 
 using UnityEngine;
+using UnityEngine.EventSystems;
 
 /// <summary>
 /// Simple helper script that conditionally enables rendering of a controller if it is connected.
 /// </summary>
 [HelpURL("https://developer.oculus.com/reference/unity/latest/class_o_v_r_controller_helper")]
-public class OVRControllerHelper : MonoBehaviour
+public class OVRControllerHelper : MonoBehaviour,
+    OVRInputModule.InputSource
 {
     /// <summary>
     /// The root GameObject that represents the Oculus Touch for Quest And RiftS Controller model (Left).
@@ -96,12 +98,18 @@ public class OVRControllerHelper : MonoBehaviour
     /// </summary>
     private Animator m_animator;
 
+    /// <summary>
+    /// An optional component for provind shell like ray functionality - highlighting where you're selecting in the UI and responding to pinches / button presses.
+    /// </summary>
+    public OVRRayHelper RayHelper;
+
     private GameObject m_activeController;
 
     private bool m_controllerModelsInitialized = false;
 
     private bool m_hasInputFocus = true;
     private bool m_hasInputFocusPrev = false;
+    private bool m_isActive = false;
 
     private enum ControllerType
     {
@@ -125,6 +133,16 @@ public class OVRControllerHelper : MonoBehaviour
         {
             InitializeControllerModels();
         }
+    }
+
+    void OnEnable()
+    {
+        OVRInputModule.TrackInputSource(this);
+    }
+
+    void OnDisable()
+    {
+        OVRInputModule.UntrackInputSource(this);
     }
 
     void InitializeControllerModels()
@@ -220,6 +238,7 @@ public class OVRControllerHelper : MonoBehaviour
 
     void Update()
     {
+        m_isActive = false;
         if (!m_controllerModelsInitialized)
         {
             if (OVRManager.OVRManagerinitialized)
@@ -401,10 +420,18 @@ public class OVRControllerHelper : MonoBehaviour
             shouldSetControllerActive = false;
         }
 
+        m_isActive = shouldSetControllerActive;
+
         if (m_activeController != null)
         {
             m_activeController.SetActive(shouldSetControllerActive);
         }
+
+        if (RayHelper != null)
+        {
+            RayHelper.gameObject.SetActive(shouldSetControllerActive);
+        }
+
 
         if (m_animator != null)
         {
@@ -428,5 +455,41 @@ public class OVRControllerHelper : MonoBehaviour
     public void InputFocusLost()
     {
         m_hasInputFocus = false;
+    }
+
+    public bool IsPressed()
+    {
+        return OVRInput.GetDown(OVRInput.Button.PrimaryIndexTrigger, m_controller);
+    }
+
+    public bool IsReleased()
+    {
+        return OVRInput.GetUp(OVRInput.Button.PrimaryIndexTrigger, m_controller);
+    }
+
+    public Transform GetPointerRayTransform()
+    {
+        return transform;
+    }
+
+    // This helps identify if the object has been destroyed.
+    public bool IsValid()
+    {
+        return this != null;
+    }
+
+    public bool IsActive()
+    {
+        return m_isActive;
+    }
+
+    public void UpdatePointerRay(OVRInputRayData rayData)
+    {
+        if (RayHelper)
+        {
+            rayData.IsActive = OVRInput.Get(OVRInput.Button.PrimaryIndexTrigger, m_controller);
+            rayData.ActivationStrength = OVRInput.Get(OVRInput.Axis1D.PrimaryIndexTrigger, m_controller);
+            RayHelper.UpdatePointerRay(rayData);
+        }
     }
 }

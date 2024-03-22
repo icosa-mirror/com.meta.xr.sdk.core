@@ -21,8 +21,10 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-#if DEVELOPMENT_BUILD
+#if DEVELOPMENT_BUILD || UNITY_EDITOR
+#pragma warning disable OVR004
 using System.Linq;
+#pragma warning restore
 #endif
 using Unity.Collections;
 using UnityEngine;
@@ -39,15 +41,17 @@ using Debug = UnityEngine.Debug;
 /// automatically. The creation operation is asynchronous, and, if it fails, this component will be destroyed.
 ///
 /// To load previously saved anchors and bind them to an <see cref="OVRSpatialAnchor"/>, see
-/// <see cref="LoadUnboundAnchors"/>.
+/// <see cref="LoadUnboundAnchorsAsync"/>.
 /// </remarks>
 [DisallowMultipleComponent]
 [HelpURL("https://developer.oculus.com/reference/unity/latest/class_o_v_r_spatial_anchor")]
-public class OVRSpatialAnchor : MonoBehaviour
+public partial class OVRSpatialAnchor : MonoBehaviour
 {
     private bool _startCalled;
 
     private ulong _requestId;
+
+    internal OVRAnchor _anchor { get; private set; }
 
     private readonly SaveOptions _defaultSaveOptions = new SaveOptions
     {
@@ -65,22 +69,13 @@ public class OVRSpatialAnchor : MonoBehaviour
     public event Action<OperationResult> OnLocalize;
 
     /// <summary>
-    /// The space associated with the spatial anchor.
-    /// </summary>
-    /// <remarks>
-    /// The <see cref="OVRSpace"/> represents the runtime instance of the spatial anchor and will change across
-    /// different sessions.
-    /// </remarks>
-    public OVRSpace Space { get; private set; }
-
-    /// <summary>
     /// The UUID associated with the spatial anchor.
     /// </summary>
     /// <remarks>
     /// UUIDs persist across sessions. If you load a persisted anchor, you can use the UUID to identify
     /// it.
     /// </remarks>
-    public Guid Uuid { get; private set; }
+    public Guid Uuid => _anchor.Uuid;
 
     /// <summary>
     ///  Checks whether the spatial anchor is created.
@@ -88,7 +83,7 @@ public class OVRSpatialAnchor : MonoBehaviour
     /// <remarks>
     /// Creation is asynchronous and may take several frames. If creation fails, the component is destroyed.
     /// </remarks>
-    public bool Created => Space.Valid;
+    public bool Created => _anchor != OVRAnchor.Null;
 
     /// <summary>
     /// Checks whether the spatial anchor is pending creation.
@@ -102,68 +97,9 @@ public class OVRSpatialAnchor : MonoBehaviour
     /// When you create a new spatial anchor, it may take a few frames before it is localized. Once localized,
     /// its transform updates automatically.
     /// </remarks>
-    public bool Localized => Space.Valid &&
-                             OVRPlugin.GetSpaceComponentStatus(Space, OVRPlugin.SpaceComponentType.Locatable,
+    public bool Localized => Created &&
+                             OVRPlugin.GetSpaceComponentStatus(_anchor.Handle, OVRPlugin.SpaceComponentType.Locatable,
                                  out var isEnabled, out _) && isEnabled;
-
-    /// <summary>
-    /// Initializes this component from an existing space handle and uuid, e.g., the result of a call to
-    /// <see cref="OVRPlugin.QuerySpaces"/>.
-    /// </summary>
-    /// <remarks>
-    /// This method associates the component with an existing spatial anchor, for example, the one that was saved in
-    /// a previous session. Do not call this method to create a new spatial anchor.
-    ///
-    /// If you call this method, you must do so prior to the component's `Start` method. You cannot change the spatial
-    /// anchor associated with this component after that.
-    /// </remarks>
-    /// <param name="space">The existing <see cref="OVRSpace"/> to associate with this spatial anchor.</param>
-    /// <param name="uuid">The universally unique identifier to associate with this spatial anchor.</param>
-    /// <exception cref="InvalidOperationException">Thrown if `Start` has already been called on this component.</exception>
-    /// <exception cref="ArgumentException">Thrown if <paramref name="space"/> is not <see cref="OVRSpace.Valid"/>.</exception>
-    public void InitializeFromExisting(OVRSpace space, Guid uuid)
-    {
-        if (_startCalled)
-            throw new InvalidOperationException(
-                $"Cannot call {nameof(InitializeFromExisting)} after {nameof(Start)}. This must be set once upon creation.");
-
-        try
-        {
-            if (!space.Valid)
-                throw new ArgumentException($"Invalid space {space}.", nameof(space));
-
-            ThrowIfBound(uuid);
-        }
-        catch
-        {
-            Destroy(this);
-            throw;
-        }
-
-        InitializeUnchecked(space, uuid);
-    }
-
-    /// <summary>
-    /// Saves the <see cref="OVRSpatialAnchor"/> to local persistent storage.
-    /// </summary>
-    /// <remarks>
-    /// This method is asynchronous. Use <paramref name="onComplete"/> to be notified of completion.
-    ///
-    /// When saved, an <see cref="OVRSpatialAnchor"/> can be loaded by a different session. Use the
-    /// <see cref="Uuid"/> to identify the same <see cref="OVRSpatialAnchor"/> at a future time.
-    ///
-    /// This operation fully succeeds or fails, which means, either all anchors are successfully saved,
-    /// or the operation fails.
-    /// </remarks>
-    /// <param name="onComplete">
-    /// Invoked when the save operation completes. May be null. Parameters are
-    /// - <see cref="OVRSpatialAnchor"/>: The anchor being saved.
-    /// - `bool`: A value indicating whether the save operation succeeded.
-    /// </param>
-    public void Save(Action<OVRSpatialAnchor, bool> onComplete = null)
-    {
-        Save(_defaultSaveOptions, onComplete);
-    }
 
     private static NativeArray<ulong> ToNativeArray(ICollection<OVRSpatialAnchor> anchors)
     {
@@ -172,36 +108,10 @@ public class OVRSpatialAnchor : MonoBehaviour
         var i = 0;
         foreach (var anchor in anchors.ToNonAlloc())
         {
-            spaces[i++] = anchor ? anchor.Space : 0;
+            spaces[i++] = anchor ? anchor._anchor.Handle : 0;
         }
 
         return spaces;
-    }
-
-    /// <summary>
-    /// Saves the <see cref="OVRSpatialAnchor"/> with specified <see cref="SaveOptions"/>.
-    /// </summary>
-    /// <remarks>
-    /// This method is asynchronous. Use <paramref name="onComplete"/> to be notified of completion.
-    /// When saved, the <see cref="OVRSpatialAnchor"/> can be loaded by a different session. Use the
-    /// <see cref="Uuid"/> to identify the same <see cref="OVRSpatialAnchor"/> at a future time.
-    ///
-    /// This operation fully succeeds or fails; that is, either all anchors are successfully saved,
-    /// or the operation fails.
-    /// </remarks>
-    /// <param name="saveOptions">Save options, e.g., whether local or cloud.</param>
-    /// <param name="onComplete">
-    /// Invoked when the save operation completes. May be null. Parameters are
-    /// - <see cref="OVRSpatialAnchor"/>: The anchor being saved.
-    /// - `bool`: A value indicating whether the save operation succeeded.
-    /// </param>
-    public void Save(SaveOptions saveOptions, Action<OVRSpatialAnchor, bool> onComplete = null)
-    {
-        var task = SaveAsync(saveOptions);
-        if (onComplete != null)
-        {
-            InvertedCapture<bool, OVRSpatialAnchor>.ContinueTaskWith(task, onComplete, this);
-        }
     }
 
     /// <summary>
@@ -244,46 +154,45 @@ public class OVRSpatialAnchor : MonoBehaviour
     }
 
     /// <summary>
-    /// Saves a collection of <see cref="OVRSpatialAnchor"/> to specified storage.
+    /// Saves a collection of anchors to persistent storage.
     /// </summary>
     /// <remarks>
-    /// This method is asynchronous. Use <paramref name="onComplete"/> to be notified of completion.
-    /// When saved, an <see cref="OVRSpatialAnchor"/> can be loaded by a different session. Use the
+    /// This method is asynchronous. Use the returned <see cref="OVRTask{TResult}"/> to track the progress of the
+    /// save operation.
+    ///
+    /// When saved, an <see cref="OVRSpatialAnchor"/> can be loaded in a different session. Use the
     /// <see cref="Uuid"/> to identify the same <see cref="OVRSpatialAnchor"/> at a future time.
     /// </remarks>
-    /// <param name="anchors">Collection of anchors</param>
+    /// <param name="anchors">The collection of anchors to save.</param>
     /// <param name="saveOptions">Save options, e.g., whether local or cloud.</param>
-    /// <param name="onComplete">
-    /// Invoked when the save operation completes. May be null. <paramref name="onComplete"/> receives two parameters:
-    /// - `ICollection&lt;OVRSpatialAnchor&gt;`: The same collection as in <paramref name="anchors"/> parameter
-    /// - `OperationResult`: An error code indicating whether the save operation succeeded or not.
-    /// </param>
+    /// <returns>A task that represents the asynchronous save operation.</returns>
     /// <exception cref="ArgumentNullException">Thrown if <paramref name="anchors"/> is `null`.</exception>
-    public static void Save(ICollection<OVRSpatialAnchor> anchors, SaveOptions saveOptions,
-        Action<ICollection<OVRSpatialAnchor>, OperationResult> onComplete = null)
+    public static OVRTask<OperationResult> SaveAsync(IEnumerable<OVRSpatialAnchor> anchors, SaveOptions saveOptions)
     {
         if (anchors == null)
             throw new ArgumentNullException(nameof(anchors));
 
-        using var spaces = ToNativeArray(anchors);
-        var saveResult =
-            OVRPlugin.SaveSpaceList(spaces, saveOptions.Storage.ToSpaceStorageLocation(), out var requestId);
-
-        if (saveResult.IsSuccess())
+        var anchorCollection = anchors.ToNonAlloc();
+        unsafe
         {
-            Development.LogRequest(requestId, $"Saving spatial anchors...");
+            var spaces = stackalloc ulong[anchorCollection.GetCount()];
+            uint spaceCount = 0;
 
-            MultiAnchorCompletionDelegates[requestId] = new MultiAnchorDelegatePair
+            foreach (var anchor in anchorCollection)
             {
-                Anchors = CopyAnchorListIntoListFromPool(anchors),
-                Delegate = onComplete
-            };
-        }
-        else
-        {
-            Development.LogError(
-                $"{nameof(OVRPlugin)}.{nameof(OVRPlugin.SaveSpaceList)} failed with error {saveResult}.");
-            onComplete?.Invoke(anchors, (OperationResult)saveResult);
+                spaces[spaceCount++] = anchor._anchor.Handle;
+            }
+
+            var result = OVRPlugin.SaveSpaceList(spaces, spaceCount, saveOptions.Storage.ToSpaceStorageLocation(),
+                out var requestId);
+
+            Development.LogRequestOrError(requestId, result,
+                $"Saving {spaceCount} spatial anchors.",
+                $"xrSaveSpaceListFB failed with error {result}.");
+
+            return result.IsSuccess()
+                ? OVRTask.FromRequest<OperationResult>(requestId)
+                : OVRTask.FromResult((OperationResult)result);
         }
     }
 
@@ -293,27 +202,6 @@ public class OVRSpatialAnchor : MonoBehaviour
         var poolList = OVRObjectPool.List<OVRSpatialAnchor>();
         poolList.AddRange(anchorList);
         return poolList;
-    }
-
-    /// <summary>
-    /// Shares the anchor to an <see cref="OVRSpaceUser"/>.
-    /// The specified user will be able to download, track, and share specified anchors.
-    /// </summary>
-    /// <remarks>
-    /// This method is asynchronous. Use <paramref name="onComplete"/> to be notified of completion.
-    /// </remarks>
-    /// <param name="user">An Oculus user to share the anchor with.</param>
-    /// <param name="onComplete">
-    /// Invoked when the share operation completes. May be null. Delegate parameter is
-    /// - `OperationResult`: An error code that indicates whether the share operation succeeded or not.
-    /// </param>
-    public void Share(OVRSpaceUser user, Action<OperationResult> onComplete = null)
-    {
-        var task = ShareAsync(user);
-        if (onComplete != null)
-        {
-            task.ContinueWith(onComplete);
-        }
     }
 
     /// <summary>
@@ -332,28 +220,6 @@ public class OVRSpatialAnchor : MonoBehaviour
         var userList = OVRObjectPool.List<OVRSpaceUser>();
         userList.Add(user);
         return ShareAsyncInternal(userList);
-    }
-
-    /// <summary>
-    /// Shares the anchor with two <see cref="OVRSpaceUser"/>.
-    /// Specified users will be able to download, track, and share specified anchors.
-    /// </summary>
-    /// <remarks>
-    /// This method is asynchronous. Use <paramref name="onComplete"/> to be notified of completion.
-    /// </remarks>
-    /// <param name="user1">An Oculus user to share the anchor with.</param>
-    /// <param name="user2">An Oculus user to share the anchor with.</param>
-    /// <param name="onComplete">
-    /// Invoked when the share operation completes. May be null. Delegate parameter is
-    /// - `OperationResult`: An error code that indicates whether the share operation succeeded or not.
-    /// </param>
-    public void Share(OVRSpaceUser user1, OVRSpaceUser user2, Action<OperationResult> onComplete = null)
-    {
-        var task = ShareAsync(user1, user2);
-        if (onComplete != null)
-        {
-            task.ContinueWith(onComplete);
-        }
     }
 
     /// <summary>
@@ -377,30 +243,6 @@ public class OVRSpatialAnchor : MonoBehaviour
     }
 
     /// <summary>
-    /// Shares the anchor with three <see cref="OVRSpaceUser"/>.
-    /// Specified users will be able to download, track, and share specified anchors.
-    /// </summary>
-    /// <remarks>
-    /// This method is asynchronous. Use <paramref name="onComplete"/> to be notified of completion.
-    /// </remarks>
-    /// <param name="user1">An Oculus user to share the anchor with.</param>
-    /// <param name="user2">An Oculus user to share the anchor with.</param>
-    /// <param name="user3">An Oculus user to share the anchor with.</param>
-    /// <param name="onComplete">
-    /// Invoked when the share operation completes. May be null. Delegate parameter is
-    /// - `OperationResult`: An error code that indicates whether the share operation succeeded or not.
-    /// </param>
-    public void Share(OVRSpaceUser user1, OVRSpaceUser user2, OVRSpaceUser user3,
-        Action<OperationResult> onComplete = null)
-    {
-        var task = ShareAsync(user1, user2, user3);
-        if (onComplete != null)
-        {
-            task.ContinueWith(onComplete);
-        }
-    }
-
-    /// <summary>
     /// Shares the anchor to an <see cref="OVRSpaceUser"/>.
     /// The specified user will be able to download, track, and share specified anchors.
     /// </summary>
@@ -420,31 +262,6 @@ public class OVRSpatialAnchor : MonoBehaviour
         userList.Add(user2);
         userList.Add(user3);
         return ShareAsyncInternal(userList);
-    }
-
-    /// <summary>
-    /// Shares the anchor with four <see cref="OVRSpaceUser"/>.
-    /// Specified users will be able to download, track, and share specified anchors.
-    /// </summary>
-    /// <remarks>
-    /// This method is asynchronous. Use <paramref name="onComplete"/> to be notified of completion.
-    /// </remarks>
-    /// <param name="user1">An Oculus user to share the anchor with.</param>
-    /// <param name="user2">An Oculus user to share the anchor with.</param>
-    /// <param name="user3">An Oculus user to share the anchor with.</param>
-    /// <param name="user4">An Oculus user to share the anchor with.</param>
-    /// <param name="onComplete">
-    /// Invoked when the share operation completes. May be null. Delegate parameter is
-    /// - `OperationResult`: An error code that indicates whether the share operation succeeded or not.
-    /// </param>
-    public void Share(OVRSpaceUser user1, OVRSpaceUser user2, OVRSpaceUser user3, OVRSpaceUser user4,
-        Action<OperationResult> onComplete = null)
-    {
-        var task = ShareAsync(user1, user2, user3, user4);
-        if (onComplete != null)
-        {
-            task.ContinueWith(onComplete);
-        }
     }
 
     /// <summary>
@@ -473,27 +290,6 @@ public class OVRSpatialAnchor : MonoBehaviour
     }
 
     /// <summary>
-    /// Shares the anchor to a collection of <see cref="OVRSpaceUser"/>.
-    /// Specified users will be able to download, track, and share specified anchors.
-    /// </summary>
-    /// <remarks>
-    /// This method is asynchronous. Use <paramref name="onComplete"/> to be notified of completion.
-    /// </remarks>
-    /// <param name="users">A collection of Oculus users to share the anchor with.</param>
-    /// <param name="onComplete">
-    /// Invoked when the share operation completes. May be null. Delegate parameter is
-    /// - `OperationResult`: An error code that indicates whether the share operation succeeded or not.
-    /// </param>
-    public void Share(IEnumerable<OVRSpaceUser> users, Action<OperationResult> onComplete = null)
-    {
-        var task = ShareAsync(users);
-        if (onComplete != null)
-        {
-            task.ContinueWith(onComplete);
-        }
-    }
-
-    /// <summary>
     /// Shares the anchor to an <see cref="OVRSpaceUser"/>.
     /// The specified user will be able to download, track, and share specified anchors.
     /// </summary>
@@ -512,55 +308,59 @@ public class OVRSpatialAnchor : MonoBehaviour
     }
 
     /// <summary>
-    /// Shares a collection of <see cref="OVRSpatialAnchor"/> to specified users.
-    /// Specified users will be able to download, track, and share specified anchors.
+    /// Shares a collection of anchors with a collection of users.
     /// </summary>
     /// <remarks>
-    /// This method is asynchronous. Use <paramref name="onComplete"/> to be notified of completion.
+    /// The <see cref="users"/> will be able to download, localize, and share the specified <see cref="anchors"/>.
+    ///
+    /// This method is asynchronous. Use the returned <see cref="OVRTask{TResult}"/> to monitor completion.
     ///
     /// This operation fully succeeds or fails, which means, either all anchors are successfully shared
     /// or the operation fails.
     /// </remarks>
     /// <param name="anchors">The collection of anchors to share.</param>
     /// <param name="users">An array of Oculus users to share these anchors with.</param>
-    /// <param name="onComplete">
-    /// Invoked when the share operation completes. May be null. Delegate parameter is
-    /// - `ICollection&lt;OVRSpatialAnchor&gt;`: The collection of anchors being shared.
-    /// - `OperationResult`: An error code that indicates whether the share operation succeeded or not.
-    /// </param>
+    /// <returns>A task that can be used to track the completion of the sharing operation.</returns>
     /// <exception cref="ArgumentNullException">Thrown if <paramref name="anchors"/> is `null`.</exception>
-    public static void Share(ICollection<OVRSpatialAnchor> anchors, ICollection<OVRSpaceUser> users,
-        Action<ICollection<OVRSpatialAnchor>, OperationResult> onComplete = null)
+    /// <exception cref="ArgumentNullException">Thrown if <paramref name="users"/> is `null`.</exception>
+    public static OVRTask<OperationResult> ShareAsync(IEnumerable<OVRSpatialAnchor> anchors,
+        IEnumerable<OVRSpaceUser> users)
     {
         if (anchors == null)
             throw new ArgumentNullException(nameof(anchors));
 
-        using var spaces = ToNativeArray(anchors);
+        if (users == null)
+            throw new ArgumentNullException(nameof(users));
 
-        var handles = new NativeArray<ulong>(users.Count, Allocator.Temp);
-        using var disposer = handles;
-        int i = 0;
-        foreach (var user in users)
+        var anchorCollection = anchors.ToNonAlloc();
+        var userCollection = users.ToNonAlloc();
+
+        unsafe
         {
-            handles[i++] = user._handle;
-        }
-
-        var shareResult = OVRPlugin.ShareSpaces(spaces, handles, out var requestId);
-        if (shareResult.IsSuccess())
-        {
-            Development.LogRequest(requestId, $"Sharing {(uint)spaces.Length} spatial anchors...");
-
-            MultiAnchorCompletionDelegates[requestId] = new MultiAnchorDelegatePair
+            var spaces = stackalloc ulong[anchorCollection.GetCount()];
+            uint spaceCount = 0;
+            foreach (var anchor in anchorCollection)
             {
-                Anchors = CopyAnchorListIntoListFromPool(anchors),
-                Delegate = onComplete
-            };
-        }
-        else
-        {
-            Development.LogError(
-                $"{nameof(OVRPlugin)}.{nameof(OVRPlugin.ShareSpaces)}  failed with error {shareResult}.");
-            onComplete?.Invoke(anchors, (OperationResult)shareResult);
+                spaces[spaceCount++] = anchor._anchor.Handle;
+            }
+
+            var userHandles = stackalloc ulong[userCollection.GetCount()];
+            uint userCount = 0;
+            foreach (var user in userCollection)
+            {
+                userHandles[userCount++] = user._handle;
+            }
+
+            var result = OVRPlugin.ShareSpaces(spaces, spaceCount, userHandles, userCount,
+                out var requestId);
+
+            Development.LogRequestOrError(requestId, result,
+                $"Sharing {spaceCount} spatial anchors with {userCount} users.",
+                $"xrShareSpacesFB failed with error {result}.");
+
+            return result.IsSuccess()
+                ? OVRTask.FromRequest<OperationResult>(requestId)
+                : OVRTask.FromResult((OperationResult)result);
         }
     }
 
@@ -613,46 +413,6 @@ public class OVRSpatialAnchor : MonoBehaviour
     }
 
     /// <summary>
-    /// Erases the <see cref="OVRSpatialAnchor"/> from persistent storage.
-    /// </summary>
-    /// <remarks>
-    /// This method is asynchronous. Use <paramref name="onComplete"/> to be notified of completion.
-    /// Erasing an <see cref="OVRSpatialAnchor"/> does not destroy the anchor.
-    /// </remarks>
-    /// <param name="onComplete">
-    /// Invoked when the erase operation completes. May be null. Parameters are
-    /// - <see cref="OVRSpatialAnchor"/>: The anchor being erased.
-    /// - `bool`: A value indicating whether the erase operation succeeded.
-    /// </param>
-    public void Erase(Action<OVRSpatialAnchor, bool> onComplete = null)
-    {
-        Erase(_defaultEraseOptions, onComplete);
-    }
-
-    /// <summary>
-    /// Erases the <see cref="OVRSpatialAnchor"/> from specified storage.
-    /// </summary>
-    /// <remarks>
-    /// This method is asynchronous. Use <paramref name="onComplete"/> to be notified of completion.
-    /// Erasing an <see cref="OVRSpatialAnchor"/> does not destroy the anchor.
-    /// </remarks>
-    /// <param name="eraseOptions">Options how the anchor should be erased.</param>
-    /// <param name="onComplete">
-    /// Invoked when the erase operation completes. May be null. Parameters are
-    /// - <see cref="OVRSpatialAnchor"/>: The anchor being erased.
-    /// - `bool`: A value indicating whether the erase operation succeeded.
-    /// </param>
-    public void Erase(EraseOptions eraseOptions, Action<OVRSpatialAnchor, bool> onComplete = null)
-    {
-        var task = EraseAsync(eraseOptions);
-
-        if (onComplete != null)
-        {
-            InvertedCapture<bool, OVRSpatialAnchor>.ContinueTaskWith(task, onComplete, this);
-        }
-    }
-
-    /// <summary>
     /// Erases the <see cref="OVRSpatialAnchor"/> from specified storage.
     /// </summary>
     /// <remarks>
@@ -676,7 +436,7 @@ public class OVRSpatialAnchor : MonoBehaviour
     /// An <see cref="OVRTask{TResult}"/> with a boolean type parameter indicating the success of the erase operation.
     /// </returns>
     public OVRTask<bool> EraseAsync(EraseOptions eraseOptions) =>
-        OVRPlugin.EraseSpace(Space, eraseOptions.Storage.ToSpaceStorageLocation(), out var requestId)
+        OVRPlugin.EraseSpace(_anchor.Handle, eraseOptions.Storage.ToSpaceStorageLocation(), out var requestId)
             ? OVRTask.FromRequest<bool>(requestId)
             : OVRTask.FromResult(false);
 
@@ -693,11 +453,22 @@ public class OVRSpatialAnchor : MonoBehaviour
     {
         SpatialAnchors.Add(uuid, this);
         _requestId = 0;
-        Space = space;
-        Uuid = uuid;
-        OVRPlugin.SetSpaceComponentStatus(Space, OVRPlugin.SpaceComponentType.Locatable, true, 0, out _);
-        OVRPlugin.SetSpaceComponentStatus(Space, OVRPlugin.SpaceComponentType.Storable, true, 0, out _);
-        OVRPlugin.SetSpaceComponentStatus(Space, OVRPlugin.SpaceComponentType.Sharable, true, 0, out _);
+        _anchor = new OVRAnchor(space, uuid);
+
+        if (_anchor.TryGetComponent<OVRLocatable>(out var locatable))
+        {
+            locatable.SetEnabledSafeAsync(true);
+        }
+
+        if (_anchor.TryGetComponent<OVRStorable>(out var storable))
+        {
+            storable.SetEnabledSafeAsync(true);
+        }
+
+        if (_anchor.TryGetComponent<OVRSharable>(out var sharable))
+        {
+            sharable.SetEnabledSafeAsync(true);
+        }
 
         // Try to update the pose as soon as we can.
         UpdateTransform();
@@ -707,9 +478,9 @@ public class OVRSpatialAnchor : MonoBehaviour
     {
         _startCalled = true;
 
-        if (Space.Valid)
+        if (Created)
         {
-            Development.Log($"[{Uuid}] Created spatial anchor from existing an existing space.");
+            Development.Log($"[{Uuid}] {nameof(OVRSpatialAnchor)} created from existing an existing anchor.");
         }
         else
         {
@@ -719,7 +490,7 @@ public class OVRSpatialAnchor : MonoBehaviour
 
     private void Update()
     {
-        if (Space.Valid)
+        if (Created)
         {
             UpdateTransform();
         }
@@ -753,7 +524,9 @@ public class OVRSpatialAnchor : MonoBehaviour
         {
             if (userList.Count > 0 && anchorList.Count > 0)
             {
+#pragma warning disable CS0618
                 Share(anchorList, userList);
+#pragma warning restore
             }
 
             OVRObjectPool.Return(userList);
@@ -765,9 +538,9 @@ public class OVRSpatialAnchor : MonoBehaviour
 
     private void OnDestroy()
     {
-        if (Space.Valid)
+        if (_anchor != OVRAnchor.Null)
         {
-            OVRPlugin.DestroySpace(Space);
+            _anchor.Dispose();
         }
 
         SpatialAnchors.Remove(Uuid);
@@ -828,7 +601,7 @@ public class OVRSpatialAnchor : MonoBehaviour
 
     private void UpdateTransform()
     {
-        if (TryGetPose(Space, out var pose))
+        if (TryGetPose(_anchor.Handle, out var pose))
         {
             transform.SetPositionAndRotation(pose.position, pose.orientation);
         }
@@ -865,16 +638,11 @@ public class OVRSpatialAnchor : MonoBehaviour
     private static readonly Dictionary<ulong, MultiAnchorDelegatePair> MultiAnchorCompletionDelegates =
         new Dictionary<ulong, MultiAnchorDelegatePair>();
 
-    private static readonly List<UnboundAnchor> UnboundAnchorBuffer = new List<UnboundAnchor>();
-
-    private static readonly OVRPlugin.SpaceComponentType[] ComponentTypeBuffer = new OVRPlugin.SpaceComponentType[32];
-
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
     static void InitializeOnLoad()
     {
         CreationRequests.Clear();
         MultiAnchorCompletionDelegates.Clear();
-        UnboundAnchorBuffer.Clear();
         SpatialAnchors.Clear();
     }
 
@@ -1088,7 +856,7 @@ public class OVRSpatialAnchor : MonoBehaviour
     /// <remarks>
     /// Use this object to bind an unbound spatial anchor to an <see cref="OVRSpatialAnchor"/>.
     /// </remarks>
-    public readonly struct UnboundAnchor
+    public readonly partial struct UnboundAnchor
     {
         internal readonly OVRSpace _space;
 
@@ -1128,44 +896,6 @@ public class OVRSpatialAnchor : MonoBehaviour
                         $"[{Uuid}] Anchor must be localized before obtaining its pose.");
 
                 return new Pose(pose.position, pose.orientation);
-            }
-        }
-
-        /// <summary>
-        /// Localizes an anchor.
-        /// </summary>
-        /// <remarks>
-        /// The delegate supplied to <see cref="OVRSpatialAnchor.LoadUnboundAnchors"/> receives an array of unbound
-        /// spatial anchors. You can choose whether to localize each one and be notified when localization completes.
-        ///
-        /// The <paramref name="onComplete"/> delegate receives two arguments:
-        /// - `bool`: Whether localization was successful
-        /// - <see cref="UnboundAnchor"/>: The anchor to bind
-        ///
-        /// Upon successful localization, your delegate should instantiate an <see cref="OVRSpatialAnchor"/>, then bind
-        /// the <see cref="UnboundAnchor"/> to the <see cref="OVRSpatialAnchor"/> by calling
-        /// <see cref="UnboundAnchor.BindTo"/>. Once an <see cref="UnboundAnchor"/> is bound to an
-        /// <see cref="OVRSpatialAnchor"/>, it cannot be used again; that is, it cannot be bound to multiple
-        /// <see cref="OVRSpatialAnchor"/> components.
-        /// </remarks>
-        /// <param name="onComplete">A delegate invoked when localization completes (which may fail). The delegate
-        /// receives two arguments:
-        /// - <see cref="UnboundAnchor"/>: The anchor to bind
-        /// - `bool`: Whether localization was successful
-        /// </param>
-        /// <param name="timeout">The timeout, in seconds, to attempt localization, or zero to indicate no timeout.</param>
-        /// <exception cref="InvalidOperationException">Thrown if
-        /// - The anchor does not support localization, e.g., because it is invalid.
-        /// - The anchor has already been localized.
-        /// - The anchor is being localized, e.g., because <see cref="Localize"/> was previously called.
-        /// </exception>
-        public void Localize(Action<UnboundAnchor, bool> onComplete = null, double timeout = 0)
-        {
-            var task = LocalizeAsync(timeout);
-
-            if (onComplete != null)
-            {
-                InvertedCapture<bool, UnboundAnchor>.ContinueTaskWith(task, onComplete, this);
             }
         }
 
@@ -1282,30 +1012,6 @@ public class OVRSpatialAnchor : MonoBehaviour
     /// <remarks>
     /// Use this method to find anchors that were previously persisted with
     /// <see cref="Save(Action{OVRSpatialAnchor, bool}"/>. The query is asynchronous; when the query completes,
-    /// <paramref name="onComplete"/> is invoked with an array of <see cref="UnboundAnchor"/>s for which tracking
-    /// may be requested.
-    /// </remarks>
-    /// <param name="options">Options that affect the query.</param>
-    /// <param name="onComplete">A delegate invoked when the query completes. The delegate accepts one argument:
-    /// - `UnboundAnchor[]`: An array of unbound anchors.
-    ///
-    /// If the operation fails, <paramref name="onComplete"/> is invoked with `null`.</param>
-    /// <returns>Returns `true` if the operation could be initiated; otherwise `false`.</returns>
-    /// <exception cref="ArgumentNullException">Thrown if <paramref name="onComplete"/> is `null`.</exception>
-    /// <exception cref="InvalidOperationException">Thrown if <see cref="LoadOptions.Uuids"/> of <paramref name="options"/> is `null`.</exception>
-    public static bool LoadUnboundAnchors(LoadOptions options, Action<UnboundAnchor[]> onComplete)
-    {
-        var task = LoadUnboundAnchorsAsync(options);
-        task.ContinueWith(onComplete);
-        return task.IsPending;
-    }
-
-    /// <summary>
-    /// Performs a query for anchors with the specified <paramref name="options"/>.
-    /// </summary>
-    /// <remarks>
-    /// Use this method to find anchors that were previously persisted with
-    /// <see cref="Save(Action{OVRSpatialAnchor, bool}"/>. The query is asynchronous; when the query completes,
     /// the returned <see cref="OVRTask{TResult}"/> will contain an array of <see cref="UnboundAnchor"/>s for which tracking
     /// may be requested.
     /// </remarks>
@@ -1335,36 +1041,19 @@ public class OVRSpatialAnchor : MonoBehaviour
     /// Create an unbound spatial anchor from an <seealso cref="OVRAnchor"/>.
     /// </summary>
     /// <remarks>
-    /// Only spatial anchors retrieved as <seealso cref="OVRAnchors"/>s should use
+    /// Only spatial anchors retrieved as <seealso cref="OVRAnchor"/>s should use
     /// this method. Using this function on system-managed scene anchors will
     /// succeed, but certain functions will not work.
     /// </remarks>
     /// <param name="anchor">The <seealso cref="OVRAnchor"/> to create the unbound anchor for.</param>
     /// <param name="unboundAnchor">The created unboundAnchor.</param>
-    /// <returns>True if the anchor was successfully created, false otherwise.</returns>
+    /// <returns>True if <paramref name="anchor"/> is localizable and is not already bound to an
+    /// <see cref="OVRSpatialAnchor"/>, otherwise false.</returns>
     public static bool FromOVRAnchor(OVRAnchor anchor, out UnboundAnchor unboundAnchor)
     {
         if (anchor == OVRAnchor.Null) throw new ArgumentNullException(nameof(anchor));
 
-        var success = false;
-        unboundAnchor = new UnboundAnchor();
-
-        if (SpatialAnchors.ContainsKey(anchor.Uuid))
-            return success;
-
-        PopulateUnbound(anchor.Uuid, anchor.Handle);
-
-        if (UnboundAnchorBuffer.Count > 0)
-        {
-            var lastAnchor = UnboundAnchorBuffer[UnboundAnchorBuffer.Count - 1];
-            if (lastAnchor.Uuid == anchor.Uuid)
-            {
-                success = true;
-                unboundAnchor = lastAnchor;
-            }
-        }
-
-        return success;
+        return TryGetUnbound(anchor, out unboundAnchor);
     }
 
     private static void OnSpaceQueryComplete(ulong requestId, bool queryResult)
@@ -1401,71 +1090,62 @@ public class OVRSpatialAnchor : MonoBehaviour
 
         using var disposer = results;
 
-        UnboundAnchorBuffer.Clear();
-        foreach (var result in results)
+        using (new OVRObjectPool.ListScope<UnboundAnchor>(out var unboundAnchorList))
         {
-            PopulateUnbound(result.uuid, result.space);
+            foreach (var result in results)
+            {
+                if (TryGetUnbound(new OVRAnchor(result.space, result.uuid), out var unboundAnchor))
+                {
+                    unboundAnchorList.Add(unboundAnchor);
+                }
+            }
+
+            var unboundAnchors = unboundAnchorList.Count == 0
+                ? Array.Empty<UnboundAnchor>()
+                : unboundAnchorList.ToArray();
+
+            Development.Log(
+                $"Invoking callback with {unboundAnchors.Length} unbound anchor{(unboundAnchors.Length == 1 ? "" : "s")}.");
+
+            OVRTask.GetExisting<UnboundAnchor[]>(requestId).SetResult(unboundAnchors);
         }
-
-        Development.Log(
-            $"Invoking callback with {UnboundAnchorBuffer.Count} unbound anchor{(UnboundAnchorBuffer.Count == 1 ? "" : "s")}.");
-
-        var unboundAnchors = UnboundAnchorBuffer.Count == 0
-            ? Array.Empty<UnboundAnchor>()
-            : UnboundAnchorBuffer.ToArray();
-        OVRTask.GetExisting<UnboundAnchor[]>(requestId).SetResult(unboundAnchors);
     }
 
-    private static void PopulateUnbound(Guid uuid, UInt64 space)
+    private static bool TryGetUnbound(OVRAnchor anchor, out UnboundAnchor unboundAnchor)
     {
-        if (SpatialAnchors.ContainsKey(uuid))
+        unboundAnchor = default;
+        if (SpatialAnchors.ContainsKey(anchor.Uuid))
         {
-            Development.Log($"[{uuid}] Anchor is already bound to an {nameof(OVRSpatialAnchor)}. Ignoring.");
-            return;
+            Development.Log($"[{anchor}] Anchor is already bound to an {nameof(OVRSpatialAnchor)}. Ignoring.");
+            return false;
         }
 
         // See if it supports localization
-        if (!OVRPlugin.EnumerateSpaceSupportedComponents(space, out var numSupportedComponents,
-                ComponentTypeBuffer))
-        {
-            Development.LogWarning($"[{uuid}] Unable to enumerate supported component types. Ignoring.");
-            return;
-        }
+        var supportsLocatable = anchor.TryGetComponent<OVRLocatable>(out var locatable);
 
-        var supportsLocatable = false;
-        for (var i = 0; i < numSupportedComponents; i++)
-        {
-            supportsLocatable |= ComponentTypeBuffer[i] == OVRPlugin.SpaceComponentType.Locatable;
-        }
-
-#if DEVELOPMENT_BUILD
-        var supportedComponentTypesMsg =
-            $"[{uuid}] Supports {numSupportedComponents} component type(s): {(numSupportedComponents == 0 ? "(none)" : string.Join(", ", ComponentTypeBuffer.Take((int)numSupportedComponents).Select(c => c.ToString())))}";
+#if DEVELOPMENT_BUILD || UNITY_EDITOR
+        using var _ = new OVRObjectPool.ListScope<OVRPlugin.SpaceComponentType>(out var supportedComponents);
+        anchor.GetSupportedComponents(supportedComponents);
+#pragma warning disable OVR004
+        var debugComponentList = supportedComponents.Count == 0
+            ? "(no components)"
+            : string.Join(", ", supportedComponents.Select(c => c.ToString()));
+#pragma warning restore
+#else
+        var debugComponentList = string.Empty;
 #endif
+
+        Development.Log(
+            $"[{anchor}] {(locatable.IsEnabled ? "is localized" : "not yet localized")}. Supported components: {debugComponentList}");
 
         if (!supportsLocatable)
         {
-#if DEVELOPMENT_BUILD
-            Development.Log($"{supportedComponentTypesMsg} -- ignoring because it does not support localization.");
-#endif
-            return;
+            Debug.LogError($"Ignoring {anchor} because it does not support localization.");
+            return false;
         }
 
-        if (!OVRPlugin.GetSpaceComponentStatus(space, OVRPlugin.SpaceComponentType.Locatable, out var enabled,
-                out var changePending))
-        {
-#if DEVELOPMENT_BUILD
-            Development.Log($"{supportedComponentTypesMsg} -- ignoring because failed to get localization.");
-#endif
-            return;
-        }
-#if DEVELOPMENT_BUILD
-        Development.Log($"{supportedComponentTypesMsg}.");
-#endif
-
-        Debug.Log($"{uuid}: locatable enabled? {enabled} changePending? {changePending}");
-
-        UnboundAnchorBuffer.Add(new UnboundAnchor(space, uuid));
+        unboundAnchor = new UnboundAnchor(anchor.Handle, anchor.Uuid);
+        return true;
     }
 
     private static void OnSpaceSetComponentStatusComplete(ulong requestId, bool result, OVRSpace space, Guid uuid,
@@ -1493,6 +1173,7 @@ public class OVRSpatialAnchor : MonoBehaviour
             $"Spaces saved.",
             $"Spaces save failed with error {result}.");
 
+        OVRTask.SetResult(requestId, result);
         InvokeMultiAnchorDelegate(requestId, result, MultiAnchorActionType.Save);
     }
 
@@ -1502,6 +1183,7 @@ public class OVRSpatialAnchor : MonoBehaviour
             $"Spaces shared.",
             $"Spaces share failed with error {result}.");
 
+        OVRTask.SetResult(requestId, result);
         InvokeMultiAnchorDelegate(requestId, result, MultiAnchorActionType.Share);
     }
 
@@ -1515,6 +1197,20 @@ public class OVRSpatialAnchor : MonoBehaviour
 
         [Conditional("DEVELOPMENT_BUILD"), Conditional("UNITY_EDITOR")]
         public static void LogError(string message) => Debug.LogError($"[{nameof(OVRSpatialAnchor)}] {message}");
+
+        [Conditional("DEVELOPMENT_BUILD"), Conditional("UNITY_EDITOR")]
+        public static void LogRequestOrError(ulong requestId, OVRPlugin.Result result, string successMessage,
+            string failureMessage)
+        {
+            if (result.IsSuccess())
+            {
+                LogRequest(requestId, successMessage);
+            }
+            else
+            {
+                LogError(failureMessage);
+            }
+        }
 
 #if DEVELOPMENT_BUILD
         private static readonly HashSet<ulong> _requests = new HashSet<ulong>();

@@ -72,6 +72,11 @@ ModelImporter:
   - first:
       type: UnityEngine:Material
       assembly: UnityEngine.CoreModule
+      name: controllerMATphong
+    second: {fileID: 2100000, guid: 4b13877204bf5394c80dc8b6e469ec13, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
       name: controllerMATphongRT
     second: {fileID: 2100000, guid: 4b13877204bf5394c80dc8b6e469ec13, type: 2}
   materials:
@@ -85,12 +90,12 @@ ModelImporter:
     resampleCurves: 1
     optimizeGameObjects: 0
     removeConstantScaleCurves: 0
-    motionNodeName: 
-    rigImportErrors: 
-    rigImportWarnings: 
-    animationImportErrors: 
-    animationImportWarnings: 
-    animationRetargetingWarnings: 
+    motionNodeName:
+    rigImportErrors:
+    rigImportWarnings:
+    animationImportErrors:
+    animationImportWarnings:
+    animationRetargetingWarnings:
     animationDoRetargetingWarnings: 0
     importAnimatedCustomProperties: 0
     importConstraints: 0
@@ -157,13 +162,11 @@ ModelImporter:
       curves: []
       events: []
       transformMask:
-      - path: 
+      - path:
         weight: 1
-      - path: right_batteryIndicatorQuad
+      - path: oculus_controller_r_MeshX
         weight: 0
-      - path: right_nub
-        weight: 0
-      - path: right_oculus_controller_mesh
+      - path: right_batteryIndicatorQuad_MeshX_MeshX
         weight: 0
       - path: right_oculus_controller_world
         weight: 0
@@ -171,15 +174,15 @@ ModelImporter:
         weight: 1
       - path: right_oculus_controller_world/b_button_b
         weight: 0
-      - path: right_oculus_controller_world/b_button_oculus
+      - path: right_oculus_controller_world/right_b_button_oculus
         weight: 0
-      - path: right_oculus_controller_world/b_thumbstick
+      - path: right_oculus_controller_world/right_b_thumbstick
         weight: 0
-      - path: right_oculus_controller_world/b_trigger_front
+      - path: right_oculus_controller_world/right_b_trigger_front
         weight: 0
-      - path: right_oculus_controller_world/b_trigger_grip
+      - path: right_oculus_controller_world/right_b_trigger_grip
         weight: 0
-      - path: right_oculus_controller_world/laser_begin
+      - path: right_oculus_controller_world/right_laser_begin
         weight: 0
       maskType: 0
       maskSource: {instanceID: 0}
@@ -210,13 +213,13 @@ ModelImporter:
       curves: []
       events: []
       transformMask:
-      - path: 
+      - path:
         weight: 1
-      - path: right_batteryIndicatorQuad
+      - path: right_batteryIndicatorQuad_MeshX
         weight: 0
       - path: right_nub
         weight: 0
-      - path: right_oculus_controller_mesh
+      - path: oculus_controller_r_MeshX
         weight: 0
       - path: right_oculus_controller_world
         weight: 0
@@ -224,15 +227,15 @@ ModelImporter:
         weight: 0
       - path: right_oculus_controller_world/b_button_b
         weight: 0
-      - path: right_oculus_controller_world/b_button_oculus
+      - path: right_oculus_controller_world/right_b_button_oculus
         weight: 0
-      - path: right_oculus_controller_world/b_thumbstick
+      - path: right_oculus_controller_world/right_b_thumbstick
         weight: 1
-      - path: right_oculus_controller_world/b_trigger_front
+      - path: right_oculus_controller_world/right_b_trigger_front
         weight: 0
-      - path: right_oculus_controller_world/b_trigger_grip
+      - path: right_oculus_controller_world/right_b_trigger_grip
         weight: 0
-      - path: right_oculus_controller_world/laser_begin
+      - path: right_oculus_controller_world/right_laser_begin
         weight: 0
       maskType: 0
       maskSource: {instanceID: 0}
@@ -263,13 +266,13 @@ ModelImporter:
       curves: []
       events: []
       transformMask:
-      - path: 
+      - path:
         weight: 1
-      - path: right_batteryIndicatorQuad
+      - path: right_batteryIndicatorQuad_MeshX
         weight: 0
       - path: right_nub
         weight: 0
-      - path: right_oculus_controller_mesh
+      - path: oculus_controller_r_MeshX
         weight: 0
       - path: right_oculus_controller_world
         weight: 0
@@ -277,15 +280,15 @@ ModelImporter:
         weight: 0
       - path: right_oculus_controller_world/b_button_b
         weight: 0
-      - path: right_oculus_controller_world/b_button_oculus
+      - path: right_oculus_controller_world/right_b_button_oculus
         weight: 0
-      - path: right_oculus_controller_world/b_thumbstick
+      - path: right_oculus_controller_world/right_b_thumbstick
         weight: 0
-      - path: right_oculus_controller_world/b_trigger_front
+      - path: right_oculus_controller_world/right_b_trigger_front
         weight: 1
-      - path: right_oculus_controller_world/b_trigger_grip
+      - path: right_oculus_controller_world/right_b_trigger_grip
         weight: 0
-      - path: right_oculus_controller_world/laser_begin
+      - path: right_oculus_controller_world/right_laser_begin
         weight: 0
       maskType: 0
       maskSource: {instanceID: 0}
@@ -316,13 +319,13 @@ ModelImporter:
       curves: []
       events: []
       transformMask:
-      - path: 
+      - path:
         weight: 1
-      - path: right_batteryIndicatorQuad
+      - path: right_batteryIndicatorQuad_MeshX
         weight: 0
       - path: right_nub
         weight: 0
-      - path: right_oculus_controller_mesh
+      - path: oculus_controller_r_MeshX
         weight: 0
       - path: right_oculus_controller_world
         weight: 0
@@ -330,15 +333,15 @@ ModelImporter:
         weight: 0
       - path: right_oculus_controller_world/b_button_b
         weight: 1
-      - path: right_oculus_controller_world/b_button_oculus
+      - path: right_oculus_controller_world/right_b_button_oculus
         weight: 0
-      - path: right_oculus_controller_world/b_thumbstick
+      - path: right_oculus_controller_world/right_b_thumbstick
         weight: 0
-      - path: right_oculus_controller_world/b_trigger_front
+      - path: right_oculus_controller_world/right_b_trigger_front
         weight: 0
-      - path: right_oculus_controller_world/b_trigger_grip
+      - path: right_oculus_controller_world/right_b_trigger_grip
         weight: 0
-      - path: right_oculus_controller_world/laser_begin
+      - path: right_oculus_controller_world/right_laser_begin
         weight: 0
       maskType: 0
       maskSource: {instanceID: 0}
@@ -369,13 +372,13 @@ ModelImporter:
       curves: []
       events: []
       transformMask:
-      - path: 
+      - path:
         weight: 1
-      - path: right_batteryIndicatorQuad
+      - path: right_batteryIndicatorQuad_MeshX
         weight: 0
       - path: right_nub
         weight: 0
-      - path: right_oculus_controller_mesh
+      - path: oculus_controller_r_MeshX
         weight: 0
       - path: right_oculus_controller_world
         weight: 0
@@ -383,15 +386,15 @@ ModelImporter:
         weight: 0
       - path: right_oculus_controller_world/b_button_b
         weight: 0
-      - path: right_oculus_controller_world/b_button_oculus
+      - path: right_oculus_controller_world/right_b_button_oculus
         weight: 1
-      - path: right_oculus_controller_world/b_thumbstick
+      - path: right_oculus_controller_world/right_b_thumbstick
         weight: 0
-      - path: right_oculus_controller_world/b_trigger_front
+      - path: right_oculus_controller_world/right_b_trigger_front
         weight: 0
-      - path: right_oculus_controller_world/b_trigger_grip
+      - path: right_oculus_controller_world/right_b_trigger_grip
         weight: 0
-      - path: right_oculus_controller_world/laser_begin
+      - path: right_oculus_controller_world/right_laser_begin
         weight: 0
       maskType: 0
       maskSource: {instanceID: 0}
@@ -422,13 +425,13 @@ ModelImporter:
       curves: []
       events: []
       transformMask:
-      - path: 
+      - path:
         weight: 1
-      - path: right_batteryIndicatorQuad
+      - path: right_batteryIndicatorQuad_MeshX
         weight: 0
       - path: right_nub
         weight: 0
-      - path: right_oculus_controller_mesh
+      - path: oculus_controller_r_MeshX
         weight: 0
       - path: right_oculus_controller_world
         weight: 0
@@ -436,15 +439,15 @@ ModelImporter:
         weight: 0
       - path: right_oculus_controller_world/b_button_b
         weight: 0
-      - path: right_oculus_controller_world/b_button_oculus
+      - path: right_oculus_controller_world/right_b_button_oculus
         weight: 0
-      - path: right_oculus_controller_world/b_thumbstick
+      - path: right_oculus_controller_world/right_b_thumbstick
         weight: 1
-      - path: right_oculus_controller_world/b_trigger_front
+      - path: right_oculus_controller_world/right_b_trigger_front
         weight: 0
-      - path: right_oculus_controller_world/b_trigger_grip
+      - path: right_oculus_controller_world/right_b_trigger_grip
         weight: 0
-      - path: right_oculus_controller_world/laser_begin
+      - path: right_oculus_controller_world/right_laser_begin
         weight: 0
       maskType: 0
       maskSource: {instanceID: 0}
@@ -475,13 +478,13 @@ ModelImporter:
       curves: []
       events: []
       transformMask:
-      - path: 
+      - path:
         weight: 1
-      - path: right_batteryIndicatorQuad
+      - path: right_batteryIndicatorQuad_MeshX
         weight: 0
       - path: right_nub
         weight: 0
-      - path: right_oculus_controller_mesh
+      - path: oculus_controller_r_MeshX
         weight: 0
       - path: right_oculus_controller_world
         weight: 0
@@ -489,15 +492,15 @@ ModelImporter:
         weight: 0
       - path: right_oculus_controller_world/b_button_b
         weight: 0
-      - path: right_oculus_controller_world/b_button_oculus
+      - path: right_oculus_controller_world/right_b_button_oculus
         weight: 0
-      - path: right_oculus_controller_world/b_thumbstick
+      - path: right_oculus_controller_world/right_b_thumbstick
         weight: 1
-      - path: right_oculus_controller_world/b_trigger_front
+      - path: right_oculus_controller_world/right_b_trigger_front
         weight: 0
-      - path: right_oculus_controller_world/b_trigger_grip
+      - path: right_oculus_controller_world/right_b_trigger_grip
         weight: 0
-      - path: right_oculus_controller_world/laser_begin
+      - path: right_oculus_controller_world/right_laser_begin
         weight: 0
       maskType: 0
       maskSource: {instanceID: 0}
@@ -528,13 +531,13 @@ ModelImporter:
       curves: []
       events: []
       transformMask:
-      - path: 
+      - path:
         weight: 1
-      - path: right_batteryIndicatorQuad
+      - path: right_batteryIndicatorQuad_MeshX
         weight: 0
       - path: right_nub
         weight: 0
-      - path: right_oculus_controller_mesh
+      - path: oculus_controller_r_MeshX
         weight: 0
       - path: right_oculus_controller_world
         weight: 0
@@ -542,15 +545,15 @@ ModelImporter:
         weight: 0
       - path: right_oculus_controller_world/b_button_b
         weight: 0
-      - path: right_oculus_controller_world/b_button_oculus
+      - path: right_oculus_controller_world/right_b_button_oculus
         weight: 0
-      - path: right_oculus_controller_world/b_thumbstick
+      - path: right_oculus_controller_world/right_b_thumbstick
         weight: 0
-      - path: right_oculus_controller_world/b_trigger_front
+      - path: right_oculus_controller_world/right_b_trigger_front
         weight: 0
-      - path: right_oculus_controller_world/b_trigger_grip
+      - path: right_oculus_controller_world/right_b_trigger_grip
         weight: 1
-      - path: right_oculus_controller_world/laser_begin
+      - path: right_oculus_controller_world/right_laser_begin
         weight: 0
       maskType: 0
       maskSource: {instanceID: 0}
@@ -581,13 +584,13 @@ ModelImporter:
       curves: []
       events: []
       transformMask:
-      - path: 
+      - path:
         weight: 1
-      - path: right_batteryIndicatorQuad
+      - path: right_batteryIndicatorQuad_MeshX
         weight: 0
       - path: right_nub
         weight: 0
-      - path: right_oculus_controller_mesh
+      - path: oculus_controller_r_MeshX
         weight: 0
       - path: right_oculus_controller_world
         weight: 0
@@ -595,15 +598,15 @@ ModelImporter:
         weight: 0
       - path: right_oculus_controller_world/b_button_b
         weight: 0
-      - path: right_oculus_controller_world/b_button_oculus
+      - path: right_oculus_controller_world/right_b_button_oculus
         weight: 0
-      - path: right_oculus_controller_world/b_thumbstick
+      - path: right_oculus_controller_world/right_b_thumbstick
         weight: 1
-      - path: right_oculus_controller_world/b_trigger_front
+      - path: right_oculus_controller_world/right_b_trigger_front
         weight: 0
-      - path: right_oculus_controller_world/b_trigger_grip
+      - path: right_oculus_controller_world/right_b_trigger_grip
         weight: 0
-      - path: right_oculus_controller_world/laser_begin
+      - path: right_oculus_controller_world/right_laser_begin
         weight: 0
       maskType: 0
       maskSource: {instanceID: 0}
@@ -634,13 +637,13 @@ ModelImporter:
       curves: []
       events: []
       transformMask:
-      - path: 
+      - path:
         weight: 1
-      - path: right_batteryIndicatorQuad
+      - path: right_batteryIndicatorQuad_MeshX
         weight: 0
       - path: right_nub
         weight: 0
-      - path: right_oculus_controller_mesh
+      - path: oculus_controller_r_MeshX
         weight: 0
       - path: right_oculus_controller_world
         weight: 0
@@ -648,15 +651,15 @@ ModelImporter:
         weight: 0
       - path: right_oculus_controller_world/b_button_b
         weight: 0
-      - path: right_oculus_controller_world/b_button_oculus
+      - path: right_oculus_controller_world/right_b_button_oculus
         weight: 0
-      - path: right_oculus_controller_world/b_thumbstick
+      - path: right_oculus_controller_world/right_b_thumbstick
         weight: 1
-      - path: right_oculus_controller_world/b_trigger_front
+      - path: right_oculus_controller_world/right_b_trigger_front
         weight: 0
-      - path: right_oculus_controller_world/b_trigger_grip
+      - path: right_oculus_controller_world/right_b_trigger_grip
         weight: 0
-      - path: right_oculus_controller_world/laser_begin
+      - path: right_oculus_controller_world/right_laser_begin
         weight: 0
       maskType: 0
       maskSource: {instanceID: 0}
@@ -687,13 +690,13 @@ ModelImporter:
       curves: []
       events: []
       transformMask:
-      - path: 
+      - path:
         weight: 1
-      - path: right_batteryIndicatorQuad
+      - path: right_batteryIndicatorQuad_MeshX
         weight: 0
       - path: right_nub
         weight: 0
-      - path: right_oculus_controller_mesh
+      - path: oculus_controller_r_MeshX
         weight: 0
       - path: right_oculus_controller_world
         weight: 0
@@ -701,15 +704,15 @@ ModelImporter:
         weight: 0
       - path: right_oculus_controller_world/b_button_b
         weight: 0
-      - path: right_oculus_controller_world/b_button_oculus
+      - path: right_oculus_controller_world/right_b_button_oculus
         weight: 0
-      - path: right_oculus_controller_world/b_thumbstick
+      - path: right_oculus_controller_world/right_b_thumbstick
         weight: 1
-      - path: right_oculus_controller_world/b_trigger_front
+      - path: right_oculus_controller_world/right_b_trigger_front
         weight: 0
-      - path: right_oculus_controller_world/b_trigger_grip
+      - path: right_oculus_controller_world/right_b_trigger_grip
         weight: 0
-      - path: right_oculus_controller_world/laser_begin
+      - path: right_oculus_controller_world/right_laser_begin
         weight: 0
       maskType: 0
       maskSource: {instanceID: 0}
@@ -740,13 +743,13 @@ ModelImporter:
       curves: []
       events: []
       transformMask:
-      - path: 
+      - path:
         weight: 1
-      - path: right_batteryIndicatorQuad
+      - path: right_batteryIndicatorQuad_MeshX
         weight: 0
       - path: right_nub
         weight: 0
-      - path: right_oculus_controller_mesh
+      - path: oculus_controller_r_MeshX
         weight: 0
       - path: right_oculus_controller_world
         weight: 0
@@ -754,15 +757,15 @@ ModelImporter:
         weight: 0
       - path: right_oculus_controller_world/b_button_b
         weight: 0
-      - path: right_oculus_controller_world/b_button_oculus
+      - path: right_oculus_controller_world/right_b_button_oculus
         weight: 0
-      - path: right_oculus_controller_world/b_thumbstick
+      - path: right_oculus_controller_world/right_b_thumbstick
         weight: 1
-      - path: right_oculus_controller_world/b_trigger_front
+      - path: right_oculus_controller_world/right_b_trigger_front
         weight: 0
-      - path: right_oculus_controller_world/b_trigger_grip
+      - path: right_oculus_controller_world/right_b_trigger_grip
         weight: 0
-      - path: right_oculus_controller_world/laser_begin
+      - path: right_oculus_controller_world/right_laser_begin
         weight: 0
       maskType: 0
       maskSource: {instanceID: 0}
@@ -793,13 +796,13 @@ ModelImporter:
       curves: []
       events: []
       transformMask:
-      - path: 
+      - path:
         weight: 1
-      - path: right_batteryIndicatorQuad
+      - path: right_batteryIndicatorQuad_MeshX
         weight: 0
       - path: right_nub
         weight: 0
-      - path: right_oculus_controller_mesh
+      - path: oculus_controller_r_MeshX
         weight: 0
       - path: right_oculus_controller_world
         weight: 0
@@ -807,15 +810,15 @@ ModelImporter:
         weight: 1
       - path: right_oculus_controller_world/b_button_b
         weight: 0
-      - path: right_oculus_controller_world/b_button_oculus
+      - path: right_oculus_controller_world/right_b_button_oculus
         weight: 0
-      - path: right_oculus_controller_world/b_thumbstick
+      - path: right_oculus_controller_world/right_b_thumbstick
         weight: 0
-      - path: right_oculus_controller_world/b_trigger_front
+      - path: right_oculus_controller_world/right_b_trigger_front
         weight: 0
-      - path: right_oculus_controller_world/b_trigger_grip
+      - path: right_oculus_controller_world/right_b_trigger_grip
         weight: 0
-      - path: right_oculus_controller_world/laser_begin
+      - path: right_oculus_controller_world/right_laser_begin
         weight: 0
       maskType: 0
       maskSource: {instanceID: 0}
@@ -846,13 +849,13 @@ ModelImporter:
       curves: []
       events: []
       transformMask:
-      - path: 
+      - path:
         weight: 1
-      - path: right_batteryIndicatorQuad
+      - path: right_batteryIndicatorQuad_MeshX
         weight: 0
       - path: right_nub
         weight: 0
-      - path: right_oculus_controller_mesh
+      - path: oculus_controller_r_MeshX
         weight: 0
       - path: right_oculus_controller_world
         weight: 0
@@ -860,15 +863,15 @@ ModelImporter:
         weight: 0
       - path: right_oculus_controller_world/b_button_b
         weight: 1
-      - path: right_oculus_controller_world/b_button_oculus
+      - path: right_oculus_controller_world/right_b_button_oculus
         weight: 0
-      - path: right_oculus_controller_world/b_thumbstick
+      - path: right_oculus_controller_world/right_b_thumbstick
         weight: 0
-      - path: right_oculus_controller_world/b_trigger_front
+      - path: right_oculus_controller_world/right_b_trigger_front
         weight: 0
-      - path: right_oculus_controller_world/b_trigger_grip
+      - path: right_oculus_controller_world/right_b_trigger_grip
         weight: 0
-      - path: right_oculus_controller_world/laser_begin
+      - path: right_oculus_controller_world/right_laser_begin
         weight: 0
       maskType: 0
       maskSource: {instanceID: 0}
@@ -899,13 +902,13 @@ ModelImporter:
       curves: []
       events: []
       transformMask:
-      - path: 
+      - path:
         weight: 1
-      - path: right_batteryIndicatorQuad
+      - path: right_batteryIndicatorQuad_MeshX
         weight: 0
       - path: right_nub
         weight: 0
-      - path: right_oculus_controller_mesh
+      - path: oculus_controller_r_MeshX
         weight: 0
       - path: right_oculus_controller_world
         weight: 0
@@ -913,15 +916,15 @@ ModelImporter:
         weight: 0
       - path: right_oculus_controller_world/b_button_b
         weight: 0
-      - path: right_oculus_controller_world/b_button_oculus
+      - path: right_oculus_controller_world/right_b_button_oculus
         weight: 1
-      - path: right_oculus_controller_world/b_thumbstick
+      - path: right_oculus_controller_world/right_b_thumbstick
         weight: 0
-      - path: right_oculus_controller_world/b_trigger_front
+      - path: right_oculus_controller_world/right_b_trigger_front
         weight: 0
-      - path: right_oculus_controller_world/b_trigger_grip
+      - path: right_oculus_controller_world/right_b_trigger_grip
         weight: 0
-      - path: right_oculus_controller_world/laser_begin
+      - path: right_oculus_controller_world/right_laser_begin
         weight: 0
       maskType: 0
       maskSource: {instanceID: 0}
@@ -952,13 +955,13 @@ ModelImporter:
       curves: []
       events: []
       transformMask:
-      - path: 
+      - path:
         weight: 1
-      - path: right_batteryIndicatorQuad
+      - path: right_batteryIndicatorQuad_MeshX
         weight: 0
       - path: right_nub
         weight: 0
-      - path: right_oculus_controller_mesh
+      - path: oculus_controller_r_MeshX
         weight: 0
       - path: right_oculus_controller_world
         weight: 0
@@ -966,15 +969,15 @@ ModelImporter:
         weight: 0
       - path: right_oculus_controller_world/b_button_b
         weight: 0
-      - path: right_oculus_controller_world/b_button_oculus
+      - path: right_oculus_controller_world/right_b_button_oculus
         weight: 0
-      - path: right_oculus_controller_world/b_thumbstick
+      - path: right_oculus_controller_world/right_b_thumbstick
         weight: 0
-      - path: right_oculus_controller_world/b_trigger_front
+      - path: right_oculus_controller_world/right_b_trigger_front
         weight: 0
-      - path: right_oculus_controller_world/b_trigger_grip
+      - path: right_oculus_controller_world/right_b_trigger_grip
         weight: 1
-      - path: right_oculus_controller_world/laser_begin
+      - path: right_oculus_controller_world/right_laser_begin
         weight: 0
       maskType: 0
       maskSource: {instanceID: 0}
@@ -1005,13 +1008,13 @@ ModelImporter:
       curves: []
       events: []
       transformMask:
-      - path: 
+      - path:
         weight: 1
-      - path: right_batteryIndicatorQuad
+      - path: right_batteryIndicatorQuad_MeshX
         weight: 0
       - path: right_nub
         weight: 0
-      - path: right_oculus_controller_mesh
+      - path: oculus_controller_r_MeshX
         weight: 0
       - path: right_oculus_controller_world
         weight: 0
@@ -1019,15 +1022,15 @@ ModelImporter:
         weight: 0
       - path: right_oculus_controller_world/b_button_b
         weight: 0
-      - path: right_oculus_controller_world/b_button_oculus
+      - path: right_oculus_controller_world/right_b_button_oculus
         weight: 0
-      - path: right_oculus_controller_world/b_thumbstick
+      - path: right_oculus_controller_world/right_b_thumbstick
         weight: 0
-      - path: right_oculus_controller_world/b_trigger_front
+      - path: right_oculus_controller_world/right_b_trigger_front
         weight: 1
-      - path: right_oculus_controller_world/b_trigger_grip
+      - path: right_oculus_controller_world/right_b_trigger_grip
         weight: 0
-      - path: right_oculus_controller_world/laser_begin
+      - path: right_oculus_controller_world/right_laser_begin
         weight: 0
       maskType: 0
       maskSource: {instanceID: 0}
@@ -1058,13 +1061,13 @@ ModelImporter:
       curves: []
       events: []
       transformMask:
-      - path: 
+      - path:
         weight: 1
-      - path: right_batteryIndicatorQuad
+      - path: right_batteryIndicatorQuad_MeshX
         weight: 0
       - path: right_nub
         weight: 0
-      - path: right_oculus_controller_mesh
+      - path: oculus_controller_r_MeshX
         weight: 0
       - path: right_oculus_controller_world
         weight: 0
@@ -1072,15 +1075,15 @@ ModelImporter:
         weight: 0
       - path: right_oculus_controller_world/b_button_b
         weight: 0
-      - path: right_oculus_controller_world/b_button_oculus
+      - path: right_oculus_controller_world/right_b_button_oculus
         weight: 0
-      - path: right_oculus_controller_world/b_thumbstick
+      - path: right_oculus_controller_world/right_b_thumbstick
         weight: 1
-      - path: right_oculus_controller_world/b_trigger_front
+      - path: right_oculus_controller_world/right_b_trigger_front
         weight: 0
-      - path: right_oculus_controller_world/b_trigger_grip
+      - path: right_oculus_controller_world/right_b_trigger_grip
         weight: 0
-      - path: right_oculus_controller_world/laser_begin
+      - path: right_oculus_controller_world/right_laser_begin
         weight: 0
       maskType: 0
       maskSource: {instanceID: 0}
@@ -1142,7 +1145,7 @@ ModelImporter:
     legStretch: 0.05
     feetSpacing: 0
     globalScale: 1
-    rootMotionBoneName: 
+    rootMotionBoneName:
     hasTranslationDoF: 0
     hasExtraRoot: 0
     skeletonHasParents: 1
@@ -1154,6 +1157,6 @@ ModelImporter:
   addHumanoidExtraRootOnlyWhenUsingAvatar: 1
   remapMaterialsIfMaterialImportModeIsNone: 1
   additionalBone: 0
-  userData: 
-  assetBundleName: 
-  assetBundleVariant: 
+  userData:
+  assetBundleName:
+  assetBundleVariant:

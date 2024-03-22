@@ -107,6 +107,20 @@ namespace Meta.XR
         /// </summary>
         public const string featureId = "com.meta.openxr.feature.metaxr";
 
+        /// <summary>
+        /// For detecting when the user has mounted or unmounted the headset.
+        /// </summary>
+        public bool userPresent
+        {
+            get
+            {
+                if (OVRPlugin.UnityOpenXR.Enabled)
+                    return OVRPlugin.userPresent;
+                else
+                    return false;
+            }
+        }
+
         /// <inheritdoc />
         protected override IntPtr HookGetInstanceProcAddr(IntPtr func)
         {

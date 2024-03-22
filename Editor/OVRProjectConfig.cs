@@ -62,12 +62,6 @@ public class OVRProjectConfig : ScriptableObject, ISerializationCallbackReceiver
         V2 = 2
     }
 
-    public enum MultimodalHandsControllersSupport
-    {
-        Disabled = 0,
-        Enabled = 1,
-    }
-
     public enum AnchorSupport
     {
         Disabled = 0,
@@ -108,8 +102,6 @@ public class OVRProjectConfig : ScriptableObject, ISerializationCallbackReceiver
     public HandTrackingSupport handTrackingSupport = HandTrackingSupport.ControllersOnly;
     public HandTrackingFrequency handTrackingFrequency = HandTrackingFrequency.LOW;
     public HandTrackingVersion handTrackingVersion = HandTrackingVersion.Default;
-    public MultimodalHandsControllersSupport multimodalHandsControllersSupport =
-        MultimodalHandsControllersSupport.Disabled;
 
     [FormerlySerializedAs("spatialAnchorsSupport")]
     public AnchorSupport anchorSupport = AnchorSupport.Disabled;
@@ -122,6 +114,7 @@ public class OVRProjectConfig : ScriptableObject, ISerializationCallbackReceiver
     public FeatureSupport eyeTrackingSupport = FeatureSupport.None;
     public FeatureSupport virtualKeyboardSupport = FeatureSupport.None;
     public FeatureSupport sceneSupport = FeatureSupport.None;
+
 
     public bool disableBackups = true;
     public bool enableNSCConfig = true;
@@ -288,7 +281,6 @@ public class OVRProjectConfig : ScriptableObject, ISerializationCallbackReceiver
             projectConfig.handTrackingSupport = HandTrackingSupport.ControllersOnly;
             projectConfig.handTrackingFrequency = HandTrackingFrequency.LOW;
             projectConfig.handTrackingVersion = HandTrackingVersion.Default;
-            projectConfig.multimodalHandsControllersSupport = MultimodalHandsControllersSupport.Disabled;
             projectConfig.anchorSupport = AnchorSupport.Disabled;
             projectConfig.sharedAnchorSupport = FeatureSupport.None;
             projectConfig.trackedKeyboardSupport = TrackedKeyboardSupport.None;

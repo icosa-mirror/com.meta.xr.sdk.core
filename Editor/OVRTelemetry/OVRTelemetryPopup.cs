@@ -19,6 +19,7 @@
  */
 
 using UnityEditor;
+using UnityEngine;
 
 [InitializeOnLoad]
 internal static class OVRTelemetryPopup
@@ -36,35 +37,34 @@ internal static class OVRTelemetryPopup
             ShowPopup();
         }
 
-        OVRRuntimeSettings.Instance.SendConsentEvent(OVRTelemetryConstants.OVRManager.ConsentOrigins.Legacy);
+        OVRTelemetryConsent.SendConsentEvent(OVRTelemetryConstants.OVRManager.ConsentOrigins.Legacy);
     }
 
     private static bool ShouldShowPopup()
     {
-        return !UserHasPreviouslyAnswered();
+        if (Application.isBatchMode)
+        {
+            return false;
+        }
+
+        return !UserHasPreviouslyAnswered;
     }
 
-    private static bool UserHasPreviouslyAnswered()
-    {
-        return OVRRuntimeSettings.Instance.HasSetTelemetryEnabled;
-    }
+    private static bool UserHasPreviouslyAnswered => OVRTelemetryConsent.HasSetTelemetryEnabled;
 
     private static void ShowPopup()
     {
         var consent = EditorUtility.DisplayDialog(
-            "Help improve the Oculus SDKs",
-            "Allow Meta to collect usage data on it's SDKs, such as feature and resource usage along with software identifiers such as package name, class names" +
-            " and plugin configuration. This data helps improve the Meta SDKs and is collected in accordance with Meta's Privacy Policy." +
-            $"\n\nYou can always change this behavior in Edit > Project Settings > {OVRProjectSetupSettingsProvider.SettingsName} > {OVRProjectSettingsProvider.SettingsName} > Telemetry Enabled",
+            "Help to Improve Meta SDKs",
+            "Allow Meta to collect usage data on its SDKs, such as package name, class names and plugin configuration in your projects using Meta SDKs on this machine." +
+            " This data helps improve the Meta SDKs and is collected in accordance with Meta's Privacy Policy." +
+            $"\n\nYou can always change your selection at:  Edit > Preferences > {OVREditorUtils.MetaXRPublicName} > Telemetry",
             "Send usage statistics",
             "Don't send");
 
         RecordConsent(consent);
     }
 
-    private static void RecordConsent(bool consent)
-    {
-        OVRRuntimeSettings.Instance.SetTelemetryEnabled(consent,
-            OVRTelemetryConstants.OVRManager.ConsentOrigins.Popup);
-    }
+    private static void RecordConsent(bool consent) =>
+        OVRTelemetryConsent.SetTelemetryEnabled(consent, OVRTelemetryConstants.OVRManager.ConsentOrigins.Popup);
 }

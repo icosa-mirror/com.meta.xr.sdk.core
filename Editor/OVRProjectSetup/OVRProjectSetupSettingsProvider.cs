@@ -47,7 +47,7 @@ internal class OVRProjectSetupSettingsProvider : SettingsProvider
         OpenSettingsWindow(Origins.Menu);
     }
 
-    public const string SettingsName = "Oculus";
+    public const string SettingsName = OVREditorUtils.MetaXRPublicName;
     public static readonly string SettingsPath = $"Project/{SettingsName}";
 
     private OVRProjectSetupDrawer _ovrProjectSetupDrawer;

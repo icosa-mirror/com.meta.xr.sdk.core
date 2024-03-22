@@ -19,6 +19,7 @@
  */
 
 using System.Collections.Generic;
+using System.Linq;
 using Meta.XR.BuildingBlocks.Editor;
 using UnityEditor;
 using UnityEditor.Events;
@@ -37,7 +38,7 @@ namespace Meta.XR.BuildingBlocks
 
             var spawner = spatialAnchorControllerGameObject.GetComponent<SpatialAnchorSpawnerBuildingBlock>();
             var spatialAnchorLoader = spatialAnchorControllerGameObject.GetComponent<SpatialAnchorLoaderBuildingBlock>();
-            var spatialAnchorCore = OVRProjectSetupUtils.FindComponentInScene<SpatialAnchorCoreBuildingBlock>();
+            var spatialAnchorCore = Utils.GetBlocksWithBaseClassType<SpatialAnchorCoreBuildingBlock>().First();
             var keyBindingHelper = OVRProjectSetupUtils.FindComponentInScene<ControllerButtonsMapper>();
 
             // Spawn anchor

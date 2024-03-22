@@ -371,3 +371,17 @@ static partial class OVRExtensions
         }
     }
 }
+
+internal static class OVREnumerable
+{
+    public static unsafe int CopyTo<T>(this OVREnumerable<T> enumerable, T* memory) where T : unmanaged
+    {
+        var count = 0;
+        foreach (var item in enumerable)
+        {
+            memory[count++] = item;
+        }
+
+        return count;
+    }
+}

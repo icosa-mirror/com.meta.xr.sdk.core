@@ -154,7 +154,7 @@ internal class OVRConfigurationTaskUpdaterSummary
         var count = GetNumberOfFixes(level);
         if (count == 0)
         {
-            return $"Oculus-Ready for {_buildTargetGroup}";
+            return $"XR Ready for {_buildTargetGroup}";
         }
         else
         {
@@ -241,6 +241,6 @@ internal class OVRConfigurationTaskUpdaterSummary
     internal static string GetFullLogMessage(OVRProjectSetup.TaskLevel level, int count)
     {
         return
-            $"[Oculus Settings] {GetLogMessage(level, count)}\nFor more information, go to <a href=\"{OVRConfigurationTask.ConsoleLinkHref}\">Edit > Project Settings > {OVRProjectSetupSettingsProvider.SettingsName}</a>";
+            $"[{OVRProjectSetupUtils.ProjectSetupToolPublicName}] {GetLogMessage(level, count)}\nFor more information, go to <a href=\"{OVRConfigurationTask.ConsoleLinkHref}\">Edit > Project Settings > {OVRProjectSetupSettingsProvider.SettingsName}</a>";
     }
 }

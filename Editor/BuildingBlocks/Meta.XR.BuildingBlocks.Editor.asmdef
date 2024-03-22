@@ -6,7 +6,8 @@
         "Oculus.VR.Editor",
         "Meta.XR.BuildingBlocks",
         "Meta.XR.Editor.Tags",
-        "Oculus.VR.Scripts.Editor"
+        "Oculus.VR.Scripts.Editor",
+        "Oculus.Platform"
     ],
     "includePlatforms": [
         "Editor"
@@ -18,6 +19,11 @@
     "autoReferenced": true,
     "defineConstraints": [],
     "versionDefines": [
+        {
+            "name": "com.meta.xr.sdk.platform",
+            "expression": "",
+            "define": "USING_META_XR_PLATFORM_SDK"
+        },
         {
             "define": "OVR_UNITY_PACKAGE_MANAGER",
             "name": "com.meta.xr.sdk.core",

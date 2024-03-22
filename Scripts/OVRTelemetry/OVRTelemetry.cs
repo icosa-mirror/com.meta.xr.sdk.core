@@ -34,10 +34,9 @@ internal static partial class OVRTelemetry
 
 #if OVRPLUGIN_UNSUPPORTED_PLATFORM
             return false;
+#else
+            return true;
 #endif
-
-
-            return OVRRuntimeSettings.Instance.TelemetryEnabled;
         }
     }
 

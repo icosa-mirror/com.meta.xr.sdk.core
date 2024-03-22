@@ -60,23 +60,30 @@ namespace Meta.XR.BuildingBlocks
 
         private IEnumerator InitSpatialAnchor(OVRSpatialAnchor anchor)
         {
+            yield return WaitForInit(anchor);
+            yield return SaveLocalAsync(anchor);
+            OnAnchorCreateCompleted?.Invoke(anchor);
+        }
+
+        protected IEnumerator WaitForInit(OVRSpatialAnchor anchor)
+        {
             while (anchor && !anchor.Created)
                 yield return null;
 
             if (anchor == null)
             {
                 Debug.LogWarning($"[{nameof(SpatialAnchorCoreBuildingBlock)}] Failed to create the spatial anchor.");
-                yield break;
             }
+        }
 
+        protected IEnumerator SaveLocalAsync(OVRSpatialAnchor anchor)
+        {
             var task = anchor.SaveAsync();
             while (!task.IsCompleted)
                 yield return null;
 
             if(!task.GetResult())
                 Debug.LogWarning($"[{nameof(SpatialAnchorCoreBuildingBlock)}] Failed to save the spatial anchor.");
-
-            OnAnchorCreateCompleted?.Invoke(anchor);
         }
 
         /// <summary>
@@ -96,7 +103,15 @@ namespace Meta.XR.BuildingBlocks
                 Debug.Log($"[{nameof(SpatialAnchorCoreBuildingBlock)}] Uuid list is empty.");
                 return;
             }
-            StartCoroutine(LoadAnchorsRoutine(prefab, uuids));
+
+            var options = new OVRSpatialAnchor.LoadOptions
+            {
+                Timeout = 0,
+                StorageLocation = OVRSpace.StorageLocation.Local,
+                Uuids = uuids
+            };
+
+            StartCoroutine(LoadAnchorsRoutine(prefab, options));
         }
 
         /// <summary>
@@ -131,16 +146,9 @@ namespace Meta.XR.BuildingBlocks
             StartCoroutine(EraseAnchorByUuidRoutine(anchor));
         }
 
-        private IEnumerator LoadAnchorsRoutine(GameObject prefab, List<Guid> uuids)
+        protected IEnumerator LoadAnchorsRoutine(GameObject prefab, OVRSpatialAnchor.LoadOptions options)
         {
             // Load unbounded anchors
-            var options = new OVRSpatialAnchor.LoadOptions
-            {
-                Timeout = 0,
-                StorageLocation = OVRSpace.StorageLocation.Local,
-                Uuids = uuids
-            };
-
             var task = OVRSpatialAnchor.LoadUnboundAnchorsAsync(options);
             while (!task.IsCompleted)
                 yield return null;
@@ -206,6 +214,20 @@ namespace Meta.XR.BuildingBlocks
                 yield return null;
 
             OnAnchorEraseCompleted?.Invoke(anchor.Uuid);
+        }
+
+        internal static List<SpatialAnchorCoreBuildingBlock> GetBaseInstances()
+        {
+            var baseClassObjects = OVRObjectPool.List<SpatialAnchorCoreBuildingBlock>();
+            var objects = FindObjectsByType<SpatialAnchorCoreBuildingBlock>(FindObjectsSortMode.None);
+
+            foreach (var obj in objects)
+            {
+                if (obj != null && obj.GetType() == typeof(SpatialAnchorCoreBuildingBlock))
+                    baseClassObjects.Add(obj);
+            }
+
+            return baseClassObjects;
         }
     }
 }

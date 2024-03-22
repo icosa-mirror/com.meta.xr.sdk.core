@@ -362,7 +362,7 @@ public class OVRTrackedKeyboard : MonoBehaviour
 
     private IEnumerator Start()
     {
-        cameraRig_ = FindObjectOfType<OVRCameraRig>();
+        cameraRig_ = FindAnyObjectByType<OVRCameraRig>();
 
         SystemKeyboardInfo = new OVRKeyboard.TrackedKeyboardInfo
         {

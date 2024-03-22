@@ -20,6 +20,7 @@ MonoBehaviour:
     array:
     - name: Anchor
     - name: Experimental
+    - name: Prototyping
   thumbnail: {fileID: 2800000, guid: 5a9d3959d5cc6c346bf7998612a568a6, type: 3}
   order: 13
   prefab: {fileID: 2865301061337241238, guid: 1c43829f2162c02489c573215d68d590, type: 3}

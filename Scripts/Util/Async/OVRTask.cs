@@ -21,13 +21,110 @@
 using System;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
+using System.Runtime.ExceptionServices;
+using System.Threading.Tasks;
+using System.Threading.Tasks.Sources;
+using UnityEngine;
 
-internal static class OVRTask
+/// <summary>
+/// Static methods related to <see cref="OVRTask{TResult}"/>
+/// </summary>
+public static partial class OVRTask
 {
+    /// <summary>
+    /// Creates a task that completes when all of the supplied tasks have completed.
+    /// </summary>
+    /// <remarks>
+    /// This can be used to combine multiple tasks into a single task. The returned task completes when all tasks
+    /// in <paramref name="tasks"/> complete.
+    ///
+    /// The result of the returned task is an array containing the results of each individual task. The results are
+    /// arranged in the same order as the original <paramref name="tasks"/> list.
+    /// </remarks>
+    /// <param name="tasks">The tasks to combine</param>
+    /// <typeparam name="TResult">The type of the result produced by the <paramref name="tasks"/>.</typeparam>
+    /// <returns>A new task which is completed when all <paramref name="tasks"/> have completed.</returns>
+    /// <exception cref="ArgumentNullException">Thrown if <paramref name="tasks"/> is `null`.</exception>
+    /// <seealso cref="OVRTask{TResult}"/>
+    public static OVRTask<TResult[]> WhenAll<TResult>(IEnumerable<OVRTask<TResult>> tasks)
+        => OVRTask<TResult>.WhenAll(tasks);
+
+    /// <summary>
+    /// Creates a task that completes when all of the supplied tasks have completed.
+    /// </summary>
+    /// <remarks>
+    /// This can be used to combine multiple tasks into a single task. The returned task completes when all tasks
+    /// in <paramref name="tasks"/> complete.
+    ///
+    /// The result of each task in <paramref name="tasks"/> is added to <paramref name="results"/>. The results are in
+    /// the same order as <paramref name="tasks"/>.
+    ///
+    /// The list in the combined task is a reference to <paramref name="results"/>. This allows the caller to own
+    /// (and potentially reuse) the memory for the list of results. It is undefined behavior to access
+    /// <paramref name="results"/> before the returned task completes.
+    /// </remarks>
+    /// <param name="tasks">The tasks to combine</param>
+    /// <param name="results">A list to store the results in. The list is cleared before adding any results to it.</param>
+    /// <typeparam name="TResult">The type of the result produced by the <paramref name="tasks"/>.</typeparam>
+    /// <returns>A new task which completes when all <paramref name="tasks"/> are complete.</returns>
+    /// <exception cref="ArgumentNullException">Thrown if <paramref name="tasks"/> is `null`.</exception>
+    /// <exception cref="ArgumentNullException">Thrown if <paramref name="results"/> is `null`.</exception>
+    /// <seealso cref="OVRTask{TResult}"/>
+    public static OVRTask<List<TResult>> WhenAll<TResult>(IEnumerable<OVRTask<TResult>> tasks, List<TResult> results)
+        => OVRTask<TResult>.WhenAll(tasks, results);
+
+    class MultiTaskData<T> : OVRObjectPool.IPoolObject
+    {
+        protected OVRTask<T> CombinedTask;
+
+        protected T Result;
+
+        protected HashSet<Guid> Remaining;
+
+        void OVRObjectPool.IPoolObject.OnGet()
+        {
+            CombinedTask = FromGuid<T>(Guid.NewGuid());
+            Result = default;
+            Remaining = OVRObjectPool.HashSet<Guid>();
+        }
+
+        void OVRObjectPool.IPoolObject.OnReturn()
+        {
+            Result = default;
+            OVRObjectPool.Return(Remaining);
+        }
+
+        protected void AddTask(Guid id) => Remaining.Add(id);
+
+        protected void OnResult(Guid taskId)
+        {
+            Remaining.Remove(taskId);
+            if (Remaining.Count != 0) return;
+
+            try
+            {
+                CombinedTask.SetResult(Result);
+            }
+            finally
+            {
+                OVRObjectPool.Return(this);
+            }
+        }
+    }
+
     internal static OVRTask<TResult> FromGuid<TResult>(Guid id) => Create<TResult>(id);
     internal static OVRTask<TResult> FromRequest<TResult>(ulong id) => Create<TResult>(GetId(id));
 
-    internal static OVRTask<TResult> FromResult<TResult>(TResult result)
+    /// <summary>
+    /// Creates an already-complete task.
+    /// </summary>
+    /// <remarks>
+    /// This creates a completed task whose result is <paramref name="result"/>.
+    /// </remarks>
+    /// <param name="result">The result of the task.</param>
+    /// <typeparam name="TResult">The type of the result.</typeparam>
+    /// <returns>Returns a new, completed task-like object whose result is <paramref name="result"/>.</returns>
+    public static OVRTask<TResult> FromResult<TResult>(TResult result)
     {
         var task = Create<TResult>(Guid.NewGuid());
         task.SetResult(result);
@@ -37,8 +134,49 @@ internal static class OVRTask
     internal static OVRTask<TResult> GetExisting<TResult>(Guid id) => Get<TResult>(id);
     internal static OVRTask<TResult> GetExisting<TResult>(ulong id) => Get<TResult>(GetId(id));
 
-    internal static void SetResult<TResult>(Guid id, TResult result) =>
-        GetExisting<TResult>(id).SetResult(result);
+    /// <summary>
+    /// Sets the result of a pending task.
+    /// </summary>
+    /// <remarks>
+    /// Set the result of a task previously created with <see cref="Create{TResult}"/>.
+    /// When this method returns, <see cref="OVRTask{TResult}.IsCompleted"/> will be true.
+    ///
+    /// <example><code><![CDATA[
+    /// OVRTask<int> MyOpAsync() {
+    ///   _id = Guid.NewGuid();
+    ///   var task = OVRTask.Create<int>(id);
+    ///   return task;
+    /// }
+    ///
+    /// // later, when the task completes:
+    /// void Update() {
+    ///   if (operationComplete) {
+    ///     OVRTask.SetResult(_id, result);
+    ///   }
+    /// }
+    /// ]]></code></example>
+    ///
+    /// This allows you to await on `MyOpAsync`:
+    ///
+    /// <example><code><![CDATA[
+    /// async void OnButtonPressed() {
+    ///   var result = await MyOpAsync();
+    /// }
+    /// ]]></code></example>
+    /// </remarks>
+    /// <param name="id">The task's unique id.</param>
+    /// <param name="result">The result the task should have.</param>
+    /// <typeparam name="TResult">The type of the result.</typeparam>
+    /// <exception cref="InvalidOperationException">Thrown if the task with id <paramref name="id"/> already has a
+    /// result.</exception>
+    public static void SetResult<TResult>(Guid id, TResult result)
+    {
+        var task = GetExisting<TResult>(id);
+        if (task.HasResult)
+            throw new InvalidOperationException($"Task {id} already has a result.");
+
+        task.SetResult(result);
+    }
 
     internal static void SetResult<TResult>(ulong id, TResult result) =>
         GetExisting<TResult>(id).SetResult(result);
@@ -48,13 +186,30 @@ internal static class OVRTask
         return new OVRTask<TResult>(id);
     }
 
-    private static OVRTask<TResult> Create<TResult>(Guid id)
+    /// <summary>
+    /// Creates a new task.
+    /// </summary>
+    /// <remarks>
+    /// This method creates a new pending task. When the task completes, set its result with
+    /// <see cref="SetResult{TResult}"/>.
+    ///
+    /// The returned task is in a pending state; that is, <see cref="OVRTask{TResult}.IsCompleted"/> is `False` until
+    /// you later set its result with <see cref="SetResult{TResult}"/>.
+    ///
+    /// The <paramref name="taskId"/> must be unique to the new task. You may use any `Guid` as long as it has not
+    /// previously been used to create a task. Use <code>Guid.NewGuid()</code> to generate a random task id.
+    /// </remarks>
+    /// <param name="taskId">The id used to assign the new task.</param>
+    /// <typeparam name="TResult">The type of the result.</typeparam>
+    /// <returns>Returns a new task which completes when you call <see cref="SetResult{TResult}"/>.</returns>
+    /// <exception cref="ArgumentException">Thrown if <paramref name="taskId"/> refers to an existing task.</exception>
+    public static OVRTask<TResult> Create<TResult>(Guid taskId)
     {
-        var task = Get<TResult>(id);
-        task.AddToPending();
-#if UNITY_EDITOR
         RegisterType<TResult>();
-#endif
+        var task = Get<TResult>(taskId);
+        if (!task.AddToPending())
+            throw new ArgumentException($"The task with id {taskId} already exists.", nameof(taskId));
+
         return task;
     }
 
@@ -68,10 +223,15 @@ internal static class OVRTask
         return guid;
     }
 
+    internal static void RegisterType<TResult>()
+    {
+#if UNITY_EDITOR
+        DomainReloadMethods.Add(OVRTask<TResult>.Clear);
+#endif
+    }
+
 #if UNITY_EDITOR
     private static readonly HashSet<Action> DomainReloadMethods = new HashSet<Action>();
-
-    private static void RegisterType<TResult>() => DomainReloadMethods.Add(OVRTask<TResult>.Clear);
 
     [UnityEditor.InitializeOnEnterPlayMode]
     internal static void OnEnterPlayMode()
@@ -99,37 +259,47 @@ internal static class OVRTask
 /// Requires the main thread to complete the await contract - blocking can result in an infinite loop.
 /// </remarks>
 /// <typeparam name="TResult">The type of result being awaited.</typeparam>
+[AsyncMethodBuilder(typeof(OVRTaskBuilder<>))]
 public readonly struct OVRTask<TResult> : IEquatable<OVRTask<TResult>>, IDisposable
 {
     #region static
 
-    private static readonly HashSet<Guid> Pending = new HashSet<Guid>();
-    private static readonly Dictionary<Guid, TResult> Results = new Dictionary<Guid, TResult>();
-    private static readonly Dictionary<Guid, Action> Continuations = new Dictionary<Guid, Action>();
+    private static readonly HashSet<Guid> Pending = new();
+    private static readonly Dictionary<Guid, TResult> Results = new();
+    private static readonly Dictionary<Guid, Exception> Exceptions = new();
+    private static readonly Dictionary<Guid, TaskSource> Sources = new();
+    private static readonly Dictionary<Guid, AwaitableSource> AwaitableSources = new();
+    private static readonly Dictionary<Guid, Action> Continuations = new();
 
-    private delegate void CallbackInvoker(Guid guid, TResult result);
+    #region ContinueWith Data
+    private delegate void ContinueWithInvoker(Guid guid, TResult result);
+    private delegate bool ContinueWithRemover(Guid guid);
+    private static readonly Dictionary<Guid, ContinueWithInvoker> ContinueWithInvokers = new();
+    private static readonly Dictionary<Guid, ContinueWithRemover> ContinueWithRemovers = new();
+    private static readonly HashSet<Action> ContinueWithClearers = new();
+    #endregion
 
-    private delegate bool CallbackRemover(Guid guid);
-
-    private static readonly Dictionary<Guid, CallbackInvoker>
-        CallbackInvokers = new Dictionary<Guid, CallbackInvoker>();
-
-    private static readonly Dictionary<Guid, CallbackRemover>
-        CallbackRemovers = new Dictionary<Guid, CallbackRemover>();
-
-    private static readonly HashSet<Action> CallbackClearers = new HashSet<Action>();
-
+    #region InternalData Data
     private delegate bool InternalDataRemover(Guid guid);
+    private static readonly Dictionary<Guid, InternalDataRemover> InternalDataRemovers = new();
+    private static readonly HashSet<Action> InternalDataClearers = new();
+    #endregion
 
-    private static readonly Dictionary<Guid, InternalDataRemover> InternalDataRemovers =
-        new Dictionary<Guid, InternalDataRemover>();
+    #region Incremental results data
+    private static readonly Dictionary<Guid, Action<Guid>> IncrementalResultSubscriberRemovers = new();
+    private static readonly HashSet<Action> IncrementalResultSubscriberClearers = new();
+    #endregion
 
-    private static readonly HashSet<Action> InternalDataClearers = new HashSet<Action>();
+    private static bool TryExtractValue<TKey, TValue>(Dictionary<TKey, TValue> dict, TKey key, out TValue value)
+    {
+        if (dict.TryGetValue(key, out value))
+        {
+            dict.Remove(key);
+            return true;
+        }
 
-    private static readonly Dictionary<Guid, Action<Guid>> SubscriberRemovers =
-        new Dictionary<Guid, Action<Guid>>();
-
-    private static readonly HashSet<Action> SubscriberClearers = new HashSet<Action>();
+        return false;
+    }
 
     /// <summary>
     /// Clears internal state for all tasks of type <typeparamref name="TResult"/>.
@@ -142,15 +312,16 @@ public readonly struct OVRTask<TResult> : IEquatable<OVRTask<TResult>>, IDisposa
         Results.Clear();
         Continuations.Clear();
         Pending.Clear();
+        Exceptions.Clear();
 
-        CallbackInvokers.Clear();
-        foreach (var clearer in CallbackClearers)
+        ContinueWithInvokers.Clear();
+        foreach (var clearer in ContinueWithClearers)
         {
             clearer();
         }
 
-        CallbackClearers.Clear();
-        CallbackRemovers.Clear();
+        ContinueWithClearers.Clear();
+        ContinueWithRemovers.Clear();
 
         foreach (var internalDataClearer in InternalDataClearers)
         {
@@ -160,67 +331,167 @@ public readonly struct OVRTask<TResult> : IEquatable<OVRTask<TResult>>, IDisposa
         InternalDataClearers.Clear();
         InternalDataRemovers.Clear();
 
-        foreach (var clearer in SubscriberClearers)
+        foreach (var clearer in IncrementalResultSubscriberClearers)
         {
             clearer();
         }
 
-        SubscriberClearers.Clear();
-        SubscriberRemovers.Clear();
+        IncrementalResultSubscriberClearers.Clear();
+        IncrementalResultSubscriberRemovers.Clear();
+
+        foreach (var source in Sources.Values)
+        {
+            OVRObjectPool.Return(source);
+        }
+        Sources.Clear();
+
+        foreach (var source in AwaitableSources.Values)
+        {
+            OVRObjectPool.Return(source);
+        }
+        AwaitableSources.Clear();
     }
 
     #endregion
 
-    private readonly Guid _id;
+    internal readonly Guid _id;
 
     internal OVRTask(Guid id)
     {
         _id = id;
     }
 
-    internal void AddToPending() => Pending.Add(_id);
+    static OVRTask() => OVRTask.RegisterType<TResult>();
+
+    internal bool AddToPending() => Pending.Add(_id);
     internal bool IsPending => Pending.Contains(_id);
     internal void SetInternalData<T>(T data) => InternalData<T>.Set(_id, data);
     internal bool TryGetInternalData<T>(out T data) => InternalData<T>.TryGet(_id, out data);
 
-    internal void SetResult(TResult result)
+    /// <summary>
+    /// Set an exception that occurred during task execution.
+    /// </summary>
+    /// <remarks>
+    /// Do not call this directly.
+    ///
+    /// OVRTasks were designed to service the needs of OpenXR APIs where one function initiates an asynchronous
+    /// operation (identified by an `XrAsyncRequestId`) and some time later, the result is received. This process
+    /// does not trigger exceptions, and you should not convert OpenXR errors to exceptions (use an error code instead).
+    ///
+    /// The exception handling provided here is to service the compiler-generated OVRTask, e.g.,
+    /// <code><![CDATA[
+    /// async OVRTask<int> ComputeAsync() {
+    ///   var sum = await SomeOtherResultAsync() + 42; // <-- compiler generates an OVRTask here
+    ///   DoSomethingThatThrows(); // exception thrown in C#
+    ///   return sum;
+    /// }
+    /// ]]></code>
+    ///
+    /// This method should only be invoked by the <see cref="OVRTaskBuilder{T}"/> to provide an exception from an
+    /// awaited C# method.
+    /// </remarks>
+    /// <param name="exception">The exception</param>
+    internal void SetException(Exception exception)
     {
-        // Means no one was awaiting this result.
-        if (!Pending.Remove(_id)) return;
-
-        if (InternalDataRemovers.TryGetValue(_id, out var internalDataRemover))
+        if (TryExtractValue(AwaitableSources, _id, out var awaitableSource))
         {
-            InternalDataRemovers.Remove(_id);
-            internalDataRemover(_id);
+            awaitableSource.SetException(exception);
         }
-
-        if (SubscriberRemovers.TryGetValue(_id, out var subscriberRemover))
+        else if (TryExtractValue(Sources, _id, out var source))
         {
-            SubscriberRemovers.Remove(_id);
-            subscriberRemover(_id);
+            source.SetException(exception);
         }
-
-        if (CallbackInvokers.TryGetValue(_id, out var invoker))
+        else if (TryRemoveInternalData())
         {
-            CallbackInvokers.Remove(_id);
-            invoker(_id, result);
+            if (TryExtractValue(ContinueWithInvokers, _id, out var invoker))
+            {
+                // When using ContinueWith, there is no way for the caller to catch the exception.
+                // However, we discourage exceptions to signal anything other than API misuse.
+                ExceptionDispatchInfo.Capture(exception).Throw();
+            }
+
+            // Save the exception so that it can be caught by the await expression.
+            Exceptions.Add(_id, exception);
+            TryInvokeContinuation();
         }
         else
         {
-            // Add to the results so that GetResult can retrieve it later.
-            Results.Add(_id, result);
+            throw new InvalidOperationException(
+                $"The exception {exception} cannot be set on task {_id} because it is not a valid task.", exception);
+        }
+    }
 
-            if (Continuations.TryGetValue(_id, out var continuation))
+    /// <summary>
+    /// Removes internal data related to the task.
+    /// </summary>
+    /// <remarks>
+    /// Removes incremental result subscribers and internal data. Call this when the task completes.
+    /// </remarks>
+    /// <returns>`True` if the task was pending, otherwise `False`</returns>
+    bool TryRemoveInternalData()
+    {
+        if (!Pending.Remove(_id)) return false;
+
+        if (TryExtractValue(InternalDataRemovers, _id, out var internalDataRemover))
+        {
+            internalDataRemover(_id);
+        }
+
+        if (TryExtractValue(IncrementalResultSubscriberRemovers, _id, out var subscriberRemover))
+        {
+            subscriberRemover(_id);
+        }
+
+        return true;
+    }
+
+    bool TryInvokeContinuation()
+    {
+        if (TryExtractValue(Continuations, _id, out var continuation))
+        {
+            continuation();
+            return true;
+        }
+
+        return false;
+    }
+
+    internal void SetResult(TResult result)
+    {
+        if (TryExtractValue(AwaitableSources, _id, out var awaitableSource))
+        {
+            awaitableSource.SetResultAndReturnToPool(result);
+        }
+        else if (TryExtractValue(Sources, _id, out var source))
+        {
+            source.SetResult(result);
+        }
+        // If false, no one was waiting on the task
+        else if (TryRemoveInternalData())
+        {
+            if (TryExtractValue(ContinueWithInvokers, _id, out var invoker))
             {
-                Continuations.Remove(_id);
-                continuation();
+                invoker(_id, result);
+            }
+            else
+            {
+                // Add to the results so that GetResult can retrieve it later.
+                Results.Add(_id, result);
+                TryInvokeContinuation();
             }
         }
     }
 
-    private static class InternalData<T>
+    /// <summary>
+    /// Represents additional data associated with the task
+    /// </summary>
+    /// <remarks>
+    /// These "removers" and "clearers" offer a sort of type erasure so that we can store a typeless
+    /// delegate to invoke that doesn't depend on <typeparamref name="T"/>.
+    /// </remarks>
+    static class InternalData<T>
     {
-        private static readonly Dictionary<Guid, T> Data = new Dictionary<Guid, T>();
+        static readonly Dictionary<Guid, T> Data = new Dictionary<Guid, T>();
 
         public static bool TryGet(Guid taskId, out T data)
         {
@@ -234,21 +505,28 @@ public readonly struct OVRTask<TResult> : IEquatable<OVRTask<TResult>>, IDisposa
             InternalDataClearers.Add(Clearer);
         }
 
-        private static readonly InternalDataRemover Remover = Remove;
-        private static readonly Action Clearer = Clear;
-        private static bool Remove(Guid taskId) => Data.Remove(taskId);
-        private static void Clear() => Data.Clear();
+        static readonly InternalDataRemover Remover = Remove;
+        static readonly Action Clearer = Clear;
+        static bool Remove(Guid taskId) => Data.Remove(taskId);
+        static void Clear() => Data.Clear();
     }
 
+    /// <summary>
+    /// A delegate to invoke when incremental data is received.
+    /// </summary>
+    /// <remarks>
+    /// It is up to the task creator to provide incremental data, but this offers a way to store the delegates,
+    /// if your API offers one to the caller of an async operation.
+    /// </remarks>
     static class IncrementalResultSubscriber<T>
     {
-        static readonly Dictionary<Guid, Action<T>> Subscribers = new Dictionary<Guid, Action<T>>();
+        static readonly Dictionary<Guid, Action<T>> Subscribers = new();
 
         public static void Set(Guid taskId, Action<T> subscriber)
         {
             Subscribers[taskId] = subscriber;
-            SubscriberRemovers[taskId] = Remover;
-            SubscriberClearers.Add(Clearer);
+            IncrementalResultSubscriberRemovers[taskId] = Remover;
+            IncrementalResultSubscriberClearers.Add(Clearer);
         }
 
         public static void Notify(Guid taskId, T result)
@@ -302,6 +580,109 @@ public readonly struct OVRTask<TResult> : IEquatable<OVRTask<TResult>>, IDisposa
     internal void NotifyIncrementalResult<TIncrementalResult>(TIncrementalResult incrementalResult)
         => IncrementalResultSubscriber<TIncrementalResult>.Notify(_id, incrementalResult);
 
+    readonly struct CombinedTaskData : IDisposable
+    {
+        public readonly OVRTask<List<TResult>> Task;
+        readonly HashSet<Guid> _remainingTaskIds;
+        readonly List<Guid> _originalTaskOrder;
+        readonly Dictionary<Guid, TResult> _completedTasks;
+        readonly List<TResult> _userOwnedResultList;
+
+        void OnSingleTaskCompleted(Guid taskId, TResult result)
+        {
+            _completedTasks.Add(taskId, result);
+            _remainingTaskIds.Remove(taskId);
+
+            if (_remainingTaskIds.Count == 0)
+            {
+                using (this)
+                {
+                    _userOwnedResultList.Clear();
+
+                    // Sort the results so that they match the original task ordering
+                    foreach (var id in _originalTaskOrder)
+                    {
+                        _userOwnedResultList.Add(_completedTasks[id]);
+                    }
+
+                    Task.SetResult(_userOwnedResultList);
+                }
+            }
+        }
+
+        static readonly Action<TResult, CombinedTaskDataWithCompletedTaskId> _onSingleTaskCompleted = (result, data)
+            => data.CombinedData.OnSingleTaskCompleted(data.CompletedTaskId, result);
+
+        public CombinedTaskData(IEnumerable<OVRTask<TResult>> tasks, List<TResult> userOwnedResultList)
+        {
+            Task = OVRTask.FromGuid<List<TResult>>(Guid.NewGuid());
+            _remainingTaskIds = OVRObjectPool.HashSet<Guid>();
+            _originalTaskOrder = OVRObjectPool.List<Guid>();
+            _completedTasks = OVRObjectPool.Dictionary<Guid, TResult>();
+            _userOwnedResultList = userOwnedResultList;
+            _userOwnedResultList.Clear();
+
+            // Create a copy of the tasks
+            foreach (var task in tasks.ToNonAlloc())
+            {
+                _remainingTaskIds.Add(task._id);
+                _originalTaskOrder.Add(task._id);
+                task.ContinueWith(_onSingleTaskCompleted, new CombinedTaskDataWithCompletedTaskId
+                {
+                    CompletedTaskId = task._id,
+                    CombinedData = this,
+                });
+            }
+
+            if (_originalTaskOrder.Count == 0)
+            {
+                Task.SetResult(_userOwnedResultList);
+            }
+        }
+
+        public void Dispose()
+        {
+            OVRObjectPool.Return(_remainingTaskIds);
+            OVRObjectPool.Return(_originalTaskOrder);
+            OVRObjectPool.Return(_completedTasks);
+        }
+    }
+
+    struct CombinedTaskDataWithCompletedTaskId
+    {
+        public Guid CompletedTaskId;
+        public CombinedTaskData CombinedData;
+    }
+
+    internal static OVRTask<List<TResult>> WhenAll(IEnumerable<OVRTask<TResult>> tasks, List<TResult> results)
+    {
+        if (tasks == null)
+            throw new ArgumentNullException(nameof(tasks));
+
+        if (results == null)
+            throw new ArgumentNullException(nameof(results));
+
+        return new CombinedTaskData(tasks, results).Task;
+    }
+
+    internal static OVRTask<TResult[]> WhenAll(IEnumerable<OVRTask<TResult>> tasks)
+    {
+        if (tasks == null)
+            throw new ArgumentNullException(nameof(tasks));
+
+        var task = OVRTask.FromGuid<TResult[]>(Guid.NewGuid());
+        var results = OVRObjectPool.List<TResult>();
+        WhenAll(tasks, results).ContinueWith(_onCombinedTaskCompleted, task);
+        return task;
+    }
+
+    static readonly Action<List<TResult>, OVRTask<TResult[]>> _onCombinedTaskCompleted = (resultsFromPool, task) =>
+    {
+        var resultsArray = resultsFromPool.ToArray();
+        OVRObjectPool.Return(resultsFromPool);
+        task.SetResult(resultsArray);
+    };
+
     #region Polling Implementation
 
     /// <summary>
@@ -316,29 +697,289 @@ public readonly struct OVRTask<TResult> : IEquatable<OVRTask<TResult>>, IDisposa
     public bool IsCompleted => !IsPending;
 
     /// <summary>
-    /// Gets the result of the Task.
+    /// Whether the task completed due to an unhandled exception
     /// </summary>
     /// <remarks>
-    /// This method should only be called once <see cref="IsCompleted"/> is true.
-    /// Calling it multiple times leads to undefined behavior.
-    /// Do not use in conjunction with any other methods (<c>await</c> or using <see cref="ContinueWith"/>).
+    /// If the task is in a faulted state, then you can extract the exception with <see cref="GetException"/>.
+    /// </remarks>
+    public bool IsFaulted => Exceptions.ContainsKey(_id);
+
+    /// <summary>
+    /// Get the exception if the task is in a faulted state.
+    /// </summary>
+    /// <remarks>
+    /// If <see cref="IsFaulted"/> is `True`, then this method gets the exception associated with this method. Similar
+    /// to <see cref="GetResult"/>, you can only get the exception once and throws if there is no exception.
+    ///
+    /// When using `await` or <see cref="ContinueWith"/>, you do not need to explicitly get the exception. Use this
+    /// method when you have an exception when it is implicitly created by the compiler and you query the task object
+    /// directly, as in the following example:
+    /// <example><code><![CDATA[
+    /// async OVRTask<bool> DoSomethingAsync() {
+    ///   var anchor = await OVRAnchor.CreateSpatialAnchorAsync(pose); // <-- implicitly generated OVRTask<bool>
+    ///   SomeMethodThatThrows();
+    ///   return true;
+    /// }
+    ///
+    /// OVRTask<bool> task = DoSomethingAsync();
+    ///
+    /// // later...
+    ///
+    /// if (task.IsFaulted) {
+    ///   throw task.GetException();
+    /// }
+    /// ]]></code></example>
+    /// </remarks>
+    /// <returns>Returns the `Exception` associated with the task.</returns>
+    /// <exception cref="InvalidOperationException">Thrown if <see cref="IsFaulted"/> is `False`.</exception>
+    public Exception GetException() => TryExtractValue(Exceptions, _id, out var exception)
+        ? exception
+        : throw new InvalidOperationException($"Task {_id} is not in a faulted state. Check with {nameof(IsFaulted)}");
+
+    /// <summary>
+    /// Gets the result of the asynchronous operation.
+    /// </summary>
+    /// <remarks>
+    /// This method should only be called once <see cref="IsCompleted"/> is true. Calling it multiple times
+    /// will throw `InvalidOperationException`.
+    ///
+    /// Note that <see cref="GetResult"/> is called implicitly when using `await` or <see cref="ContinueWith"/>. You
+    /// should not call this method explicitly when using one of those mechanisms.
     /// </remarks>
     /// <returns>Returns the result of type <typeparamref name="TResult"/>.</returns>
     /// <exception cref="InvalidOperationException">Thrown when the task doesn't have any available result. This could
-    /// happen if the method is called before <see cref="IsCompleted"/> is true, after the task has been disposed of
-    /// or if this method has already been called once.</exception>
+    /// happen if the method is called before <see cref="IsCompleted"/> is true, after the task has been disposed of,
+    /// if this method has already been called once, or if an exception was thrown during the task's execution.</exception>
+    /// <seealso cref="HasResult"/>
+    /// <seealso cref="TryGetResult"/>
     public TResult GetResult()
     {
-        if (!Results.TryGetValue(_id, out var value))
+        if (TryExtractValue(Exceptions, _id, out var exception))
+        {
+            ExceptionDispatchInfo.Capture(exception).Throw();
+        }
+
+        if (!TryGetResult(out var value))
         {
             throw new InvalidOperationException($"Task {_id} doesn't have any available result.");
         }
 
-        Results.Remove(_id);
         return value;
     }
 
+    /// <summary>
+    /// Whether there is a result available.
+    /// </summary>
+    /// <remarks>
+    /// This property is true when the <see cref="OVRTask{TResult}"/> is complete (<see cref="IsCompleted"/> is `true`)
+    /// and <see cref="GetResult"/> has not already been called.
+    ///
+    /// Note that <see cref="GetResult"/> is called implicitly when using `await` or <see cref="ContinueWith"/>.
+    /// </remarks>
+    /// <seealso cref="GetResult"/>
+    /// <seealso cref="TryGetResult"/>
+    public bool HasResult => Results.ContainsKey(_id);
+
+    /// <summary>
+    /// Tries to get the result of the asynchronous operation.
+    /// </summary>
+    /// <remarks>
+    /// This method may safely be called at any time. It tests whether the operation is both complete
+    /// (<see cref="IsCompleted"/> is `True`) and the result has not already been retrieved with <see cref="GetResult"/>
+    /// (<see cref="HasResult"/> is `True`).
+    ///
+    /// If the result is available, <paramref name="result"/> is set to the result and this method returns `True`. This
+    /// method is equivalent to (though more efficient than) the following:
+    /// <code>
+    /// <![CDATA[
+    /// if (task.HasResult) {
+    ///   result = task.GetResult();
+    ///   return true;
+    /// } else {
+    ///   result = default;
+    ///   return false;
+    /// }
+    /// ]]>
+    /// </code>
+    /// </remarks>
+    /// <param name="result">Set to the result of the task, if one is available. Otherwise, it is set to the default
+    /// value for <typeparamref name="TResult"/>.</param>
+    /// <returns>`True` if this task is complete and a result is available.</returns>
+    /// <exception cref="InvalidOperationException">Thrown when the task doesn't have any available result. This could
+    /// happen if the method is called before <see cref="IsCompleted"/> is true, after the task has been disposed of
+    /// or if this method has already been called once.</exception>
+    /// <seealso cref="HasResult"/>
+    /// <seealso cref="GetResult"/>
+    public bool TryGetResult(out TResult result) => TryExtractValue(Results, _id, out result);
+
     #endregion
+
+    class TaskSource : IValueTaskSource<TResult>, OVRObjectPool.IPoolObject
+    {
+        ManualResetValueTaskSourceCore<TResult> _manualSource;
+
+        public ValueTask<TResult> Task { get; private set; }
+
+        public TResult GetResult(short token)
+        {
+            try
+            {
+                return _manualSource.GetResult(token);
+            }
+            finally
+            {
+                OVRObjectPool.Return(this);
+            }
+        }
+
+        public ValueTaskSourceStatus GetStatus(short token) => _manualSource.GetStatus(token);
+
+        public void OnCompleted(Action<object> continuation, object state, short token, ValueTaskSourceOnCompletedFlags flags)
+            => _manualSource.OnCompleted(continuation, state, token, flags);
+
+        void OVRObjectPool.IPoolObject.OnGet()
+        {
+            _manualSource.Reset();
+            Task = new(this, _manualSource.Version);
+        }
+
+        void OVRObjectPool.IPoolObject.OnReturn()
+        { }
+
+        public void SetResult(TResult result) => _manualSource.SetResult(result);
+
+        public void SetException(Exception exception) => _manualSource.SetException(exception);
+    }
+
+    /// <summary>
+    /// Converts the task to a ValueTask
+    /// </summary>
+    /// <remarks>
+    /// This method converts this <see cref="OVRTask{TResult}"/> to a
+    /// [ValueTask](https://learn.microsoft.com/en-us/dotnet/api/system.threading.tasks.valuetask-1?view=net-8.0).
+    ///
+    /// A `ValueTask` is similar to an `OVRTask`. Key differences:
+    /// - A ValueTask does not support <see cref="ContinueWith"/>
+    /// - A ValueTask does not support <see cref="WhenAll(System.Collections.Generic.IEnumerable{OVRTask{TResult}})"/>
+    ///
+    /// The above are only supported on the
+    /// [Task](https://learn.microsoft.com/en-us/dotnet/api/system.threading.tasks.task-1?view=net-8.0) object.
+    ///
+    /// Invoking this method also invalidates this <see cref="OVRTask{TResult}"/>. It is invalid to continue using an
+    /// <see cref="OVRTask{TResult}"/> after calling <see cref="ToValueTask"/>.
+    /// </remarks>
+    /// <returns>Returns a new `ValueTask` that completes when the asynchronous operation completes.</returns>
+    /// <exception cref="InvalidOperationException">Thrown if the task is not pending (<see cref="IsCompleted"/> is true)
+    /// and does not have a result (<see cref="HasResult"/> is false)</exception>
+    /// <exception cref="InvalidOperationException">Thrown if the task has already been awaited.</exception>
+    /// <exception cref="InvalidOperationException">Thrown if <see cref="ContinueWith"/> has already been called.</exception>
+    public ValueTask<TResult> ToValueTask()
+    {
+        var hasResult = Results.TryGetValue(_id, out var result);
+        if (!Pending.Contains(_id) && !hasResult)
+            throw new InvalidOperationException($"Task {_id} is not a valid task.");
+
+        if (Continuations.ContainsKey(_id))
+            throw new InvalidOperationException($"Task {_id} is already being used by an await call.");
+
+        if (ContinueWithInvokers.ContainsKey(_id))
+            throw new InvalidOperationException($"Task {_id} is already being used with ContinueWith.");
+
+        using (this)
+        {
+            if (hasResult)
+            {
+                Results.Remove(_id);
+                return new ValueTask<TResult>(result);
+            }
+
+            var source = OVRObjectPool.Get<TaskSource>();
+            Sources.Add(_id, source);
+            return source.Task;
+        }
+    }
+
+#if !UNITY_2023_1_OR_NEWER
+    class Awaitable<T> { }
+
+    class AwaitableCompletionSource<T>
+    {
+        public void SetResult(in T result) => throw new NotImplementedException();
+        public void Reset() => throw new NotImplementedException();
+        public void SetException(Exception exception) => throw new NotImplementedException();
+        public Awaitable<T> Awaitable => throw new NotImplementedException();
+    }
+#endif
+
+    class AwaitableSource : AwaitableCompletionSource<TResult>, OVRObjectPool.IPoolObject
+    {
+        public void OnGet()
+        {
+            Reset();
+        }
+
+        public void OnReturn()
+        { }
+
+        public void SetResultAndReturnToPool(in TResult result)
+        {
+            try
+            {
+                SetResult(in result);
+            }
+            finally
+            {
+                OVRObjectPool.Return(this);
+            }
+        }
+    }
+
+#if UNITY_2023_1_OR_NEWER
+    /// <summary>
+    /// Converts the task to an Awaitable.
+    /// </summary>
+    /// <remarks>
+    /// An `Awaitable` is a task-like object developed by Unity and provided in the `UnityEngine` namespace. For more
+    /// details, refer to the section on
+    /// [Await support](https://docs.unity3d.com/2023.2/Documentation/Manual/AwaitSupport.html) in the Unity manual.
+    ///
+    /// Awaitables are available starting with Unity 2023.1.
+    ///
+    /// Invoking this method invalidates this <see cref="OVRTask{TResult}"/>. It is invalid to continue using an
+    /// <see cref="OVRTask{TResult}"/> after calling <see cref="ToAwaitable"/>.
+    /// </remarks>
+    /// <returns>Returns a new Awaitable that completes when the asynchronous operation completes.</returns>
+    /// <exception cref="InvalidOperationException">Thrown if the task is not pending (<see cref="IsCompleted"/> is true)
+    /// and does not have a result (<see cref="HasResult"/> is false)</exception>
+    /// <exception cref="InvalidOperationException">Thrown if the task has already been awaited.</exception>
+    /// <exception cref="InvalidOperationException">Thrown if <see cref="ContinueWith"/> has already been called.</exception>
+    public Awaitable<TResult> ToAwaitable()
+    {
+        var hasResult = Results.TryGetValue(_id, out var result);
+        if (!Pending.Contains(_id) && !hasResult)
+            throw new InvalidOperationException($"Task {_id} is not a valid task.");
+
+        if (Continuations.ContainsKey(_id))
+            throw new InvalidOperationException($"Task {_id} is already being used by an await call.");
+
+        if (ContinueWithInvokers.ContainsKey(_id))
+            throw new InvalidOperationException($"Task {_id} is already being used with ContinueWith.");
+
+        using (this)
+        {
+            var source = OVRObjectPool.Get<AwaitableSource>();
+            if (hasResult)
+            {
+                source.SetResult(in result);
+            }
+            else
+            {
+                AwaitableSources.Add(_id, source);
+            }
+            return source.Awaitable;
+        }
+    }
+#endif
 
     #region Awaiter Contract Implementation
 
@@ -359,8 +1000,36 @@ public readonly struct OVRTask<TResult> : IEquatable<OVRTask<TResult>>, IDisposa
             _task = task;
         }
 
+        /// <summary>
+        /// Whether the task has completed
+        /// </summary>
+        /// <remarks>
+        /// When `True` the asynchronous operation associated with the <see cref="OVRTask{TResult}"/> that created
+        /// this <see cref="Awaiter"/> (see <see cref="OVRTask{TResult}.GetAwaiter"/>) is complete.
+        ///
+        /// Typically, you would not call this directly. This is queried by a compiler-generated state machine to
+        /// support `async` / `await`.
+        /// </remarks>
         public bool IsCompleted => _task.IsCompleted;
-        public void OnCompleted(Action continuation) => _task.WithContinuation(continuation);
+
+        /// <summary>
+        /// Provides the Awaiter with a method to call when the task completes.
+        /// </summary>
+        /// <remarks>
+        /// Do not call this directly. It is called by a compiler-generated state machine when using the `await`
+        /// keyword.
+        /// </remarks>
+        /// <param name="continuation">The continuation to invoke when the task is complete.</param>
+        void INotifyCompletion.OnCompleted(Action continuation) => _task.WithContinuation(continuation);
+
+        /// <summary>
+        /// Gets the result of the asynchronous operation.
+        /// </summary>
+        /// <remarks>
+        /// Typically, you should not call this directly. Use <see cref="OVRTask{TResult}.GetResult()"/> instead.
+        /// </remarks>
+        /// <returns>The result of the asynchronous operation.</returns>
+        /// <exception cref="InvalidOperationException">Thrown if there is no result available.</exception>
         public TResult GetResult() => _task.GetResult();
     }
 
@@ -422,18 +1091,18 @@ public readonly struct OVRTask<TResult> : IEquatable<OVRTask<TResult>>, IDisposa
 
         Callback(Action<TResult> @delegate) => _delegate = @delegate;
 
-        public static readonly CallbackInvoker Invoker = Invoke;
+        public static readonly ContinueWithInvoker Invoker = Invoke;
 
-        public static readonly CallbackRemover Remover = Remove;
+        public static readonly ContinueWithRemover Remover = Remove;
 
         public static readonly Action Clearer = Clear;
 
         public static void Add(Guid taskId, Action<TResult> @delegate)
         {
             Callbacks.Add(taskId, new Callback(@delegate));
-            CallbackInvokers.Add(taskId, Invoker);
-            CallbackRemovers.Add(taskId, Remover);
-            CallbackClearers.Add(Clearer);
+            ContinueWithInvokers.Add(taskId, Invoker);
+            ContinueWithRemovers.Add(taskId, Remover);
+            ContinueWithClearers.Add(Clearer);
         }
     }
 
@@ -461,8 +1130,8 @@ public readonly struct OVRTask<TResult> : IEquatable<OVRTask<TResult>>, IDisposa
             _delegate = @delegate;
         }
 
-        private static readonly CallbackInvoker Invoker = Invoke;
-        private static readonly CallbackRemover Remover = Remove;
+        private static readonly ContinueWithInvoker Invoker = Invoke;
+        private static readonly ContinueWithRemover Remover = Remove;
         private static readonly Action Clearer = Clear;
         private static void Clear() => Callbacks.Clear();
         private static bool Remove(Guid taskId) => Callbacks.Remove(taskId);
@@ -471,24 +1140,57 @@ public readonly struct OVRTask<TResult> : IEquatable<OVRTask<TResult>>, IDisposa
         public static void Add(Guid taskId, T data, Action<TResult, T> callback)
         {
             Callbacks.Add(taskId, new CallbackWithState<T>(data, callback));
-            CallbackInvokers.Add(taskId, Invoker);
-            CallbackRemovers.Add(taskId, Remover);
-            CallbackClearers.Add(Clearer);
+            ContinueWithInvokers.Add(taskId, Invoker);
+            ContinueWithRemovers.Add(taskId, Remover);
+            ContinueWithClearers.Add(Clearer);
         }
     }
 
     /// <summary>
-    /// Registers a delegate that will get called on completion of the task.
+    /// Registers a delegate to be invoked on completion of the task.
     /// </summary>
     /// <remarks>
     /// The delegate will be invoked with the <typeparamref name="TResult"/> result as parameter.
-    /// Do not use in conjunction with any other methods (<c>await</c> or calling <see cref="GetResult"/>).
+    ///
+    /// Do not use in conjunction with any other methods (`await` or calling <see cref="GetResult"/>).
+    ///
+    /// Note: If the task throws an exception during execution, there is no way to catch it in when using
+    /// <see cref="ContinueWith"/>. Most Meta XR Core SDK calls that return an OVRTask do not throw, but it is possible
+    /// to return an <see cref="OVRTask{TResult}"/> from your own async method, which can still throw. For example,
+    /// <code><![CDATA[
+    /// async OVRTask<OVRAnchor> DoSomethingAsync() {
+    ///   var anchor = await OVRAnchor.CreateSpatialAnchorAsync(pose); // <-- doesn't throw
+    ///   throw new Exception(); // <-- Cannot be caught if using ContinueWith
+    ///   return anchor;
+    /// }
+    ///
+    /// async void MethodA() {
+    ///   try {
+    ///     var anchor = await DoSomethingAsync();
+    ///   } catch (Exception e) {
+    ///     // okay; exception caught!
+    ///   }
+    /// }
+    ///
+    /// void MethodB() {
+    ///   DoSomethingAsync().ContinueWith(anchor => {
+    ///     Debug.Log($"Anchor {anchor} created!");
+    ///   });
+    /// ]]></code>
+    ///
+    /// In the above example, the exception generated by `DoSomethingAsync` is caught in `MethodA`, but there is no
+    /// way to catch it in `MethodB` because it uses <see cref="ContinueWith"/> rather than `await`. The exception
+    /// is still thrown, however.
     /// </remarks>
     /// <param name="onCompleted">A delegate to be invoked when this task completes. If the task is already complete,
     /// <paramref name="onCompleted"/> is invoked immediately.</param>
     /// <seealso cref="ContinueWith{T}"/>
     /// <exception cref="ArgumentNullException">Thrown if <paramref name="onCompleted"/> is null.</exception>
-    /// <exception cref="InvalidOperationException">Thrown if there already is a delegate or a continuation registered to this task.</exception>
+    /// <exception cref="InvalidOperationException">Thrown if this task is already being awaited.</exception>
+    /// <exception cref="InvalidOperationException">Thrown if this task is already used in another <see cref="ContinueWith"/>.</exception>
+    /// <exception cref="InvalidOperationException">Thrown if this task is already used as a `ValueTask` (<see cref="ToValueTask"/>).</exception>
+    /// <exception cref="InvalidOperationException">Thrown if this task is already used or as an `Awaitable`.
+    /// (<see cref="ToAwaitable"/>, only available in Unity 2023.1+).</exception>
     public void ContinueWith(Action<TResult> onCompleted)
     {
         ValidateDelegateAndThrow(onCompleted, nameof(onCompleted));
@@ -509,14 +1211,21 @@ public readonly struct OVRTask<TResult> : IEquatable<OVRTask<TResult>>, IDisposa
     /// <remarks>
     /// The delegate will be invoked with <paramref name="state"/> and the <typeparamref name="TResult"/> result as
     /// parameters.
-    /// Do not use in conjunction with any other methods (<c>await</c> or calling <see cref="GetResult"/>).
+    /// Do not use in conjunction with any other methods (`await` or calling <see cref="GetResult"/>).
+    ///
+    /// Note: If the task throws an exception during execution, there is no way to catch it in when using a callback.
+    /// See <see cref="ContinueWith(Action{TResult})"/> for more details.
     /// </remarks>
     /// <param name="onCompleted">A delegate to be invoked when this task completes. If the task is already complete,
     /// <paramref name="onCompleted"/> is invoked immediately.</param>
-    /// <param name="state">An <c>object</c> to store and pass to <paramref name="onCompleted"/>.</param>
+    /// <param name="state">An object to store and pass to <paramref name="onCompleted"/>.</param>
     /// <seealso cref="ContinueWith(Action{TResult})"/>
     /// <exception cref="ArgumentNullException">Thrown if <paramref name="onCompleted"/> is null.</exception>
-    /// <exception cref="InvalidOperationException">Thrown if there already is a delegate or a continuation registered to this task.</exception>
+    /// <exception cref="InvalidOperationException">Thrown if this task is already being awaited.</exception>
+    /// <exception cref="InvalidOperationException">Thrown if this task is already used in another <see cref="ContinueWith"/>.</exception>
+    /// <exception cref="InvalidOperationException">Thrown if this task is already used as a `ValueTask` (<see cref="ToValueTask"/>).</exception>
+    /// <exception cref="InvalidOperationException">Thrown if this task is already used or as an `Awaitable`.
+    /// (<see cref="ToAwaitable"/>, only available in Unity 2023.1+).</exception>
     public void ContinueWith<T>(Action<TResult, T> onCompleted, T state)
     {
         ValidateDelegateAndThrow(onCompleted, nameof(onCompleted));
@@ -539,8 +1248,14 @@ public readonly struct OVRTask<TResult> : IEquatable<OVRTask<TResult>>, IDisposa
         if (Continuations.ContainsKey(_id))
             throw new InvalidOperationException($"Task {_id} is already being used by an await call.");
 
-        if (CallbackInvokers.ContainsKey(_id))
+        if (ContinueWithInvokers.ContainsKey(_id))
             throw new InvalidOperationException($"Task {_id} is already being used with ContinueWith.");
+
+        if (Sources.ContainsKey(_id))
+            throw new InvalidOperationException($"Task {_id} is already being used as a ValueTask.");
+
+        if (AwaitableSources.ContainsKey(_id))
+            throw new InvalidOperationException($"Task {_id} is already being used as an Awaitable.");
     }
 
     #endregion
@@ -561,10 +1276,10 @@ public readonly struct OVRTask<TResult> : IEquatable<OVRTask<TResult>>, IDisposa
         Continuations.Remove(_id);
         Pending.Remove(_id);
 
-        CallbackInvokers.Remove(_id);
-        if (CallbackRemovers.TryGetValue(_id, out var remover))
+        ContinueWithInvokers.Remove(_id);
+        if (ContinueWithRemovers.TryGetValue(_id, out var remover))
         {
-            CallbackRemovers.Remove(_id);
+            ContinueWithRemovers.Remove(_id);
             remover(_id);
         }
 
@@ -574,9 +1289,9 @@ public readonly struct OVRTask<TResult> : IEquatable<OVRTask<TResult>>, IDisposa
             internalDataRemover(_id);
         }
 
-        if (SubscriberRemovers.TryGetValue(_id, out var subscriberRemover))
+        if (IncrementalResultSubscriberRemovers.TryGetValue(_id, out var subscriberRemover))
         {
-            SubscriberRemovers.Remove(_id);
+            IncrementalResultSubscriberRemovers.Remove(_id);
             subscriberRemover(_id);
         }
     }
@@ -594,3 +1309,46 @@ public readonly struct OVRTask<TResult> : IEquatable<OVRTask<TResult>>, IDisposa
 
     #endregion
 }
+
+#region Task builder
+/// <summary>
+/// The AsyncMethodBuilder for <see cref="OVRTask{TResult}"/>.
+/// </summary>
+/// <remarks>
+/// Do not use this struct directly. It is used by the compiler to allow <see cref="OVRTask{TResult}"/> to be used as
+/// a task-like object, that is, you can await on it from an awaitable function.
+/// </remarks>
+/// <typeparam name="T">The type of the result of an asynchronous operation.</typeparam>
+public struct OVRTaskBuilder<T>
+{
+    OVRTask<T>? _task;
+
+    public OVRTask<T> Task => _task ??= OVRTask.FromGuid<T>(Guid.NewGuid());
+
+    public void AwaitOnCompleted<TAwaiter, TStateMachine>(
+        ref TAwaiter awaiter,
+        ref TStateMachine stateMachine)
+        where TAwaiter : INotifyCompletion
+        where TStateMachine : IAsyncStateMachine =>
+        awaiter.OnCompleted(stateMachine.MoveNext);
+
+    public void AwaitUnsafeOnCompleted<TAwaiter, TStateMachine>(
+        ref TAwaiter awaiter,
+        ref TStateMachine stateMachine)
+        where TAwaiter : ICriticalNotifyCompletion
+        where TStateMachine : IAsyncStateMachine =>
+        awaiter.UnsafeOnCompleted(stateMachine.MoveNext);
+
+    public static OVRTaskBuilder<T> Create() => new();
+
+    public void SetException(Exception exception) => Task.SetException(exception);
+
+    public void SetResult(T result) => Task.SetResult(result);
+
+    public void SetStateMachine(IAsyncStateMachine stateMachine)
+    { }
+
+    public void Start<TStateMachine>(ref TStateMachine stateMachine)
+        where TStateMachine : IAsyncStateMachine => stateMachine.MoveNext();
+}
+#endregion

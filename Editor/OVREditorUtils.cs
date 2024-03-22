@@ -26,6 +26,9 @@ using UnityEngine;
 [InitializeOnLoad]
 internal static class OVREditorUtils
 {
+    internal const string MetaXRPublicName = "Meta XR";
+    internal static readonly string MetaXRSettingsName = $"{MetaXRPublicName} Settings";
+
     internal static double LastUpdateTime;
     internal static float DeltaTime { get; private set; }
 
@@ -38,12 +41,12 @@ internal static class OVREditorUtils
 
         var statusItem = new OVRStatusMenu.Item()
         {
-            Name = "Oculus Settings",
+            Name = MetaXRSettingsName,
             Color = OVREditorUtils.HexToColor("#c4c4c4"),
             Icon = CreateContent("ovr_icon_settings.png", OVRGUIContent.Source.GenericIcons),
-            InfoTextDelegate = ComputeMenuSubText,
+            InfoTextDelegate = ComputeInfoText,
             OnClickDelegate = OnStatusMenuClick,
-            Order = 2
+            Order = 100
         };
         OVRStatusMenu.RegisterItem(statusItem);
     }
@@ -55,14 +58,12 @@ internal static class OVREditorUtils
         LastUpdateTime = timeSinceStartup;
     }
 
-    public static string ComputeMenuSubText()
-    {
-        return "Open settings menu.";
-    }
+    private static (string, Color?) ComputeInfoText() => ("Open settings menu.", null);
+
 
     private static void OnStatusMenuClick()
     {
-        OVRProjectSettingsProvider.OpenSettingsWindow(OVRProjectSetupSettingsProvider.Origins.Icon);
+        OVRUserSettingsProvider.OpenSettingsWindow(OVRProjectSetupSettingsProvider.Origins.Icon);
     }
 
     // Helper function to create a texture with a given color
@@ -176,6 +177,25 @@ internal static class OVREditorUtils
                     GUI.contentColor = _previousColor;
                     break;
             }
+        }
+    }
+
+    public readonly struct UndoScope : System.IDisposable
+    {
+        private readonly int _group;
+        private readonly string _name;
+
+        public UndoScope(string name)
+        {
+            Undo.IncrementCurrentGroup();
+            _group = Undo.GetCurrentGroup();
+            _name = name;
+        }
+
+        public void Dispose()
+        {
+            Undo.SetCurrentGroupName(_name);
+            Undo.CollapseUndoOperations(_group);
         }
     }
 

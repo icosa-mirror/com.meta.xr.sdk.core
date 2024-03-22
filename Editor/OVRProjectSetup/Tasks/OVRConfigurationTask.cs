@@ -25,7 +25,7 @@ using UnityEngine;
 
 internal class OVRConfigurationTask
 {
-    internal static readonly string ConsoleLinkHref = "OpenOculusProjectSettings";
+    internal static readonly string ConsoleLinkHref = "OpenProjectSetupTool";
 
     public Hash128 Uid { get; }
     public OVRProjectSetup.TaskGroup Group { get; }
@@ -142,7 +142,7 @@ internal class OVRConfigurationTask
         catch (OVRConfigurationTaskException exception)
         {
             Debug.LogWarning(
-                $"[Oculus Settings] Failed to fix task \"{Message.GetValue(buildTargetGroup)}\" : {exception}");
+                $"[{OVRProjectSetupUtils.ProjectSetupToolPublicName}] Failed to fix task \"{Message.GetValue(buildTargetGroup)}\" : {exception}");
         }
 
         var hasChanged = UpdateAndGetStateChanged(buildTargetGroup);
@@ -151,8 +151,8 @@ internal class OVRConfigurationTask
             var fixMessage = FixMessage.GetValue(buildTargetGroup);
             Debug.Log(
                 fixMessage != null
-                    ? $"[Oculus Settings] Fixed task \"{Message.GetValue(buildTargetGroup)}\" : {fixMessage}"
-                    : $"[Oculus Settings] Fixed task \"{Message.GetValue(buildTargetGroup)}\"");
+                    ? $"[{OVRProjectSetupUtils.ProjectSetupToolPublicName}] Fixed task \"{Message.GetValue(buildTargetGroup)}\" : {fixMessage}"
+                    : $"[{OVRProjectSetupUtils.ProjectSetupToolPublicName}] Fixed task \"{Message.GetValue(buildTargetGroup)}\"");
         }
 
         var isDone = IsDone(buildTargetGroup);
@@ -249,6 +249,16 @@ internal class OVRConfigurationTask
 #if UNITY_XR_CORE_UTILS
     internal Unity.XR.CoreUtils.Editor.BuildValidationRule ToValidationRule(BuildTargetGroup platform)
     {
+        if(FixAction == null)
+        {
+            return null;
+        }
+
+        if (platform == BuildTargetGroup.Unknown)
+        {
+            return null;
+        }
+
         var validationRule = new Unity.XR.CoreUtils.Editor.BuildValidationRule
         {
             IsRuleEnabled = () => Valid.GetValue(platform),

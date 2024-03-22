@@ -65,7 +65,6 @@ namespace UnityEngine.EventSystems
         [Tooltip("Invert X axis on touchpad")]
         public bool InvertSwipeXAxis = false;
 
-
         // The raycaster that gets to do pointer interaction (e.g. with a mouse), gaze interaction always works
         [NonSerialized]
         public OVRRaycaster activeGraphicRaycaster;
@@ -99,6 +98,23 @@ namespace UnityEngine.EventSystems
 
         protected OVRInputModule()
         {
+        }
+
+        protected override void Awake()
+        {
+            base.Awake();
+            instance = this;
+
+            for (int i = 0; i < _pendingInputSources.Count; i++)
+            {
+                var inputSource = _pendingInputSources[i];
+                if (inputSource != null && inputSource.IsValid())
+                {
+                    TrackInputSource(inputSource);
+                }
+            }
+
+            _pendingInputSources.Clear();
         }
 
 #if UNITY_EDITOR
@@ -506,7 +522,23 @@ namespace UnityEngine.EventSystems
                     SendSubmitEventToSelectedObject();
             }
 
-            ProcessMouseEvent(GetGazePointerData());
+            // Handle controllers / hands if we have them. If not, fallback to tracking the gaze cursor.
+            bool hadActiveInputSource = false;
+            for (int i = 0; i < _trackedInputSources.Count; i++)
+            {
+                if (_trackedInputSources[i].IsActive())
+                {
+                    hadActiveInputSource = true;
+                    var mouseState = GetMouseStateFromInputSource(_trackedInputSources[i], i);
+                    ProcessMouseEvent(mouseState);
+                }
+            }
+
+            if (!hadActiveInputSource)
+            {
+                // Process gaze event.
+                ProcessMouseEvent(GetMouseStateFromRaycast(rayTransform));
+            }
 #if !UNITY_ANDROID
             ProcessMouseEvent(GetCanvasPointerData());
 #endif
@@ -623,15 +655,137 @@ namespace UnityEngine.EventSystems
 
         private readonly MouseState m_MouseState = new MouseState();
 
-
         // The following 2 functions are equivalent to PointerInputModule.GetMousePointerEventData but are customized to
         // get data for ray pointers and canvas mouse pointers.
+
+        /// <summary>
+        /// Handle inputs from hands and controllers and parse them in a way unity UI can understand.
+        /// </summary>
+        /// <returns></returns>
+        virtual protected MouseState GetMouseStateFromInputSource(InputSource inputSource, int id)
+        {
+            Transform handRay = inputSource.GetPointerRayTransform();
+
+            // Get the OVRRayPointerEventData reference
+            OVRPointerEventData leftData;
+            GetPointerData(id, out leftData, true);
+            leftData.Reset();
+
+            OVRInputRayData rayData = new OVRInputRayData();
+
+            if (handRay != null)
+            {
+                //Now set the world space ray. This ray is what the user uses to point at UI elements
+                leftData.worldSpaceRay = new Ray(handRay.position, handRay.forward);
+                // Since we're using this for hand pinches too, we should probably look at that?
+
+                leftData.scrollDelta = GetExtraScrollDelta();
+
+                //Populate some default values
+                leftData.button = PointerEventData.InputButton.Left;
+                leftData.useDragThreshold = true;
+                // Perform raycast to find intersections with world
+                eventSystem.RaycastAll(leftData, m_RaycastResultCache);
+                var raycast = FindFirstRaycast(m_RaycastResultCache);
+                leftData.pointerCurrentRaycast = raycast;
+                m_RaycastResultCache.Clear();
+                rayData.IsOverCanvas = raycast.isValid;
+                if (rayData.IsOverCanvas)
+                {
+                    rayData.DistanceToCanvas = raycast.distance;
+                    rayData.WorldPosition = raycast.worldPosition;
+                    rayData.WorldNormal = raycast.worldNormal;
+                }
+
+                m_Cursor.SetCursorRay(handRay);
+
+                OVRRaycaster ovrRaycaster = raycast.module as OVRRaycaster;
+                // We're only interested in intersections from OVRRaycasters
+                if (ovrRaycaster)
+                {
+                    // The Unity UI system expects event data to have a screen position
+                    // so even though this raycast came from a world space ray we must get a screen
+                    // space position for the camera attached to this raycaster for compatability
+                    leftData.position = ovrRaycaster.GetScreenPosition(raycast);
+                }
+
+                // Now process physical raycast intersections
+                OVRPhysicsRaycaster physicsRaycaster = raycast.module as OVRPhysicsRaycaster;
+                if (physicsRaycaster)
+                {
+                    Vector3 position = raycast.worldPosition;
+
+                    if (performSphereCastForGazepointer)
+                    {
+                        // Here we cast a sphere into the scene rather than a ray. This gives a more accurate depth
+                        // for positioning a circular gaze pointer
+                        List<RaycastResult> results = new List<RaycastResult>();
+                        physicsRaycaster.Spherecast(leftData, results, m_SpherecastRadius);
+                        if (results.Count > 0 && results[0].distance < raycast.distance)
+                        {
+                            position = results[0].worldPosition;
+                            rayData.IsOverCanvas |= results[0].isValid;
+                            rayData.DistanceToCanvas = results[0].distance;
+                            rayData.WorldPosition = results[0].worldPosition;
+                            rayData.WorldNormal = results[0].worldNormal;
+                        }
+                    }
+
+                    leftData.position = physicsRaycaster.GetScreenPos(raycast.worldPosition);
+                }
+            }
+
+            // Stick default data values in right and middle slots for compatability
+            OVRPointerEventData rightData;
+            GetPointerData(kMouseRightId, out rightData, true);
+            CopyFromTo(leftData, rightData);
+            rightData.button = PointerEventData.InputButton.Right;
+
+            OVRPointerEventData middleData;
+            GetPointerData(kMouseMiddleId, out middleData, true);
+            CopyFromTo(leftData, middleData);
+            middleData.button = PointerEventData.InputButton.Middle;
+
+            PointerEventData.FramePressState pressedState = PointerEventData.FramePressState.NotChanged;
+            bool pressed = inputSource.IsPressed();
+            bool released = inputSource.IsReleased();
+            if (pressed)
+            {
+                if (released)
+                {
+                    pressedState = PointerEventData.FramePressState.PressedAndReleased;
+                }
+                else
+                {
+                    pressedState = PointerEventData.FramePressState.Pressed;
+                }
+            }
+            else
+            {
+                if (released)
+                {
+                    pressedState = PointerEventData.FramePressState.Released;
+                }
+            }
+
+            rayData.IsActive = pressed;
+
+            inputSource.UpdatePointerRay(rayData);
+
+            m_MouseState.SetButtonState(PointerEventData.InputButton.Left,
+                pressedState, leftData);
+            m_MouseState.SetButtonState(PointerEventData.InputButton.Right,
+                PointerEventData.FramePressState.NotChanged, rightData);
+            m_MouseState.SetButtonState(PointerEventData.InputButton.Middle,
+                PointerEventData.FramePressState.NotChanged, middleData);
+            return m_MouseState;
+        }
 
         /// <summary>
         /// State for a pointer controlled by a world space ray. E.g. gaze pointer
         /// </summary>
         /// <returns></returns>
-        virtual protected MouseState GetGazePointerData()
+        virtual protected MouseState GetMouseStateFromRaycast(Transform rayOrigin)
         {
             // Get the OVRRayPointerEventData reference
             OVRPointerEventData leftData;
@@ -639,7 +793,9 @@ namespace UnityEngine.EventSystems
             leftData.Reset();
 
             //Now set the world space ray. This ray is what the user uses to point at UI elements
-            leftData.worldSpaceRay = new Ray(rayTransform.position, rayTransform.forward);
+            leftData.worldSpaceRay = new Ray(rayOrigin.position, rayOrigin.forward);
+            // Since we're using this for hand pinches too, we should probably look at that?
+
             leftData.scrollDelta = GetExtraScrollDelta();
 
             //Populate some default values
@@ -651,7 +807,7 @@ namespace UnityEngine.EventSystems
             leftData.pointerCurrentRaycast = raycast;
             m_RaycastResultCache.Clear();
 
-            m_Cursor.SetCursorRay(rayTransform);
+            m_Cursor.SetCursorRay(rayOrigin);
 
             OVRRaycaster ovrRaycaster = raycast.module as OVRRaycaster;
             // We're only interested in intersections from OVRRaycasters
@@ -669,7 +825,7 @@ namespace UnityEngine.EventSystems
                     // Set are gaze indicator with this world position and normal
                     Vector3 worldPos = raycast.worldPosition;
                     Vector3 normal = GetRectTransformNormal(graphicRect);
-                    m_Cursor.SetCursorStartDest(rayTransform.position, worldPos, normal);
+                    m_Cursor.SetCursorStartDest(rayOrigin.position, worldPos, normal);
                 }
             }
 
@@ -693,7 +849,7 @@ namespace UnityEngine.EventSystems
 
                 leftData.position = physicsRaycaster.GetScreenPos(raycast.worldPosition);
 
-                m_Cursor.SetCursorStartDest(rayTransform.position, position, raycast.worldNormal);
+                m_Cursor.SetCursorStartDest(rayOrigin.position, position, raycast.worldNormal);
             }
 
             // Stick default data values in right and middle slots for compatability
@@ -943,5 +1099,63 @@ namespace UnityEngine.EventSystems
 
             return scrollDelta;
         }
-    };
+
+        public static void TrackInputSource(InputSource hand)
+        {
+            if (instance)
+            {
+                instance._trackedInputSources.Add(hand);
+            }
+            else
+            {
+                _pendingInputSources.Add(hand);
+            }
+        }
+
+        public static void UntrackInputSource(InputSource hand)
+        {
+            if (instance)
+            {
+                instance._trackedInputSources.Remove(hand);
+            }
+            else
+            {
+                if (_pendingInputSources.Contains(hand))
+                {
+                    _pendingInputSources.Remove(hand);
+                }
+            }
+        }
+
+        protected override void OnDestroy()
+        {
+            base.OnDestroy();
+            _trackedInputSources.Clear();
+            _pendingInputSources.Clear();
+        }
+
+        // Singleton Accessors.
+        public static OVRInputModule instance { get; private set; }
+
+        // A list of currently active hands we need to consider for input
+        private List<InputSource> _trackedInputSources = new List<InputSource>();
+        private static List<InputSource> _pendingInputSources = new List<InputSource>();
+
+        /// <summary>
+        /// Represents a source for UI interactions, e.g. hands / controllers.
+        /// </summary>
+        public interface InputSource
+        {
+            bool IsPressed();
+            bool IsReleased();
+            Transform GetPointerRayTransform();
+            bool IsValid();
+            // Is this input mode currently being used?
+            bool IsActive();
+            // Update the projected ray showing where this input source is pointing.
+            // Use the OVRControllerRayHelper as a starting point.
+            void UpdatePointerRay(OVRInputRayData rayData);
+        }
+
+    }
 }

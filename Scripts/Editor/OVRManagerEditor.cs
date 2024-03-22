@@ -30,7 +30,9 @@ public class OVRManagerEditor : Editor
     private SerializedProperty _requestScenePermissionOnStartup;
     private SerializedProperty _requestRecordAudioPermissionOnStartup;
     private bool _expandPermissionsRequest;
+#if UNITY_EDITOR_WIN || UNITY_STANDALONE_WIN || UNITY_ANDROID
     private bool _showFaceTrackingDataSources = false;
+#endif
 
     void OnEnable()
     {
@@ -146,27 +148,26 @@ public class OVRManagerEditor : Editor
 #if UNITY_EDITOR_WIN || UNITY_STANDALONE_WIN || UNITY_ANDROID
         // Multimodal hands and controllers section
 #if UNITY_ANDROID
-        bool launchMultimodalHandsControllersOnStartup =
-            projectConfig.multimodalHandsControllersSupport != OVRProjectConfig.MultimodalHandsControllersSupport.Disabled;
-        EditorGUI.BeginDisabledGroup(!launchMultimodalHandsControllersOnStartup);
-        GUIContent enableConcurrentHandsAndControllersOnStartup = new GUIContent("Launch concurrent hands and controllers mode on startup",
-            "Launches concurrent hands and controllers on startup for the scene. Concurrent Hands and Controllers Capability must be enabled in the project settings.");
+        bool launchSimultaneousHandsControllersOnStartup = manager.SimultaneousHandsAndControllersEnabled;
+        EditorGUI.BeginDisabledGroup(!launchSimultaneousHandsControllersOnStartup);
+        GUIContent enableSimultaneousHandsAndControllersOnStartup = new GUIContent("Launch simultaneous hands and controllers mode on startup",
+            "Launches simultaneous hands and controllers on startup for the scene. Simultaneous Hands and Controllers Capability must be enabled in the project settings.");
 #else
-        GUIContent enableConcurrentHandsAndControllersOnStartup = new GUIContent("Enable concurrent hands and controllers mode on startup",
-            "Launches concurrent hands and controllers on startup for the scene.");
+        GUIContent enableSimultaneousHandsAndControllersOnStartup = new GUIContent("Enable simultaneous hands and controllers mode on startup",
+            "Launches simultaneous hands and controllers on startup for the scene.");
 #endif
         EditorGUILayout.Space();
-        EditorGUILayout.LabelField("Concurrent hands and controllers", EditorStyles.boldLabel);
+        EditorGUILayout.LabelField("Simultaneous hands and controllers", EditorStyles.boldLabel);
 #if UNITY_ANDROID
-        if (!launchMultimodalHandsControllersOnStartup)
+        if (!launchSimultaneousHandsControllersOnStartup)
         {
             EditorGUILayout.LabelField(
-                "Requires Concurrent Hands and Controllers Capability to be enabled in the General section of the Quest features.",
+                "Requires Simultaneous Hands and Controllers Capability to be enabled in the General section of the Quest features.",
                 EditorStyles.wordWrappedLabel);
         }
 #endif
-        OVREditorUtil.SetupBoolField(target, enableConcurrentHandsAndControllersOnStartup,
-            ref manager.launchMultimodalHandsControllersOnStartup,
+        OVREditorUtil.SetupBoolField(target, enableSimultaneousHandsAndControllersOnStartup,
+            ref manager.launchSimultaneousHandsControllersOnStartup,
             ref modified);
 #if UNITY_ANDROID
         EditorGUI.EndDisabledGroup();
@@ -187,6 +188,7 @@ public class OVRManagerEditor : Editor
 #endif
         EditorGUILayout.Space();
         EditorGUILayout.LabelField("Insight Passthrough", EditorStyles.boldLabel);
+        EditorGUI.indentLevel++; // PT section
 #if UNITY_ANDROID
         if (!passthroughCapabilityEnabled)
         {
@@ -200,6 +202,9 @@ public class OVRManagerEditor : Editor
 #if UNITY_ANDROID
         EditorGUI.EndDisabledGroup();
 #endif
+
+        EditorGUI.indentLevel--; // PT section
+
 
         // Common Movement Tracking section header
         EditorGUILayout.Space();
@@ -247,6 +252,14 @@ public class OVRManagerEditor : Editor
             EditorGUILayout.HelpBox("Please specify at least one face tracking data source. If you don't choose, all available data sources will be chosen.", MessageType.Warning, true);
         }
 
+        // Warn when simultaneous hands and controllers is enabled
+        bool bodyEnabled =
+            (GameObject.FindObjectOfType<OVRBody>() != null || manager.wideMotionModeHandPosesEnabled == true);
+        if (bodyEnabled && manager.SimultaneousHandsAndControllersEnabled)
+        {
+            EditorGUILayout.HelpBox("Simultaneous hands and controllers are not supported together with Body API. Please select only one of these features", MessageType.Warning, true);
+        }
+
         if (_showFaceTrackingDataSources)
         {
             EditorGUI.indentLevel++;
@@ -273,7 +286,6 @@ public class OVRManagerEditor : Editor
 
         // Common Movement Tracking section footer
         EditorGUI.indentLevel--;
-
 #endif
 
         #region PermissionRequests
@@ -283,38 +295,47 @@ public class OVRManagerEditor : Editor
             EditorGUILayout.BeginFoldoutHeaderGroup(_expandPermissionsRequest, "Permission Requests On Startup");
         if (_expandPermissionsRequest)
         {
-            void AddPermissionGroup(bool featureEnabled, string permissionName, string capabilityName, SerializedProperty property)
+            // helper function for all permission requests
+            static void AddPermissionGroup(bool featureEnabled, string permissionName, string capabilityName, SerializedProperty property)
             {
                 using (new EditorGUI.DisabledScope(!featureEnabled))
                 {
                     if (!featureEnabled)
                     {
                         EditorGUILayout.LabelField(
-                            $"Requires {capabilityName} Capability to be enabled in the Quest features section.",
+                            $"Requires {capabilityName} Capability to be enabled in Quest Features.",
                             EditorStyles.wordWrappedLabel);
+
+                        // disable if the Quest Features doesn't have support for it
+                        if (property.boolValue == true)
+                            property.boolValue = false;
                     }
 
                     var label = new GUIContent(permissionName,
-                        $"Requests {permissionName} permission on start up. {capabilityName} Capability must be enabled in the project settings.");
+                        $"Requests {permissionName} permission on start up. " +
+                        $"{capabilityName} Capability must be enabled in Quest Features. " +
+                        "It is recommended to manage runtime permissions yourself, " +
+                        "and to only request them when needed."
+                        );
                     EditorGUILayout.PropertyField(property, label);
                 }
             }
 
             AddPermissionGroup(projectConfig.bodyTrackingSupport != OVRProjectConfig.FeatureSupport.None,
                 "Body Tracking", "Body Tracking", _requestBodyTrackingPermissionOnStartup);
-            AddPermissionGroup(projectConfig.faceTrackingSupport != OVRProjectConfig.FeatureSupport.None,
-                "Face Tracking", "Face Tracking", _requestFaceTrackingPermissionOnStartup);
             AddPermissionGroup(projectConfig.eyeTrackingSupport != OVRProjectConfig.FeatureSupport.None,
                 "Eye Tracking", "Eye Tracking", _requestEyeTrackingPermissionOnStartup);
-            AddPermissionGroup(projectConfig.sceneSupport != OVRProjectConfig.FeatureSupport.None,
-                "Scene", "Scene", _requestScenePermissionOnStartup);
+            AddPermissionGroup(projectConfig.faceTrackingSupport != OVRProjectConfig.FeatureSupport.None,
+                "Face Tracking", "Face Tracking", _requestFaceTrackingPermissionOnStartup);
             AddPermissionGroup(projectConfig.faceTrackingSupport != OVRProjectConfig.FeatureSupport.None,
                 "Record Audio for audio based Face Tracking", "Face Tracking", _requestRecordAudioPermissionOnStartup);
+            AddPermissionGroup(projectConfig.sceneSupport != OVRProjectConfig.FeatureSupport.None,
+                "Scene", "Scene", _requestScenePermissionOnStartup);
         }
 
         EditorGUILayout.EndFoldoutHeaderGroup();
 
-#endregion
+        #endregion
 
 
         if (modified)

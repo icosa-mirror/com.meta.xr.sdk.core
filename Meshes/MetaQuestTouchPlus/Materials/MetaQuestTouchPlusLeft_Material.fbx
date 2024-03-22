@@ -364,8 +364,8 @@ Objects:  {
             P: "ReflectionColor", "Color", "", "A",0.800000011920929,0.800000011920929,0.800000011920929
             P: "ReflectionFactor", "Number", "", "A",0.5
             P: "Shininess", "Number", "", "A",25
-            P: "OVR_SmoothnessTextureChannel", "Number", "", "A+U",0
-            P: "OVR_SmoothnessFactor", "Number", "", "A+U",0.2
+            P: "OVR_SmoothnessTextureChannel", "Number", "", "A+U",1
+            P: "OVR_SmoothnessFactor", "Number", "", "A+U",1
             P: "OVR_HeightMap", "Color", "", "A+U",1.0,1.0,1.0
             P: "OVR_HeightFactor", "Number", "", "A+U",0
             P: "OVR_OcclusionMap", "Color", "", "A+U",1.0,1.0,1.0
@@ -384,12 +384,12 @@ Objects:  {
     Video: 1816576090001, "Video::Albedo.png", "Clip" {
         Type: "Clip"
         Properties70:  {
-            P: "Path", "KString", "XRefUrl", "", "/Assets/Oculus/VR/Textures/MetaQuestTouchPlus/MetaQuestTouchPlus_Left_BaseColor_AO.png"
-            P: "RelPath", "KString", "XRefUrl", "", "Assets/Oculus/VR/Textures/MetaQuestTouchPlus/MetaQuestTouchPlus_Left_BaseColor_AO.png"
+            P: "Path", "KString", "XRefUrl", "", "/Assets/Oculus/VR/Textures/MetaQuestTouchPlus/MetaQuestTouchPlus_Left_BaseColor_AO_AlphaRoughness.png"
+            P: "RelPath", "KString", "XRefUrl", "", "Assets/Oculus/VR/Textures/MetaQuestTouchPlus/MetaQuestTouchPlus_Left_BaseColor_AO_AlphaRoughness.png"
 
         }
         UseMipMap: 0
-        Filename: "/Assets/Oculus/VR/Textures/MetaQuestTouchPlus/MetaQuestTouchPlus_Left_BaseColor_AO.png"
+        Filename: "/Assets/Oculus/VR/Textures/MetaQuestTouchPlus/MetaQuestTouchPlus_Left_BaseColor_AO_AlphaRoughness.png"
         RelativeFilename: "TemplateAlbedo.png"
     }
     Video: 1816576090002, "Video::Metallic.png", "Clip" {
@@ -469,7 +469,7 @@ Objects:  {
             P: "Scaling", "Vector", "", "A",1,1,0
         }
         Media: "Video::Albedo.png"
-        Filename: "/Assets/Oculus/VR/Textures/MetaQuestTouchPlus/MetaQuestTouchPlus_Left_BaseColor_AO.png"
+        Filename: "/Assets/Oculus/VR/Textures/MetaQuestTouchPlus/MetaQuestTouchPlus_Left_BaseColor_AO_AlphaRoughness.png"
         RelativeFilename: "TemplateAlbedo.png"
         ModelUVTranslation: 0,0
         ModelUVScaling: 1,1

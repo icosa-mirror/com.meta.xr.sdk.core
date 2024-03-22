@@ -85,7 +85,7 @@ public class OVRRaycaster : GraphicRaycaster, IPointerEnterHandler
         {
             Debug.Log("Canvas does not have an event camera attached. " +
                       "Attaching OVRCameraRig.centerEyeAnchor as default.");
-            OVRCameraRig rig = FindObjectOfType<OVRCameraRig>();
+            OVRCameraRig rig = FindAnyObjectByType<OVRCameraRig>();
             canvas.worldCamera = rig.centerEyeAnchor.gameObject.GetComponent<Camera>();
         }
     }
@@ -272,6 +272,7 @@ public class OVRRaycaster : GraphicRaycaster, IPointerEnterHandler
         return eventCamera.WorldToScreenPoint(raycastResult.worldPosition);
     }
 
+    static readonly Vector3[] _corners = new Vector3[4];
 
     /// <summary>
     /// Detects whether a ray intersects a RectTransform and if it does also
@@ -283,9 +284,8 @@ public class OVRRaycaster : GraphicRaycaster, IPointerEnterHandler
     /// <returns></returns>
     static bool RayIntersectsRectTransform(RectTransform rectTransform, Ray ray, out Vector3 worldPos)
     {
-        Vector3[] corners = new Vector3[4];
-        rectTransform.GetWorldCorners(corners);
-        Plane plane = new Plane(corners[0], corners[1], corners[2]);
+        rectTransform.GetWorldCorners(_corners);
+        Plane plane = new Plane(_corners[0], _corners[1], _corners[2]);
 
         float enter;
         if (!plane.Raycast(ray, out enter))
@@ -296,16 +296,16 @@ public class OVRRaycaster : GraphicRaycaster, IPointerEnterHandler
 
         Vector3 intersection = ray.GetPoint(enter);
 
-        Vector3 BottomEdge = corners[3] - corners[0];
-        Vector3 LeftEdge = corners[1] - corners[0];
-        float BottomDot = Vector3.Dot(intersection - corners[0], BottomEdge);
-        float LeftDot = Vector3.Dot(intersection - corners[0], LeftEdge);
+        Vector3 BottomEdge = _corners[3] - _corners[0];
+        Vector3 LeftEdge = _corners[1] - _corners[0];
+        float BottomDot = Vector3.Dot(intersection - _corners[0], BottomEdge);
+        float LeftDot = Vector3.Dot(intersection - _corners[0], LeftEdge);
         if (BottomDot < BottomEdge.sqrMagnitude && // Can use sqrMag because BottomEdge is not normalized
             LeftDot < LeftEdge.sqrMagnitude &&
             BottomDot >= 0 &&
             LeftDot >= 0)
         {
-            worldPos = corners[0] + LeftDot * LeftEdge / LeftEdge.sqrMagnitude +
+            worldPos = _corners[0] + LeftDot * LeftEdge / LeftEdge.sqrMagnitude +
                        BottomDot * BottomEdge / BottomEdge.sqrMagnitude;
             return true;
         }

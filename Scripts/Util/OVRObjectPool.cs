@@ -27,6 +27,12 @@ using System.Collections.Generic;
 /// </summary>
 internal static class OVRObjectPool
 {
+    public interface IPoolObject
+    {
+        void OnGet();
+        void OnReturn();
+    }
+
     private static class Storage<T> where T : class, new()
     {
         public static readonly HashSet<T> HashSet = new HashSet<T>();
@@ -39,12 +45,13 @@ internal static class OVRObjectPool
     public static T Get<T>() where T : class, new()
     {
         using var enumerator = Storage<T>.HashSet.GetEnumerator();
-        if (!enumerator.MoveNext()) return new T();
-        var item = enumerator.Current;
+        var item = enumerator.MoveNext() ? enumerator.Current : new T();
         Storage<T>.HashSet.Remove(item);
 
         if (item is IList list) list.Clear();
         else if (item is IDictionary dict) dict.Clear();
+
+        (item as IPoolObject)?.OnGet();
 
         return item;
     }
@@ -90,6 +97,9 @@ internal static class OVRObjectPool
                 break;
             case IDictionary dict:
                 dict.Clear();
+                break;
+            case IPoolObject returnable:
+                returnable.OnReturn();
                 break;
         }
 

@@ -67,7 +67,6 @@ public class OVRPassthroughLayer : MonoBehaviour
     /// </summary>
     public bool hidden = false;
 
-
     /// <summary>
     /// Specify whether `colorScale` and `colorOffset` should be applied to this layer. By default, the color scale and offset are not applied to the layer.
     /// </summary>
@@ -212,6 +211,7 @@ public class OVRPassthroughLayer : MonoBehaviour
             }
         }
     }
+
 
     /// <summary>
     /// This color map method allows to recolor the grayscale camera images by specifying a color lookup table.
@@ -1007,6 +1007,7 @@ public class OVRPassthroughLayer : MonoBehaviour
         // Add OVROverlay component for the passthrough proxy layer.
         passthroughOverlay = auxGameObject.AddComponent<OVROverlay>();
         passthroughOverlay.currentOverlayShape = overlayShape;
+
         SyncToOverlay();
 
         // Surface geometries have been moved to the deferred additions queue in OnDisable() and will be re-added

@@ -546,7 +546,7 @@ public class OVRLint : EditorWindow
                 false, "Set Lightmapping.realtimeGI = false.");
         }
 
-        var lights = GameObject.FindObjectsOfType<Light>();
+        var lights = GameObject.FindObjectsByType<Light>(FindObjectsSortMode.None);
         for (int i = 0; i < lights.Length; ++i)
         {
             if (lights[i].type != LightType.Directional && !lights[i].bakingOutput.isBaked && IsLightBaked(lights[i]))
@@ -568,7 +568,7 @@ public class OVRLint : EditorWindow
             }
         }
 
-        var sources = GameObject.FindObjectsOfType<AudioSource>();
+        var sources = GameObject.FindObjectsByType<AudioSource>(FindObjectsSortMode.None);
         if (sources.Length > 16)
         {
             List<AudioSource> playingAudioSources = new List<AudioSource>();
@@ -696,7 +696,7 @@ public class OVRLint : EditorWindow
             }
         }
 
-        var renderers = GameObject.FindObjectsOfType<Renderer>();
+        var renderers = GameObject.FindObjectsByType<Renderer>(FindObjectsSortMode.None);
         for (int i = 0; i < renderers.Length; ++i)
         {
             if (renderers[i].sharedMaterial == null)
@@ -706,7 +706,7 @@ public class OVRLint : EditorWindow
             }
         }
 
-        var overlays = GameObject.FindObjectsOfType<OVROverlay>();
+        var overlays = GameObject.FindObjectsByType<OVROverlay>(FindObjectsSortMode.None);
         if (overlays.Length > 4)
         {
             AddFix(eRecordType.StaticCommon, "Optimize VR Layer Count",
@@ -781,7 +781,7 @@ public class OVRLint : EditorWindow
                 "OVRManager can select the optimal antialiasing for the installed hardware at runtime. Recommend enabling this.",
                 delegate(UnityEngine.Object obj, bool last, int selected)
                 {
-                    var ovrManagers = GameObject.FindObjectsOfType<OVRManager>();
+                    var ovrManagers = GameObject.FindObjectsByType<OVRManager>(FindObjectsSortMode.None);
                     foreach (var ovrManager in ovrManagers)
                     {
                         ovrManager.useRecommendedMSAALevel = true;
@@ -926,7 +926,7 @@ public class OVRLint : EditorWindow
                 }, null, false, "Fix");
         }
 
-        var monoBehaviours = GameObject.FindObjectsOfType<MonoBehaviour>();
+        var monoBehaviours = GameObject.FindObjectsByType<MonoBehaviour>(FindObjectsSortMode.None);
         System.Type effectBaseType = System.Type.GetType("UnityStandardAssets.ImageEffects.PostEffectsBase");
         if (effectBaseType != null)
         {
@@ -970,14 +970,14 @@ public class OVRLint : EditorWindow
             }
         }
 
-        var projectors = GameObject.FindObjectsOfType<Projector>();
+        var projectors = GameObject.FindObjectsByType<Projector>(FindObjectsSortMode.None);
         if (projectors.Length > 0)
         {
             AddFix(eRecordType.StaticAndroid, "Optimize Projectors",
                 "For GPU performance, please don't use projectors.",
                 delegate(UnityEngine.Object obj, bool last, int selected)
                 {
-                    Projector[] thisProjectors = GameObject.FindObjectsOfType<Projector>();
+                    Projector[] thisProjectors = GameObject.FindObjectsByType<Projector>(FindObjectsSortMode.None);
                     for (int i = 0; i < thisProjectors.Length; ++i)
                     {
                         thisProjectors[i].enabled = false;
@@ -996,7 +996,7 @@ public class OVRLint : EditorWindow
                 }, null, false, "Fix");
         }
 
-        var cameras = GameObject.FindObjectsOfType<Camera>();
+        var cameras = GameObject.FindObjectsByType<Camera>(FindObjectsSortMode.None);
         int clearCount = 0;
         for (int i = 0; i < cameras.Length; ++i)
         {

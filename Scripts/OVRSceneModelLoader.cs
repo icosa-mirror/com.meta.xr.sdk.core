@@ -18,8 +18,10 @@
  * limitations under the License.
  */
 
+using System;
 using System.Collections;
 using UnityEngine;
+using UnityEngine.Android;
 
 /// <summary>
 /// Utility for loading a scene model. Derive from this class to customize the scene loading behavior and respond to
@@ -40,12 +42,15 @@ public class OVRSceneModelLoader : MonoBehaviour
 
     void Start()
     {
+        OVRTelemetry.SendEvent(OVRTelemetryConstants.Scene.MarkerId.UseDefaultSceneModelLoader);
+
         SceneManager = GetComponent<OVRSceneManager>();
 
         // Bind the events associated with LoadSceneModel()
         SceneManager.SceneModelLoadedSuccessfully += OnSceneModelLoadedSuccessfully;
         SceneManager.NoSceneModelToLoad += OnNoSceneModelToLoad;
         SceneManager.NewSceneModelAvailable += OnNewSceneModelAvailable;
+        SceneManager.LoadSceneModelFailedPermissionNotGranted += OnLoadSceneModelFailedPermissionNotGranted;
 
         // Bind the events associated with RequestSceneCapture()
         SceneManager.SceneCaptureReturnedWithoutError += OnSceneCaptureReturnedWithoutError;
@@ -82,6 +87,66 @@ public class OVRSceneModelLoader : MonoBehaviour
     protected virtual void OnStart()
     {
         LoadSceneModel();
+    }
+
+    /// <summary>
+    /// An async version of `Android.Permission.RequestUserPermission`
+    /// </summary>
+    /// <remarks>
+    /// This requests permission for Scene using UnityEngine.Android.Permission.RequestUserPermission. However, it turns
+    /// the callback-based API into an async API that can be awaited.
+    /// </remarks>
+    /// <returns>A task that completes when the user grants or denies permission to use Scene.</returns>
+    protected static OVRTask<bool> RequestScenePermissionAsync()
+    {
+#pragma warning disable CS8321 // declared but not used (on non-Android platforms)
+        OVRTask<bool> RequestPermissionOnAndroid()
+        {
+            // Reserve an ID for the task
+            var taskId = Guid.NewGuid();
+
+            // Setup permission callbacks
+            var callbacks = new PermissionCallbacks();
+            callbacks.PermissionGranted += _ => OVRTask.SetResult(taskId, true);
+            callbacks.PermissionDenied += _ => OVRTask.SetResult(taskId, false);
+            callbacks.PermissionDeniedAndDontAskAgain += _ => OVRTask.SetResult(taskId, false);
+
+            // Create a task and request permission
+            var task = OVRTask.Create<bool>(taskId);
+            Permission.RequestUserPermission(OVRPermissionsRequester.ScenePermission, callbacks);
+            return task;
+        }
+#pragma warning restore
+
+#if UNITY_ANDROID && !UNITY_EDITOR
+        return RequestPermissionOnAndroid();
+#else
+        return OVRTask.FromResult(true);
+#endif
+    }
+
+    /// <summary>
+    /// Invoked when loading the Scene Model failed because the user has not granted permission to use Scene.
+    /// </summary>
+    /// <remarks>
+    /// See <see cref="OVRSceneManager.LoadSceneModelFailedPermissionNotGranted"/> for details.
+    /// </remarks>
+    protected virtual async void OnLoadSceneModelFailedPermissionNotGranted()
+    {
+        SceneManager.Verbose?.Log(nameof(OVRSceneModelLoader),
+            $"Requesting permission {OVRPermissionsRequester.ScenePermission}");
+
+        if (await RequestScenePermissionAsync())
+        {
+            SceneManager.Verbose?.Log(nameof(OVRSceneModelLoader),
+                $"Permission {OVRPermissionsRequester.ScenePermission} granted. Attempting to load scene model.");
+            LoadSceneModel();
+        }
+        else
+        {
+            SceneManager.Verbose?.Log(nameof(OVRSceneModelLoader),
+                $"Permission {OVRPermissionsRequester.ScenePermission} denied. Scene model will not be loaded.");
+        }
     }
 
     private void LoadSceneModel()
@@ -145,7 +210,8 @@ public class OVRSceneModelLoader : MonoBehaviour
     }
 
     /// <summary>
-    /// Invoked when the scene model has changed.
+    /// Invoked when the scene model has changed. The default behavior loads the scene model using
+    /// <see cref="OVRSceneManager.LoadSceneModel"/>.
     /// </summary>
     protected virtual void OnNewSceneModelAvailable()
     {
@@ -156,8 +222,7 @@ public class OVRSceneModelLoader : MonoBehaviour
     }
 
     /// <summary>
-    /// Invoked when the scene capture succeeds without error. The default behavior loads the scene model using
-    /// <see cref="OVRSceneManager.LoadSceneModel"/>.
+    /// Invoked when the scene capture succeeds without error.
     /// </summary>
     protected virtual void OnSceneCaptureReturnedWithoutError()
     {

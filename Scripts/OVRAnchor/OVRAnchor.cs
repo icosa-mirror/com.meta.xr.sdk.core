@@ -234,6 +234,7 @@ public readonly partial struct OVRAnchor : IEquatable<OVRAnchor>, IDisposable
     #endregion
 
 
+
     internal ulong Handle { get; }
 
     /// <summary>
@@ -275,9 +276,8 @@ public readonly partial struct OVRAnchor : IEquatable<OVRAnchor>, IDisposable
     /// <seealso cref="GetComponent{T}"/>
     public bool TryGetComponent<T>(out T component) where T : struct, IOVRAnchorComponent<T>
     {
-        component = default(T);
-        var result = OVRPlugin.GetSpaceComponentStatusInternal(Handle, component.Type, out _, out _);
-        if (!result.IsSuccess())
+        component = default;
+        if (!GetSpaceComponentStatusInternal(Handle, component.Type, out _, out _).IsSuccess())
         {
             return false;
         }
@@ -300,40 +300,34 @@ public readonly partial struct OVRAnchor : IEquatable<OVRAnchor>, IDisposable
     /// <typeparam name="T">The type of the component.</typeparam>
     /// <returns>Whether or not the specified type of component is supported.</returns>
     public bool SupportsComponent<T>() where T : struct, IOVRAnchorComponent<T>
-    {
-        var component = default(T);
-        var result = OVRPlugin.GetSpaceComponentStatusInternal(Handle, component.Type, out _, out _);
-        return result.IsSuccess();
-    }
+        => GetSpaceComponentStatusInternal(Handle, default(T).Type, out _, out _).IsSuccess();
 
     /// <summary>
     /// Get all the supported components of an anchor.
     /// </summary>
-    /// <remarks>
-    /// For performance reasons, this method reuses data structures to
-    /// avoid allocations, and is therefore not considered thread safe.
-    ///
-    /// Do not use in background threads, including async functions
-    /// started with <seealso cref="System.Threading.Tasks.Task.Run(Action)"/>
-    /// </remarks>
-    /// <param name="components">The list that will be cleared, then populated with
-    /// the supported components.</param>
-    /// <returns>Whether or not the request succeeded.</returns>
+    /// <param name="components">The list to populate with the supported components. The list is cleared first.</param>
+    /// <returns>`True` if the supported components could be retrieved, otherwise `False`.</returns>
     public bool GetSupportedComponents(List<SpaceComponentType> components)
     {
         components.Clear();
 
-        if (OVRPlugin.EnumerateSpaceSupportedComponents(Handle,
-            out var componentCount, SupportedComponentsArray))
+        unsafe
         {
-            for (var i = 0; i < componentCount; i++)
-                components.Add(SupportedComponentsArray[i]);
+            if (!EnumerateSpaceSupportedComponents(Handle, 0, out var count, null).IsSuccess())
+                return false;
+
+            var buffer = stackalloc SpaceComponentType[(int)count];
+            if (!EnumerateSpaceSupportedComponents(Handle, count, out count, buffer).IsSuccess())
+                return false;
+
+            for (uint i = 0; i < count; i++)
+            {
+                components.Add(buffer[i]);
+            }
 
             return true;
         }
-        return false;
     }
-    private static readonly SpaceComponentType[] SupportedComponentsArray = new SpaceComponentType[64];
 
     public bool Equals(OVRAnchor other) => Handle.Equals(other.Handle) && Uuid.Equals(other.Uuid);
     public override bool Equals(object obj) => obj is OVRAnchor other && Equals(other);
@@ -350,4 +344,118 @@ public readonly partial struct OVRAnchor : IEquatable<OVRAnchor>, IDisposable
     /// the next time it is fetched again.
     /// </remarks>
     public void Dispose() => OVRPlugin.DestroySpace(Handle);
+
+    struct DeferredValue
+    {
+        public OVRTask<bool> Task;
+        public bool EnabledDesired;
+        public ulong RequestId;
+    }
+
+    struct DeferredKey : IEquatable<DeferredKey>
+    {
+        public ulong Space;
+        public SpaceComponentType ComponentType;
+        public static DeferredKey FromEvent(OVRDeserialize.SpaceSetComponentStatusCompleteData eventData) => new()
+        {
+            Space = eventData.Space,
+            ComponentType = eventData.ComponentType,
+        };
+
+        public bool Equals(DeferredKey other) => Space == other.Space && ComponentType == other.ComponentType;
+        public override bool Equals(object obj) => obj is DeferredKey other && Equals(other);
+        public override int GetHashCode() => unchecked(Space.GetHashCode() * 486187739 + ((int)ComponentType).GetHashCode());
+    }
+
+    static readonly Dictionary<DeferredKey, List<DeferredValue>> _deferredTasks = new();
+
+    [RuntimeInitializeOnLoadMethod]
+    internal static void Init() => _deferredTasks.Clear();
+
+    internal static OVRTask<bool> CreateDeferredSpaceComponentStatusTask(ulong space, SpaceComponentType componentType, bool enabledDesired)
+    {
+        var key = new DeferredKey
+        {
+            Space = space,
+            ComponentType = componentType
+        };
+
+        if (!_deferredTasks.TryGetValue(key, out var list))
+        {
+            list = OVRObjectPool.List<DeferredValue>();
+            _deferredTasks.Add(key, list);
+        }
+
+        var task = OVRTask.FromGuid<bool>(Guid.NewGuid());
+
+        list.Add(new DeferredValue
+        {
+            EnabledDesired = enabledDesired,
+            Task = task,
+        });
+
+        return task;
+    }
+
+    internal static void OnSpaceSetComponentStatusComplete(OVRDeserialize.SpaceSetComponentStatusCompleteData eventData)
+    {
+        var key = DeferredKey.FromEvent(eventData);
+        if (!_deferredTasks.TryGetValue(key, out var list)) return;
+
+        try
+        {
+            var isEnabled = eventData.Enabled != 0;
+            for (var i = 0; i < list.Count; i++)
+            {
+                var value = list[i];
+                var task = value.Task;
+                bool? result = null;
+
+                if (eventData.RequestId == value.RequestId)
+                {
+                    // If this result was initiated by us, then use that value
+                    result = eventData.Result >= 0;
+                }
+                else if (isEnabled == value.EnabledDesired)
+                {
+                    // We're done!
+                    result = true;
+                }
+                // Check to see if there is any other change pending
+                else if (!GetSpaceComponentStatus(eventData.Space, eventData.ComponentType, out _,
+                        out var changePending))
+                {
+                    result = false;
+                }
+                // If there's no other change pending, then try to change the component status
+                else if (!changePending)
+                {
+                    if (SetSpaceComponentStatus(eventData.Space, eventData.ComponentType, value.EnabledDesired,
+                            0, out var requestId))
+                    {
+                        value.RequestId = requestId;
+                        list[i] = value;
+                    }
+                    else
+                    {
+                        result = false;
+                    }
+                }
+
+                if (result.HasValue)
+                {
+                    list.RemoveAt(i--);
+                    task.SetResult(result.Value);
+                }
+            }
+        }
+        finally
+        {
+            if (list.Count == 0)
+            {
+                OVRObjectPool.Return(list);
+                _deferredTasks.Remove(key);
+            }
+        }
+    }
 }

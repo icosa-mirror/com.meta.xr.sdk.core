@@ -349,7 +349,6 @@ public class OVROverlay : MonoBehaviour
             }
         }
 
-
         bool needsSetup = (
                               isOverridePending ||
                               layerDesc.MipLevels != mipLevels ||
@@ -359,8 +358,7 @@ public class OVROverlay : MonoBehaviour
                               layerDesc.LayerFlags != flags ||
                               !layerDesc.TextureSize.Equals(size) ||
                               layerDesc.Shape != shape ||
-                              layerCompositionDepth != compositionDepth)
-            ;
+                              layerCompositionDepth != compositionDepth);
 
         if (!needsSetup)
             return false;
@@ -371,9 +369,7 @@ public class OVROverlay : MonoBehaviour
 
         OVRPlugin.EnqueueSetupLayer(desc, compositionDepth, layerIdPtr);
 
-
         layerId = (int)layerIdHandle.Target;
-
         if (layerId > 0)
         {
             layerDesc = desc;
@@ -779,6 +775,10 @@ public class OVROverlay : MonoBehaviour
             // PC requries premultiplied Alpha, premultiply it unless its already premultiplied
             bool premultiplyAlpha = !Application.isMobilePlatform && !isAlphaPremultiplied;
 
+            // Mobile requires unpremultiplied alpha, so if it is premultiplied, divide it out if possible.
+            bool unmultiplyAlpha = Application.isMobilePlatform && isAlphaPremultiplied;
+
+
             // OpenGL does not support copy texture between different format
             bool isOpenGL = SystemInfo.graphicsDeviceType == UnityEngine.Rendering.GraphicsDeviceType.OpenGLES3 ||
                             SystemInfo.graphicsDeviceType == UnityEngine.Rendering.GraphicsDeviceType.OpenGLES2;
@@ -786,7 +786,7 @@ public class OVROverlay : MonoBehaviour
             bool isSameSize = et.width == textures[eyeId].width && et.height == textures[eyeId].height;
             bool sameMipMap = textures[eyeId].mipmapCount == et.mipmapCount;
 
-            bool bypassBlit = Application.isMobilePlatform && !isOpenGL && isSameSize && sameMipMap;
+            bool bypassBlit = Application.isMobilePlatform && !isOpenGL && isSameSize && sameMipMap && !unmultiplyAlpha;
             if (bypassBlit)
             {
                 Graphics.CopyTexture(textures[eyeId], et);
@@ -828,6 +828,7 @@ public class OVROverlay : MonoBehaviour
                 }
 
                 blitMat.SetInt("_premultiply", premultiplyAlpha ? 1 : 0);
+                blitMat.SetInt("_unmultiply", unmultiplyAlpha ? 1 : 0);
 
                 if (currentOverlayShape != OverlayShape.Cubemap && currentOverlayShape != OverlayShape.OffcenterCubemap)
                 {

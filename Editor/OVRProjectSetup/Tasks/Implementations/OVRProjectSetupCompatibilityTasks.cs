@@ -143,7 +143,7 @@ internal static class OVRProjectSetupCompatibilityTasks
             level: OVRProjectSetup.TaskLevel.Recommended,
             group: compatibilityTaskGroup,
             isDone: group => !OVRManager.IsUnityAlphaOrBetaVersion(),
-            message: "We recommend using a stable version for Oculus Development"
+            message: $"We recommend using a stable version for {OVREditorUtils.MetaXRPublicName} Development"
         );
 
         // ConfigurationTask : Check that Android TV Compatibility is disabled

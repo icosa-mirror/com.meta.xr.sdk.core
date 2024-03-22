@@ -24,6 +24,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using Unity.Collections;
+using UnityEngine.Events;
 using UnityEngine.Serialization;
 using Debug = UnityEngine.Debug;
 
@@ -67,13 +68,20 @@ public class OVRSceneManager : MonoBehaviour
     public List<OVRScenePrefabOverride> PrefabOverrides = new List<OVRScenePrefabOverride>();
 
     /// <summary>
-    /// If True, the <see cref="OVRSceneManager"/> will present the room(s) the user is currently in.
-    /// Otherwise, the <see cref="OVRSceneManager"/> will present all the room(s) detected by the system at
-    /// the time of <see cref="LoadSceneModel"/> execution.
+    /// When enabled, only rooms the user is currently in will be instantiated.
     /// </summary>
     /// <remarks>
-    /// No scene room will be presented if this value set to True and a user is not in any room(s)
-    /// during the <see cref="LoadSceneModel"/> execution.
+    /// When `True`,  <see cref="OVRSceneManager"/> will instantiate an <see cref="OVRSceneRoom"/> and all of its child
+    /// scene anchors (walls, floor, ceiling, and furniture) only if the user is located in the room when
+    /// <see cref="LoadSceneModel"/> is called.
+    ///
+    /// When `False`, the <see cref="OVRSceneManager"/> will instantiate an <see cref="OVRSceneRoom"/> for each room,
+    /// regardless of the user's location.
+    ///
+    /// The 2D boundary points of the room's floor are used to determine whether the user is inside a room.
+    ///
+    /// If a room exists, but the user is not inside it, then the <see cref="NoSceneModelToLoad"/> event is invoked as
+    /// if the user had not yet run Space Setup.
     /// </remarks>
     [Tooltip("Scene manager will only present the room(s) the user is currently in.")]
     public bool ActiveRoomsOnly = true;
@@ -117,11 +125,17 @@ public class OVRSceneManager : MonoBehaviour
 
     #region Events
 
+
     /// <summary>
-    /// This event fires when the OVR Scene Manager has correctly loaded the scene definition and
-    /// instantiated the prefabs for the planes and volumes. Trap it to know that the logic of the
-    /// experience can now continue.
+    /// This event fires when the <see cref="OVRSceneManager"/> has instantiated prefabs
+    /// for the Scene Anchors in a Scene Model.
     /// </summary>
+    /// <remarks>
+    /// Wait until this event has been fired before accessing any <see cref="OVRSceneAnchor"/>s,
+    /// as this event waits for any additional initialization logic to be executed first.
+    /// Access <see cref="OVRSceneAnchor"/>s using
+    /// <see cref="OVRSceneAnchor.GetSceneAnchors(List{OVRSceneAnchor})"/>.
+    /// </remarks>
     public Action SceneModelLoadedSuccessfully;
 
     /// <summary>
@@ -129,6 +143,20 @@ public class OVRSceneManager : MonoBehaviour
     /// user never used the Room Setup in the space they are in.
     /// </summary>
     public Action NoSceneModelToLoad;
+
+    /// <summary>
+    /// Unable to load the scene model because the user has not granted permission to use Scene.
+    /// </summary>
+    /// <remarks>
+    /// Apps that wish to use Scene must have "Spatial data" sharing permission. This is a runtime permission that
+    /// must be granted before loading the scene model. If the permission has not been granted, then calling
+    /// <see cref="LoadSceneModel"/> will result in this event.
+    ///
+    /// The permission string is "com.oculus.permission.USE_SCENE". See Unity's
+    /// [Android Permission API](https://docs.unity3d.com/ScriptReference/Android.Permission.html) for more information
+    /// on interacting with permissions.
+    /// </remarks>
+    public event Action LoadSceneModelFailedPermissionNotGranted;
 
     /// <summary>
     /// This event will fire after the Room Setup successfully returns. It can be trapped to load the
@@ -307,6 +335,7 @@ public class OVRSceneManager : MonoBehaviour
         false)]
     public RoomLayoutInformation RoomLayout;
 
+
     #region Private Vars
 
     // We use this to store the request id when attempting to load the scene
@@ -321,7 +350,7 @@ public class OVRSceneManager : MonoBehaviour
     private Action<bool> _onFloorAnchorsFetchCompleted;
     private Action<bool, OVRAnchor> _onFloorAnchorLocalizationCompleted;
     private List<OVRAnchor> _floorAnchors = OVRObjectPool.Get<List<OVRAnchor>>();
-    private readonly HashSet<Guid> _pendingLocatable = OVRObjectPool.Get<HashSet<Guid>>();
+    private readonly HashSet<Guid> _floorsPendingLocalization = OVRObjectPool.Get<HashSet<Guid>>();
     private Dictionary<Guid, OVRAnchor> _roomAndFloorPairs = OVRObjectPool.Get<Dictionary<Guid, OVRAnchor>>();
     private List<OVRAnchor> _roomLayoutAnchors = new List<OVRAnchor>();
 
@@ -364,7 +393,7 @@ public class OVRSceneManager : MonoBehaviour
     void Awake()
     {
         // Only allow one instance at runtime.
-        if (FindObjectsOfType<OVRSceneManager>().Length > 1)
+        if (FindObjectsByType<OVRSceneManager>(FindObjectsSortMode.None).Length > 1)
         {
             new LogForwarder().LogError(nameof(OVRSceneManager),
                 $"Found multiple {nameof(OVRSceneManager)}s. Destroying '{name}'.");
@@ -375,6 +404,18 @@ public class OVRSceneManager : MonoBehaviour
         _onAnchorsFetchCompleted = OnAnchorsFetchCompleted;
         _onFloorAnchorsFetchCompleted = OnFloorAnchorsFetchCompleted;
         _onFloorAnchorLocalizationCompleted = OnFloorAnchorLocalizationCompleted;
+    }
+
+    void Start()
+    {
+        OVRTelemetry.Start(OVRTelemetryConstants.Scene.MarkerId.UseOVRSceneManager)
+            .AddAnnotation(OVRTelemetryConstants.Scene.AnnotationType.UsingBasicPrefabs,
+                (PlanePrefab != null || VolumePrefab != null) ? "true" : "false")
+            .AddAnnotation(OVRTelemetryConstants.Scene.AnnotationType.UsingPrefabOverrides,
+                (PrefabOverrides.Count > 0) ? "true" : "false")
+            .AddAnnotation(OVRTelemetryConstants.Scene.AnnotationType.ActiveRoomsOnly,
+                ActiveRoomsOnly ? "true" : "false")
+            .Send();
     }
 
     internal async void OnApplicationPause(bool isPaused)
@@ -449,38 +490,48 @@ public class OVRSceneManager : MonoBehaviour
 
     private void OnAnchorsFetchCompleted(bool success, List<OVRAnchor> roomLayoutAnchors)
     {
-        if (success)
+        try
         {
-            if (roomLayoutAnchors.Any())
+            if (!success) return;
+
+            if (roomLayoutAnchors.Count > 0)
             {
                 if (ActiveRoomsOnly)
+                {
                     InstantiateActiveRooms(roomLayoutAnchors);
+                }
                 else
+                {
                     InstantiateSceneRooms(roomLayoutAnchors);
+                }
             }
             else
             {
-                if (VerboseLogging)
+                if (OVRPermissionsRequester.IsPermissionGranted(OVRPermissionsRequester.Permission.Scene))
                 {
-                    var scenePermission = OVRPermissionsRequester.Permission.Scene;
-                    if (!OVRPermissionsRequester.IsPermissionGranted(scenePermission))
-                    {
-                        Verbose?.LogWarning(nameof(OVRSceneManager),
-                            $"Cannot retrieve anchors as {scenePermission} hasn't been granted.",
-                            gameObject);
-                    }
+                    Development.LogWarning(nameof(OVRSceneManager),
+                        $"Although the app has {OVRPermissionsRequester.ScenePermission} permission, loading the "
+                        + "Scene definition yielded no result. Typically, this means the user has not captured the room they are in yet. "
+                        + "Alternatively, an internal error may be preventing this app from accessing scene. "
+                        + $"Invoking {nameof(NoSceneModelToLoad)}.");
+
+                    NoSceneModelToLoad?.Invoke();
                 }
+                else
+                {
+                    Verbose?.LogWarning(nameof(OVRSceneManager),
+                        $"Cannot retrieve anchors as {OVRPermissionsRequester.ScenePermission} hasn't been granted. " +
+                        $"Invoking {nameof(LoadSceneModelFailedPermissionNotGranted)}",
+                        gameObject);
 
-                Development.LogWarning(nameof(OVRSceneManager),
-                    "Loading the Scene definition yielded no result. "
-                    + "Typically, this means the user has not captured the room they are in yet. "
-                    + "Alternatively, an internal error may be preventing this app from accessing scene. "
-                    + $"Invoking {nameof(NoSceneModelToLoad)}.");
-
-                NoSceneModelToLoad?.Invoke();
+                    LoadSceneModelFailedPermissionNotGranted?.Invoke();
+                }
             }
         }
-        OVRObjectPool.Return(roomLayoutAnchors);
+        finally
+        {
+            OVRObjectPool.Return(roomLayoutAnchors);
+        }
     }
 
     #region Loading active room(s)
@@ -489,7 +540,7 @@ public class OVRSceneManager : MonoBehaviour
     {
         _floorAnchors.Clear();
         _roomAndFloorPairs.Clear();
-        _pendingLocatable.Clear();
+        _floorsPendingLocalization.Clear();
 
         using (new OVRObjectPool.ListScope<Guid>(out var floorUuids))
         {
@@ -516,31 +567,34 @@ public class OVRSceneManager : MonoBehaviour
         if (!success) return;
 
         _roomLayoutAnchors.Clear();
-        foreach (var floorAnchor in _floorAnchors)
+        using (new OVRObjectPool.ListScope<(OVRTask<bool>, OVRAnchor)>(out var tasks))
         {
-            // Make anchors locatable for Pose
-            if (!floorAnchor.TryGetComponent(out OVRLocatable locatable))
+            foreach (var floorAnchor in _floorAnchors)
             {
-                continue;
+                // Make anchors locatable for Pose
+                if (!floorAnchor.TryGetComponent(out OVRLocatable locatable))
+                {
+                    continue;
+                }
+
+                _floorsPendingLocalization.Add(floorAnchor.Uuid);
+                tasks.Add((locatable.SetEnabledSafeAsync(true), floorAnchor));
             }
 
-            if (locatable.IsEnabled)
+            // Don't invoke the onComplete method until we've populated the _floorsPendingLocalization
+            foreach (var (task, anchor) in tasks)
             {
-                LocateUserInRoom(floorAnchor);
-                continue;
+                task.ContinueWith(_onFloorAnchorLocalizationCompleted, anchor);
             }
-
-            locatable.SetEnabledAsync(true).ContinueWith(_onFloorAnchorLocalizationCompleted, floorAnchor);
-            _pendingLocatable.Add(floorAnchor.Uuid);
         }
     }
 
     private void OnFloorAnchorLocalizationCompleted(bool success, OVRAnchor anchor)
     {
-        if (!_pendingLocatable.Contains(anchor.Uuid))
+        if (!_floorsPendingLocalization.Contains(anchor.Uuid))
             return;
 
-        _pendingLocatable.Remove(anchor.Uuid);
+        _floorsPendingLocalization.Remove(anchor.Uuid);
 
         if (!success) return;
         LocateUserInRoom(anchor);
@@ -576,16 +630,19 @@ public class OVRSceneManager : MonoBehaviour
             _roomLayoutAnchors.Add(roomAnchor);
         }
 
-        if (!_roomLayoutAnchors.Any())
-        {
-            Verbose?.Log(nameof(OVRSceneManager), "User is not present in any room(s).");
-            return;
-        }
-
         // Instantiate room(s)
-        if (!_pendingLocatable.Any())
+        if (_floorsPendingLocalization.Count == 0)
         {
-            InstantiateSceneRooms(_roomLayoutAnchors);
+            if (_roomLayoutAnchors.Count == 0)
+            {
+                Verbose?.Log(nameof(OVRSceneManager),
+                    $"There is at least one room, but the user is not in any of them. Invoking {nameof(NoSceneModelToLoad)}.");
+                NoSceneModelToLoad?.Invoke();
+            }
+            else
+            {
+                InstantiateSceneRooms(_roomLayoutAnchors);
+            }
         }
     }
 
@@ -863,14 +920,16 @@ public class OVRSceneManager : MonoBehaviour
 
         if (!_cameraRig)
         {
-            _cameraRig = FindObjectOfType<OVRCameraRig>();
+            _cameraRig = FindAnyObjectByType<OVRCameraRig>();
         }
 
         if (_cameraRig)
         {
             _cameraRig.TrackingSpaceChanged += OnTrackingSpaceChanged;
         }
+
     }
+
 
     private void OnDisable()
     {
@@ -886,6 +945,7 @@ public class OVRSceneManager : MonoBehaviour
         {
             _cameraRig.TrackingSpaceChanged -= OnTrackingSpaceChanged;
         }
+
     }
 
     /// <summary>

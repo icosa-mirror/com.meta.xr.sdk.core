@@ -20,10 +20,11 @@ MonoBehaviour:
     array:
     - name: Core
     - name: Tracking
-  thumbnail: {fileID: 2800000, guid: 42076419df902cf4fb1f80c04a401aac, type: 3}
+  thumbnail: {fileID: 2800000, guid: 7fb9c19c262a3bf4884528a7804f8ff9, type: 3}
   order: -5
   prefab: {fileID: 112276, guid: d9809c5e8418bb047bf2c8ba1d1a2cec, type: 3}
   dependencies:
   - e47682b9-c270-40b1-b16d-90b627a5ce1b
+  packageDependencies: []
   isSingleton: 1
   usageInstructions: 

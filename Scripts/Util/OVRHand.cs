@@ -22,8 +22,10 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.EventSystems;
 
 public class OVRHand : MonoBehaviour,
+    OVRInputModule.InputSource,
     OVRSkeleton.IOVRSkeletonDataProvider,
     OVRSkeletonRenderer.IOVRSkeletonRendererDataProvider,
     OVRMesh.IOVRMeshDataProvider,
@@ -63,8 +65,17 @@ public class OVRHand : MonoBehaviour,
     /// </summary>
     public OVRInput.InputDeviceShowState m_showState = OVRInput.InputDeviceShowState.ControllerNotInHand;
 
+    /// <summary>
+    /// An optional component for provind shell like ray functionality - highlighting where you're selecting in the UI and responding to pinches / button presses.
+    /// </summary>
+    public OVRRayHelper RayHelper;
+
     private GameObject _pointerPoseGO;
     private OVRPlugin.HandState _handState = new OVRPlugin.HandState();
+
+    // Track index pinching for UI interactions.
+    private bool _wasIndexPinching = false;
+    private bool _wasReleased = false;
 
 
     public bool IsDataValid { get; private set; }
@@ -86,12 +97,20 @@ public class OVRHand : MonoBehaviour,
             PointerPose.SetParent(_pointerPoseRoot, false);
         }
 
+        if (RayHelper != null)
+        {
+            RayHelper.transform.SetParent(PointerPose, false);
+        }
         GetHandState(OVRPlugin.Step.Render);
     }
 
     private void Update()
     {
         GetHandState(OVRPlugin.Step.Render);
+
+        bool newPinching = GetFingerIsPinching(HandFinger.Index);
+        _wasReleased = !newPinching && _wasIndexPinching;
+        _wasIndexPinching = newPinching;
     }
 
     private void FixedUpdate()
@@ -99,6 +118,11 @@ public class OVRHand : MonoBehaviour,
         if (OVRPlugin.nativeXrApi != OVRPlugin.XrApi.OpenXR)
         {
             GetHandState(OVRPlugin.Step.Physics);
+        }
+
+        if (RayHelper != null)
+        {
+            RayHelper.gameObject.SetActive(IsDataValid);
         }
     }
 
@@ -280,25 +304,77 @@ public class OVRHand : MonoBehaviour,
         return data;
     }
 
+    public void OnEnable()
+    {
+        OVRInputModule.TrackInputSource(this);
+        if (RayHelper)
+        {
+            RayHelper.gameObject.SetActive(true);
+        }
+    }
+
+    public void OnDisable()
+    {
+        OVRInputModule.UntrackInputSource(this);
+        if (RayHelper)
+        {
+            RayHelper.gameObject.SetActive(false);
+        }
+    }
+
     public void OnValidate()
     {
         // Verify that all hand side based components on this object are using the same hand side.
         var skeleton = GetComponent<OVRSkeleton>();
-        if( skeleton != null )
+        if (skeleton != null)
         {
-            if( skeleton.GetSkeletonType().AsHandType() != HandType )
+            if (skeleton.GetSkeletonType().AsHandType() != HandType)
             {
                 skeleton.SetSkeletonType(HandType.AsSkeletonType());
             }
         }
 
         var mesh = GetComponent<OVRMesh>();
-        if( mesh != null )
+        if (mesh != null)
         {
-            if( mesh.GetMeshType().AsHandType() != HandType )
+            if (mesh.GetMeshType().AsHandType() != HandType)
             {
                 mesh.SetMeshType(HandType.AsMeshType());
             }
+        }
+    }
+
+    public bool IsPressed()
+    {
+        return GetFingerIsPinching(HandFinger.Index);
+    }
+
+    public bool IsReleased()
+    {
+        return _wasReleased;
+    }
+
+    public Transform GetPointerRayTransform()
+    {
+        return PointerPose;
+    }
+
+    public bool IsValid()
+    {
+        return this != null;
+    }
+
+    public bool IsActive()
+    {
+        return true;
+    }
+
+    public void UpdatePointerRay(OVRInputRayData rayData)
+    {
+        if (RayHelper)
+        {
+            rayData.ActivationStrength = GetFingerPinchStrength(HandFinger.Index);
+            RayHelper.UpdatePointerRay(rayData);
         }
     }
 }

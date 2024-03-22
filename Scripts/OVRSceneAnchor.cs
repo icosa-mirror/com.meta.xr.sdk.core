@@ -21,6 +21,7 @@
 using System;
 using System.Collections.Generic;
 using UnityEngine;
+using Object = UnityEngine.Object;
 
 /// <summary>
 /// Represents a scene anchor.
@@ -173,9 +174,15 @@ public sealed class OVRSceneAnchor : MonoBehaviour
     }
 
     /// <summary>
-    /// Get the list of all scene anchors.
+    /// Get the list of all scene anchors that the <see cref="OVRSceneManager"/> created.
     /// </summary>
-    /// <param name="anchors">A list of <see cref="OVRSceneAnchor"/> to populate.</param>
+    /// <remarks>
+    /// Anchor components such as <see cref="OVRSceneRoom"/>, <see cref="OVRScenePlane"/>,
+    /// and <see cref="OVRSceneVolume"/> all have a <see cref="OVRSceneAnchor"/>
+    /// component, so this method should be used to find those sibling components.
+    /// </remarks>
+    /// <param name="anchors">A list of <see cref="OVRSceneAnchor"/>s to
+    /// populate. Any existing elements in the list will be removed.</param>
     /// <exception cref="ArgumentNullException">Thrown if <paramref name="anchors"/> is `null`.</exception>
     public static void GetSceneAnchors(List<OVRSceneAnchor> anchors)
     {
@@ -184,6 +191,36 @@ public sealed class OVRSceneAnchor : MonoBehaviour
 
         anchors.Clear();
         anchors.AddRange(SceneAnchorsList);
+    }
+
+    /// <summary>
+    /// Get the list of all scene anchors filtered by type.
+    /// </summary>
+    /// <remarks>
+    /// Anchor components such as <see cref="OVRSceneRoom"/>, <see cref="OVRScenePlane"/>, and
+    /// <see cref="OVRSceneVolume"/> all have a <see cref="OVRSceneAnchor"/> component, so this method should be used to
+    /// find those sibling components.
+    ///
+    /// This method traverses all <see cref="OVRSceneAnchor"/> instantiated by the <see cref="OVRSceneManager"/>
+    /// and filters them based on whether they have the given component.
+    /// </remarks>
+    /// <typeparam name="T">The type of component the <see cref="OVRSceneAnchor"/> must have.</typeparam>
+    /// <param name="anchors">A list of components of type <typeparamref name="T"/> to populate. Any existing elements
+    /// in the list will be removed.</param>
+    /// <exception cref="ArgumentNullException">Thrown if <paramref name="anchors"/> is `null`.</exception>
+    public static void GetSceneAnchorsOfType<T>(List<T> anchors) where T : Object
+    {
+        if (anchors == null)
+            throw new ArgumentNullException(nameof(anchors));
+
+        anchors.Clear();
+        foreach (var anchor in SceneAnchorsList)
+        {
+            if (anchor.TryGetComponent<T>(out var component))
+            {
+                anchors.Add(component);
+            }
+        }
     }
 
     internal bool TryUpdateTransform(bool useCache)

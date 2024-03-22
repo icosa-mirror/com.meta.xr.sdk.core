@@ -52,8 +52,8 @@ namespace Meta.XR.BuildingBlocks
 
         private void Awake()
         {
-            _cameraRig = FindObjectOfType<OVRCameraRig>();
-            _spatialAnchorCore = FindObjectOfType<SpatialAnchorCoreBuildingBlock>();
+            _cameraRig = FindAnyObjectByType<OVRCameraRig>();
+            _spatialAnchorCore = SpatialAnchorCoreBuildingBlock.GetBaseInstances()[0];
             AnchorPrefab = _anchorPrefab;
         }
 
@@ -92,7 +92,7 @@ namespace Meta.XR.BuildingBlocks
         /// <remarks>If </remarks>
         public virtual void LoadAnchorsFromDefaultLocalStorage()
         {
-            var spatialAnchorLocalStorageManagerBuildingBlock = FindObjectOfType<SpatialAnchorLocalStorageManagerBuildingBlock>();
+            var spatialAnchorLocalStorageManagerBuildingBlock = FindAnyObjectByType<SpatialAnchorLocalStorageManagerBuildingBlock>();
             if (!spatialAnchorLocalStorageManagerBuildingBlock)
             {
                 Debug.Log($"[{nameof(SpatialAnchorLocalStorageManagerBuildingBlock)}] component is missing.");

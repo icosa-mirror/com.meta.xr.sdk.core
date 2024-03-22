@@ -2,7 +2,8 @@
     Properties{
         _MainTex("Base (RGB) Trans (A)", CUBE) = "white" {}
         _face("Face", Int) = 0
-        _premultiply("Cubemap Blit", Int) = 0
+        _premultiply("Pre-multiply alpha", Int) = 0
+        _unmultiply("Un-multiply alpha", Int) = 0
     }
     SubShader{
         Tags{ "Queue" = "Transparent" "IgnoreProjector" = "True" "RenderType" = "Transparent" }
@@ -33,6 +34,7 @@
                 float4 _MainTex_ST;
                 int _face;
                 int _premultiply;
+                int _unmultiply;
 
                 v2f vert (appdata_t va)
                 {
@@ -56,6 +58,8 @@
 
                     if (_premultiply)
                         col.rgb *= col.a;
+                    if (_unmultiply && col.a > 0)
+                        col.rgb /= col.a;
 
                     return col;
                 }

@@ -77,7 +77,13 @@ internal class OVRConfigurationTaskRegistry
             return;
         }
 
-        Unity.XR.CoreUtils.Editor.BuildValidator.AddRules(targetGroup, new []{task.ToValidationRule(task.Platform)});
+        var validationRule = task.ToValidationRule(targetGroup);
+        if (validationRule == null)
+        {
+            return;
+        }
+
+        Unity.XR.CoreUtils.Editor.BuildValidator.AddRules(targetGroup, new []{validationRule});
     }
 #endif
 

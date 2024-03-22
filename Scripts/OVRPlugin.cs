@@ -55,7 +55,7 @@ public static partial class OVRPlugin
 #if OVRPLUGIN_UNSUPPORTED_PLATFORM
     public static readonly System.Version wrapperVersion = _versionZero;
 #else
-    public static readonly System.Version wrapperVersion = OVRP_1_92_0.version;
+    public static readonly System.Version wrapperVersion = OVRP_1_94_0.version;
 #endif
 
 #if !OVRPLUGIN_UNSUPPORTED_PLATFORM
@@ -202,6 +202,13 @@ public static partial class OVRPlugin
         Failure_SpaceLocalizationFailed = -2002,
         Failure_SpaceNetworkTimeout = -2003,
         Failure_SpaceNetworkRequestFailed = -2004,
+
+        /// XR_FB_spatial_entity extension
+        Failure_SpaceComponentNotSupported = -2005,
+        Failure_SpaceComponentNotEnabled = -2006,
+        Failure_SpaceComponentStatusPending = -2007,
+        Failure_SpaceComponentStatusAlreadySet = -2008,
+
 
 
     }
@@ -437,6 +444,7 @@ public static partial class OVRPlugin
         None = 0,
         Normal = 1 << 13,
         Quality = 1 << 16,
+        Automatic = 1 << 18,
     }
 
     public static bool IsPassthroughShape(OverlayShape shape)
@@ -1435,7 +1443,6 @@ public static partial class OVRPlugin
         }
     }
 
-
     public enum BlendFactor
     {
         Zero = 0,
@@ -1925,7 +1932,7 @@ public static partial class OVRPlugin
         public BoneCapsule BoneCapsules_18;
     }
 
-[StructLayout(LayoutKind.Sequential)]
+    [StructLayout(LayoutKind.Sequential)]
     private struct Skeleton3Internal
     {
         public SkeletonType Type;
@@ -2205,7 +2212,7 @@ public static partial class OVRPlugin
         public bool PositionTracked => (LocationFlags & SpaceLocationFlags.PositionTracked) != 0;
 
         public static readonly BodyJointLocation invalid = new BodyJointLocation
-            { LocationFlags = 0, Pose = Posef.identity };
+        { LocationFlags = 0, Pose = Posef.identity };
     }
 
     /// <summary>
@@ -2897,6 +2904,8 @@ public static partial class OVRPlugin
         VirtualKeyboardHidden = 205,
 
 
+
+
     }
 
     private const int EventDataBufferSize = 4000;
@@ -2953,6 +2962,7 @@ public static partial class OVRPlugin
 
         // Pose only set if locationType == Custom
         public Posef pose;
+        public TrackingOrigin trackingOriginType;
     }
 
     [StructLayout(LayoutKind.Sequential)]
@@ -2963,6 +2973,7 @@ public static partial class OVRPlugin
         // Pose & Scale only set if locationType == Custom
         public Posef pose;
         public float scale;
+        public TrackingOrigin trackingOriginType;
     }
 
     [StructLayout(LayoutKind.Sequential)]
@@ -2996,6 +3007,7 @@ public static partial class OVRPlugin
         public VirtualKeyboardInputSource inputSource;
         public Posef inputPose;
         public VirtualKeyboardInputStateFlags inputState;
+        public TrackingOrigin inputTrackingOriginType;
     }
 
     [StructLayout(LayoutKind.Sequential)]
@@ -4192,7 +4204,6 @@ public static partial class OVRPlugin
 #endif
     }
 
-
     public static bool EnqueueDestroyLayer(IntPtr layerID)
     {
 #if OVRPLUGIN_UNSUPPORTED_PLATFORM
@@ -5209,6 +5220,47 @@ public static partial class OVRPlugin
 #endif
     }
 
+    public static bool SetWideMotionModeHandPoses(bool wideMotionModeFusionHandPoses)
+    {
+#if OVRPLUGIN_UNSUPPORTED_PLATFORM
+        return false;
+#else
+        if (version >= OVRP_1_93_0.version)
+        {
+            Result result = OVRP_1_93_0.ovrp_SetWideMotionModeHandPoses(wideMotionModeFusionHandPoses ? Bool.True : Bool.False);
+            return (result == Result.Success);
+        }
+
+        return false;
+#endif
+    }
+
+    public static bool IsWideMotionModeHandPosesEnabled()
+    {
+#if OVRPLUGIN_UNSUPPORTED_PLATFORM
+        return false;
+#else
+        if (version >= OVRP_1_93_0.version)
+        {
+            Bool enabled = OVRPlugin.Bool.False;
+            Result result = OVRP_1_93_0.ovrp_IsSetWideMotionModeHandPosesEnabled(ref enabled);
+            if (result == Result.Success)
+            {
+                return enabled == OVRPlugin.Bool.True;
+            }
+
+            //Debug.LogError(
+            //    "Unable to determine if controller driven hand poses are enabled. Try calling IsWideMotionModeHandPosesEnabled() " +
+            //    "while the XR plug-in is initialized. Failed with reason: " + result);
+            return false;
+        }
+        else
+        {
+            return false;
+        }
+#endif
+    }
+
 
     public static EyeTextureFormat GetDesiredEyeTextureFormat()
     {
@@ -5639,7 +5691,7 @@ public static partial class OVRPlugin
             // This is making Virtual Keyboard Tests fail.
             /*
             Debug.LogError(
-                "Unable to determine whether concurrent hands and controllers mode is supported. Try calling IsMultimodalHandsControllersSupported() " +
+                "Unable to determine whether simultaneous hands and controllers mode is supported. Try calling IsMultimodalHandsControllersSupported() " +
                 "while the XR plug-in is initialized. Failed with reason: " + result);
             */
             return false;
@@ -9886,6 +9938,7 @@ public static partial class OVRPlugin
 #endif
     }
 
+    [Obsolete("Use the overload of " + nameof(EnumerateSpaceSupportedComponents) + " that accepts a pointer rather than a managed array.")]
     public static bool EnumerateSpaceSupportedComponents(UInt64 space, out uint numSupportedComponents,
         SpaceComponentType[] supportedComponents)
     {
@@ -9904,6 +9957,19 @@ public static partial class OVRPlugin
         {
             return false;
         }
+#endif
+    }
+
+    public static unsafe Result EnumerateSpaceSupportedComponents(UInt64 space, uint capacityInput, out uint countOutput,
+        SpaceComponentType* buffer)
+    {
+        countOutput = 0;
+#if OVRPLUGIN_UNSUPPORTED_PLATFORM
+        return Result.Failure_Unsupported;
+#else
+        return version < OVRP_1_72_0.version
+            ? Result.Failure_Unsupported
+            : OVRP_1_72_0.ovrp_EnumerateSpaceSupportedComponents(ref space, capacityInput, out countOutput, buffer);
 #endif
     }
 
@@ -10077,26 +10143,20 @@ public static partial class OVRPlugin
 #endif
     }
 
-    public static OVRPlugin.Result SaveSpaceList(NativeArray<ulong> spaces, SpaceStorageLocation location,
-        out UInt64 requestId)
+    public static unsafe Result SaveSpaceList(NativeArray<ulong> spaces, SpaceStorageLocation location,
+        out ulong requestId)
+        => SaveSpaceList((ulong*)spaces.GetUnsafeReadOnlyPtr(), (uint)spaces.Length, location, out requestId);
+
+    public static unsafe Result SaveSpaceList(ulong* spaces, uint numSpaces, SpaceStorageLocation location,
+        out ulong requestId)
     {
         requestId = 0;
 #if OVRPLUGIN_UNSUPPORTED_PLATFORM
         return Result.Failure_Unsupported;
 #else
-        if (version >= OVRP_1_79_0.version)
-        {
-            unsafe
-            {
-                Result result = OVRP_1_79_0.ovrp_SaveSpaceList((ulong*)spaces.GetUnsafeReadOnlyPtr(),
-                    (uint)spaces.Length, location, out requestId);
-                return result;
-            }
-        }
-        else
-        {
-            return Result.Failure_Unsupported;
-        }
+        return version >= OVRP_1_79_0.version
+            ? OVRP_1_79_0.ovrp_SaveSpaceList(spaces, numSpaces, location, out requestId)
+            : Result.Failure_Unsupported;
 #endif
     }
 
@@ -10133,7 +10193,11 @@ public static partial class OVRPlugin
     }
 
     public static unsafe Result ShareSpaces(NativeArray<ulong> spaces, NativeArray<ulong> userHandles,
-        out UInt64 requestId)
+        out UInt64 requestId) => ShareSpaces((ulong*)spaces.GetUnsafeReadOnlyPtr(), (uint)spaces.Length,
+        (ulong*)userHandles.GetUnsafeReadOnlyPtr(), (uint)userHandles.Length, out requestId);
+
+    public static unsafe Result ShareSpaces(ulong* spaces, uint numSpaces, ulong* userHandles, uint numUsers,
+        out ulong requestId)
     {
         requestId = 0;
 #if OVRPLUGIN_UNSUPPORTED_PLATFORM
@@ -10141,8 +10205,7 @@ public static partial class OVRPlugin
 #else
         if (version >= OVRP_1_79_0.version)
         {
-            return OVRP_1_79_0.ovrp_ShareSpaces((ulong*)spaces.GetUnsafeReadOnlyPtr(), (uint)spaces.Length,
-                (ulong*)userHandles.GetUnsafeReadOnlyPtr(), (uint)userHandles.Length, out requestId);
+            return OVRP_1_79_0.ovrp_ShareSpaces(spaces, numSpaces, userHandles, numUsers, out requestId);
         }
         else
         {
@@ -10892,6 +10955,9 @@ public static partial class OVRPlugin
 
 
 
+
+
+
     public class UnityOpenXR
     {
         public static bool Enabled = false; // OculusXRFeature will set it to true when being used
@@ -11087,7 +11153,7 @@ public static partial class OVRPlugin
 
         public static void SetConsent(Bool consent)
         {
-#if OVRPLUGIN_UNSUPPORTED_PLATFORM
+#if !(UNITY_EDITOR_WIN || UNITY_STANDALONE_WIN || (UNITY_ANDROID && !UNITY_EDITOR))
             return;
 #else
             if (version < OVRP_1_92_0.version) return;
@@ -11771,7 +11837,6 @@ public static partial class OVRPlugin
         [DllImport(pluginName, CallingConvention = CallingConvention.Cdecl)]
         public static extern Result ovrp_EnqueueSetupLayer2(ref LayerDesc desc, int compositionDepth,
             IntPtr layerId);
-
     }
 
     private static class OVRP_1_29_0
@@ -12451,6 +12516,11 @@ public static partial class OVRPlugin
             [MarshalAs(UnmanagedType.LPArray), In, Out] SpaceComponentType[] componentTypes);
 
         [DllImport(pluginName, CallingConvention = CallingConvention.Cdecl)]
+        public static extern unsafe Result ovrp_EnumerateSpaceSupportedComponents(ref UInt64 space,
+            uint componentTypesCapacityInput, out uint componentTypesCountOutput,
+            SpaceComponentType* componentTypes);
+
+        [DllImport(pluginName, CallingConvention = CallingConvention.Cdecl)]
         public static extern Result ovrp_SaveSpace(ref UInt64 space, SpaceStorageLocation location,
             SpaceStoragePersistenceMode mode, out UInt64 requestId);
 
@@ -12764,6 +12834,8 @@ public static partial class OVRPlugin
         [DllImport(pluginName, CallingConvention = CallingConvention.Cdecl)]
         public static extern Result ovrp_GetEyeLayerRecommendedResolution(out Sizei recommendedDimensions);
 
+
+
     }
 
     private static class OVRP_1_85_0
@@ -12889,6 +12961,27 @@ public static partial class OVRPlugin
         [DllImport(pluginName, CallingConvention = CallingConvention.Cdecl)]
         public static extern Result ovrp_QplSetConsent(Bool consent);
     }
+
+    private static class OVRP_1_93_0
+    {
+        public static readonly System.Version version = new System.Version(1, 93, 0);
+
+        [DllImport(pluginName, CallingConvention = CallingConvention.Cdecl)]
+        public static extern Result ovrp_SetWideMotionModeHandPoses(Bool wideMotionModeHandPoses);
+
+        [DllImport(pluginName, CallingConvention = CallingConvention.Cdecl)]
+        public static extern Result ovrp_IsSetWideMotionModeHandPosesEnabled(ref Bool enabled);
+
+
+
+
+    }
+
+    private static class OVRP_1_94_0
+    {
+        public static readonly System.Version version = new System.Version(1, 94, 0);
+    }
+
     /* INSERT NEW OVRP CLASS ABOVE THIS LINE */
     // After modify this file, run `fbpython arvr/projects/integrations/codegen/generate_mockovrplugin.py` to update OculusInternal/Tests/MockOVRPlugin.cs
 }

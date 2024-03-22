@@ -35,7 +35,7 @@ internal class OVREditorStart
     {
         if (!OVREditorUtils.IsMainEditor()) return;
 
-        OVRPlugin.Qpl.SetConsent(OVRRuntimeSettings.Instance.TelemetryEnabled ? OVRPlugin.Bool.True : OVRPlugin.Bool.False);
+        OVRPlugin.Qpl.SetConsent(OVRTelemetryConsent.TelemetryEnabled ? OVRPlugin.Bool.True : OVRPlugin.Bool.False);
 
         if (InitSession.Value)
         {

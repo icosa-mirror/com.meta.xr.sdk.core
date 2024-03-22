@@ -83,13 +83,19 @@ public class OVRVirtualKeyboardSampleInputHandler : MonoBehaviour
 
     private void UpdateLineRenderer()
     {
-        leftLinePointer.enabled = false;
-        rightLinePointer.enabled = false;
+        if (leftLinePointer != null)
+        {
+            leftLinePointer.enabled = false;
+            UpdateLineRendererFromSource(OVRVirtualKeyboard.InputSource.ControllerLeft);
+            UpdateLineRendererFromSource(OVRVirtualKeyboard.InputSource.HandLeft);
+        }
 
-        UpdateLineRendererFromSource(OVRVirtualKeyboard.InputSource.ControllerLeft);
-        UpdateLineRendererFromSource(OVRVirtualKeyboard.InputSource.ControllerRight);
-        UpdateLineRendererFromSource(OVRVirtualKeyboard.InputSource.HandLeft);
-        UpdateLineRendererFromSource(OVRVirtualKeyboard.InputSource.HandRight);
+        if (rightLinePointer != null)
+        {
+            rightLinePointer.enabled = false;
+            UpdateLineRendererFromSource(OVRVirtualKeyboard.InputSource.ControllerRight);
+            UpdateLineRendererFromSource(OVRVirtualKeyboard.InputSource.HandRight);
+        }
     }
 
     private void UpdateLineRendererFromSource(OVRVirtualKeyboard.InputSource source)

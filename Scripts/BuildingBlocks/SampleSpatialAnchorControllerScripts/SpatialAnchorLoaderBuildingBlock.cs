@@ -33,7 +33,7 @@ namespace Meta.XR.BuildingBlocks
         private void Awake()
         {
             _spatialAnchorSpawner = GetComponent<SpatialAnchorSpawnerBuildingBlock>();
-            _spatialAnchorCore = FindObjectOfType<SpatialAnchorCoreBuildingBlock>();
+            _spatialAnchorCore = SpatialAnchorCoreBuildingBlock.GetBaseInstances()[0];
         }
 
         /// <summary>
@@ -53,7 +53,7 @@ namespace Meta.XR.BuildingBlocks
         /// <remarks>If </remarks>
         public virtual void LoadAnchorsFromDefaultLocalStorage()
         {
-            var spatialAnchorLocalStorageManagerBuildingBlock = FindObjectOfType<SpatialAnchorLocalStorageManagerBuildingBlock>();
+            var spatialAnchorLocalStorageManagerBuildingBlock = FindAnyObjectByType<SpatialAnchorLocalStorageManagerBuildingBlock>();
             if (!spatialAnchorLocalStorageManagerBuildingBlock)
             {
                 Debug.Log($"[{nameof(SpatialAnchorLocalStorageManagerBuildingBlock)}] component is missing.");

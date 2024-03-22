@@ -43,7 +43,7 @@ public interface IOVRAnchorComponent<T>
     /// <remarks>
     /// A component must be enabled to access its data.
     /// </remarks>
-    /// <param name="enabled">The desired state of the component.</param>
+    /// <param name="enable">The desired state of the component.</param>
     /// <param name="timeout">The timeout, in seconds, for the operation. Use zero to indicate an infinite timeout.</param>
     /// <returns>Returns an <see cref="OVRTask{T}" /> whose result indicates the result of the operation.</returns>
     public OVRTask<bool> SetEnabledAsync(bool enable, double timeout = 0);

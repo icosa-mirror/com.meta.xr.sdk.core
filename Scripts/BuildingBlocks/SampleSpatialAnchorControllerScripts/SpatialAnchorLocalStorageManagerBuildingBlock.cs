@@ -36,7 +36,7 @@ namespace Meta.XR.BuildingBlocks
 
         private void Start()
         {
-            _spatialAnchorCore = FindObjectOfType<SpatialAnchorCoreBuildingBlock>();
+            _spatialAnchorCore = SpatialAnchorCoreBuildingBlock.GetBaseInstances()[0];
             _spatialAnchorCore.OnAnchorCreateCompleted.AddListener(SaveAnchorUuidToLocalStorage);
             _spatialAnchorCore.OnAnchorEraseCompleted.AddListener(RemoveAnchorFromLocalStorage);
         }

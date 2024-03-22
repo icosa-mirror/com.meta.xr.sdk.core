@@ -23,7 +23,7 @@ using System.Collections.Generic;
 using System.Linq;
 using Meta.XR.Editor.Tags;
 using UnityEngine;
-using NUnit.Framework;
+using UnityEngine.Assertions;
 using UnityEditor;
 
 namespace Meta.XR.BuildingBlocks.Editor
@@ -36,17 +36,19 @@ namespace Meta.XR.BuildingBlocks.Editor
         [SerializeField, OVRReadOnly] internal int version = 1;
         public int Version => version;
 
-        private static readonly OVRGUIContent DefaultThumbnailTexture = OVREditorUtils.CreateContent("bb_thumb_default.png",
+        private static readonly OVRGUIContent DefaultThumbnailTexture = OVREditorUtils.CreateContent("bb_thumb_default.jpg",
             OVRGUIContent.Source.BuildingBlocksThumbnails);
 
-        private static readonly OVRGUIContent DefaultInternalThumbnailTexture = OVREditorUtils.CreateContent("bb_thumb_internal.png",
+        private static readonly OVRGUIContent DefaultInternalThumbnailTexture = OVREditorUtils.CreateContent("bb_thumb_internal.jpg",
             OVRGUIContent.Source.BuildingBlocksThumbnails);
 
         [SerializeField] internal string blockName;
-        public string BlockName => blockName;
+        internal string BlockNameOverride;
+        public string BlockName => string.IsNullOrEmpty(BlockNameOverride) ? blockName : BlockNameOverride;
 
         [SerializeField] internal string description;
-        public string Description => description;
+        internal string DescriptionOverride;
+        public string Description => string.IsNullOrEmpty(DescriptionOverride) ? description : DescriptionOverride;
 
         [SerializeField] internal TagArray tags;
 
@@ -99,6 +101,12 @@ namespace Meta.XR.BuildingBlocks.Editor
             }
 
             _hasSeenBefore.Value = true;
+            ValidateTags();
+        }
+
+        internal void ResetSeen()
+        {
+            _hasSeenBefore.Value = false;
             ValidateTags();
         }
         #endregion
@@ -155,5 +163,7 @@ namespace Meta.XR.BuildingBlocks.Editor
         internal abstract void AddToProject(GameObject selectedGameObject = null, Action onInstall = null);
 
         internal virtual bool RequireListRefreshAfterInstall => false;
+
+        internal virtual bool OverridesInstallRoutine => false;
     }
 }

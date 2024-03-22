@@ -123,9 +123,19 @@ public class OVRVirtualKeyboardSampleControls : MonoBehaviour
         inputHandler = GetComponent<OVRVirtualKeyboardSampleInputHandler>();
         keyboard.KeyboardHiddenEvent.AddListener(OnHideKeyboard);
 
-        MoveNearButton.onClick.AddListener(MoveKeyboardNear);
-        MoveFarButton.onClick.AddListener(MoveKeyboardFar);
-        DestroyKeyboardButton.onClick.AddListener(DestroyKeyboard);
+        if (MoveNearButton)
+        {
+            MoveNearButton.onClick.AddListener(MoveKeyboardNear);
+        }
+        if (MoveFarButton)
+        {
+            MoveFarButton.onClick.AddListener(MoveKeyboardFar);
+        }
+        if (DestroyKeyboardButton)
+        {
+            DestroyKeyboardButton.onClick.AddListener(DestroyKeyboard);
+        }
+
         StartCoroutine(CreateKeyboard());
     }
 
@@ -137,9 +147,18 @@ public class OVRVirtualKeyboardSampleControls : MonoBehaviour
         }
 
         keyboard.KeyboardHiddenEvent.RemoveListener(OnHideKeyboard);
-        MoveNearButton.onClick.RemoveListener(MoveKeyboardNear);
-        MoveFarButton.onClick.RemoveListener(MoveKeyboardFar);
-        DestroyKeyboardButton.onClick.RemoveListener(DestroyKeyboard);
+        if (MoveNearButton)
+        {
+            MoveNearButton.onClick.RemoveListener(MoveKeyboardNear);
+        }
+        if (MoveFarButton)
+        {
+            MoveFarButton.onClick.RemoveListener(MoveKeyboardFar);
+        }
+        if (DestroyKeyboardButton)
+        {
+            DestroyKeyboardButton.onClick.RemoveListener(DestroyKeyboard);
+        }
     }
 
     public void ShowKeyboard()
@@ -157,11 +176,15 @@ public class OVRVirtualKeyboardSampleControls : MonoBehaviour
 
     private IEnumerator CreateKeyboard()
     {
-        var showButtonText = ShowButton.GetComponentInChildren<Text>();
-        showButtonText.text = "Creating Keyboard...";
-        ShowButton.interactable = false;
-        HideButton.interactable = false;
-        DestroyKeyboardButton.interactable = false;
+        Text showButtonText = null;
+        if (ShowButton && HideButton && DestroyKeyboardButton)
+        {
+            showButtonText = ShowButton.GetComponentInChildren<Text>();
+            showButtonText.text = "Creating Keyboard...";
+            ShowButton.interactable = false;
+            HideButton.interactable = false;
+            DestroyKeyboardButton.interactable = false;
+        }
 
         if (keyboard == null)
         {
@@ -172,7 +195,10 @@ public class OVRVirtualKeyboardSampleControls : MonoBehaviour
         }
 
         yield return new OVRVirtualKeyboard.WaitUntilKeyboardVisible(keyboard);
-        showButtonText.text = "Show Keyboard";
+        if (showButtonText)
+        {
+            showButtonText.text = "Show Keyboard";
+        }
         UpdateButtonInteractable();
     }
 
@@ -226,12 +252,30 @@ public class OVRVirtualKeyboardSampleControls : MonoBehaviour
     {
         var kbExists = keyboard != null;
         var kbActiveAndNotMoving = kbExists && keyboard.gameObject.activeSelf && !isMovingKeyboard_;
-        ShowButton.interactable = !kbExists || !keyboard.gameObject.activeSelf;
-        MoveButton.interactable = kbActiveAndNotMoving;
-        MoveNearButton.interactable = kbActiveAndNotMoving;
-        MoveFarButton.interactable = kbActiveAndNotMoving;
-        HideButton.interactable = kbActiveAndNotMoving;
-        DestroyKeyboardButton.interactable = kbExists;
+        if (ShowButton)
+        {
+            ShowButton.interactable = !kbExists || !keyboard.gameObject.activeSelf;
+        }
+        if (MoveButton)
+        {
+            MoveButton.interactable = kbActiveAndNotMoving;
+        }
+        if (MoveNearButton)
+        {
+            MoveNearButton.interactable = kbActiveAndNotMoving;
+        }
+        if (MoveFarButton)
+        {
+            MoveFarButton.interactable = kbActiveAndNotMoving;
+        }
+        if (HideButton)
+        {
+            HideButton.interactable = kbActiveAndNotMoving;
+        }
+        if (DestroyKeyboardButton)
+        {
+            DestroyKeyboardButton.interactable = kbExists;
+        }
     }
 
     void Update()

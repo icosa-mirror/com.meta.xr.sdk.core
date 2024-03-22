@@ -18,6 +18,9 @@
  * limitations under the License.
  */
 
+using System.IO;
+using UnityEngine.SceneManagement;
+
 namespace Meta.XR.BuildingBlocks
 {
     internal static class Telemetry
@@ -28,6 +31,18 @@ namespace Meta.XR.BuildingBlocks
                 .AddAnnotation(OVRTelemetryConstants.BB.AnnotationType.InstanceId, block.InstanceId)
                 .AddAnnotation(OVRTelemetryConstants.BB.AnnotationType.BlockName, block.gameObject.name)
                 .AddAnnotation(OVRTelemetryConstants.BB.AnnotationType.Version, block.Version.ToString());
+        }
+
+        public static OVRTelemetryMarker AddSceneInfo(this OVRTelemetryMarker marker, Scene scene)
+        {
+            long sceneSizeInB = 0;
+
+            if (File.Exists(scene.path))
+            {
+                sceneSizeInB = new FileInfo(scene.path).Length;
+            }
+
+            return marker.AddAnnotation(OVRTelemetryConstants.BB.AnnotationType.SceneSizeInB, sceneSizeInB.ToString());
         }
     }
 }

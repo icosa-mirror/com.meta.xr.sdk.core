@@ -30,6 +30,8 @@ using PackageInfo = UnityEditor.PackageManager.PackageInfo;
 
 internal static class OVRProjectSetupUtils
 {
+    internal const string ProjectSetupToolPublicName = "Project Setup Tool";
+
     public static T FindComponentInScene<T>() where T : Component
     {
         var scene = SceneManager.GetActiveScene();

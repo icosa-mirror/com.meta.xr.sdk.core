@@ -2,6 +2,7 @@
     Properties{
         _MainTex("Base (RGB) Trans (A)", 2D) = "white" {}
         _premultiply("Pre-multiply alpha", Int) = 0
+        _unmultiply("Un-multiply alpha", Int) = 0
         _flip("Y-Flip", Int) = 0
     }
     SubShader{
@@ -32,6 +33,7 @@
                 sampler2D _MainTex;
                 float4 _MainTex_ST;
                 int _premultiply;
+                int _unmultiply;
                 int _flip;
 
                 v2f vert (appdata_t v)
@@ -54,6 +56,8 @@
 
                     if (_premultiply)
                         col.rgb *= col.a;
+                    if (_unmultiply && col.a > 0)
+                        col.rgb /= col.a;
 
                     return col;
                 }

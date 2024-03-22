@@ -21,8 +21,6 @@
 using System.Collections.Generic;
 using System.Linq;
 using UnityEditor;
-using UnityEditor.SceneManagement;
-using UnityEngine;
 
 namespace Meta.XR.BuildingBlocks.Editor
 {
@@ -42,6 +40,7 @@ namespace Meta.XR.BuildingBlocks.Editor
                     return GetSceneBlocks()
                         .Select(block => block.GetBlockData())
                         .SelectMany(blockData => blockData != null ? blockData.Dependencies : Enumerable.Empty<BlockData>())
+                        .Where(dependency => dependency != null)
                         .All(dependency => blockSet.Contains(dependency.Id));
                 },
                 message: $"All {Utils.BlocksPublicName} dependencies must be present in the scene",
@@ -59,7 +58,7 @@ namespace Meta.XR.BuildingBlocks.Editor
 
                         foreach (var dependency in blockData.Dependencies)
                         {
-                            if (blockSet.Contains(dependency.Id))
+                            if (dependency == null || blockSet.Contains(dependency.Id))
                             {
                                 continue;
                             }
@@ -70,6 +69,34 @@ namespace Meta.XR.BuildingBlocks.Editor
                     }
                 },
                 fixMessage: "Install the missing dependencies"
+            );
+
+            // [Required] All block package dependencies must be present
+            OVRProjectSetup.AddTask(
+                level: OVRProjectSetup.TaskLevel.Required,
+                group: OVRProjectSetup.TaskGroup.Compatibility,
+                isDone: _ =>
+                {
+                    return GetSceneBlocks()
+                        .Select(block => block.GetBlockData())
+                        .SelectMany(blockData => blockData != null ? blockData.PackageDependencies : Enumerable.Empty<string>())
+                        .All(OVRProjectSetupUtils.IsPackageInstalled);
+                },
+                message: $"All {Utils.BlocksPublicName} package dependencies must be present in the scene",
+                fix: _ =>
+                {
+                    var missingPackageIds = GetSceneBlocks()
+                        .Select(block => block.GetBlockData())
+                        .SelectMany(blockData =>
+                            blockData != null ? blockData.PackageDependencies : Enumerable.Empty<string>())
+                        .Where(packageId => !OVRProjectSetupUtils.IsPackageInstalled(packageId));
+
+                    foreach (var packageId in missingPackageIds)
+                    {
+                        OVRProjectSetupUtils.InstallPackage(packageId);
+                    }
+                },
+                fixMessage: "Install the missing package dependencies"
             );
         }
 

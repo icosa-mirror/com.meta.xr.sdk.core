@@ -31,6 +31,7 @@ using UnityEngine;
 [HelpURL("https://developer.oculus.com/reference/unity/latest/class_o_v_r_scene_room")]
 public class OVRSceneRoom : MonoBehaviour, IOVRSceneComponent
 {
+
     /// <summary>
     /// The <see cref="OVRScenePlane"/> representing the floor of the room.
     /// </summary>
@@ -46,6 +47,7 @@ public class OVRSceneRoom : MonoBehaviour, IOVRSceneComponent
     /// </summary>
     public OVRScenePlane[] Walls { get; private set; } = Array.Empty<OVRScenePlane>();
 
+
     internal List<OVRScenePlane> _walls = new List<OVRScenePlane>();
 
     private readonly Dictionary<Guid, int> _orderedRoomGuids = new Dictionary<Guid, int>();
@@ -53,6 +55,7 @@ public class OVRSceneRoom : MonoBehaviour, IOVRSceneComponent
 
     private OVRSceneAnchor _sceneAnchor;
     private OVRSceneManager _sceneManager;
+    private Guid _uuid;
 
     internal HashSet<Guid> _uuidToQuery = new HashSet<Guid>();
     private List<OVRAnchor> _roomAnchors = OVRObjectPool.Get<List<OVRAnchor>>();
@@ -67,7 +70,8 @@ public class OVRSceneRoom : MonoBehaviour, IOVRSceneComponent
     private void Awake()
     {
         _sceneAnchor = GetComponent<OVRSceneAnchor>();
-        _sceneManager = FindObjectOfType<OVRSceneManager>();
+        _uuid = _sceneAnchor.Uuid;
+        _sceneManager = FindAnyObjectByType<OVRSceneManager>();
 
         _wallOrderComparer = (planeA, planeB) =>
         {
@@ -99,7 +103,7 @@ public class OVRSceneRoom : MonoBehaviour, IOVRSceneComponent
     void IOVRSceneComponent.Initialize()
     {
         GetUuidsToQuery();
-        SceneRooms[_sceneAnchor.Uuid] = this;
+        SceneRooms[_uuid] = this;
         SceneRoomsList.Add(this);
     }
 
@@ -142,7 +146,7 @@ public class OVRSceneRoom : MonoBehaviour, IOVRSceneComponent
                 continue;
             }
 
-            locatableComponent.SetEnabledAsync(true).ContinueWith(_onAnchorLocalizationCompleted, anchor);
+            locatableComponent.SetEnabledSafeAsync(true).ContinueWith(_onAnchorLocalizationCompleted, anchor);
         }
     }
 
@@ -267,7 +271,7 @@ public class OVRSceneRoom : MonoBehaviour, IOVRSceneComponent
 
     private void OnDestroy()
     {
-        SceneRooms.Remove(_sceneAnchor.Uuid);
+        SceneRooms.Remove(_uuid);
         SceneRoomsList.Remove(this);
     }
 }

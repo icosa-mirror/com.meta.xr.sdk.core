@@ -19,8 +19,6 @@
  */
 
 using System;
-using System.Collections.Generic;
-using System.Linq;
 using Meta.XR.Editor.Tags;
 using UnityEditor;
 using UnityEditorInternal;
@@ -35,7 +33,6 @@ namespace Meta.XR.BuildingBlocks.Editor
     public class BlockDataEditor : UnityEditor.Editor
     {
         private ReorderableList _dependencyList;
-        private bool _foldoutInstruction = false;
         private bool _foldoutAdvanced;
 
         private void OnEnable()
@@ -71,31 +68,55 @@ namespace Meta.XR.BuildingBlocks.Editor
 
         public override void OnInspectorGUI()
         {
+            using var disabledScope = new EditorGUI.DisabledScope(true);
             serializedObject.Update();
             var blockData = (BlockData)serializedObject.targetObject;
-            // Thumbnail
+
+            // Thumbnail display
             DrawThumbnail(blockData);
-
-            // BlockName
-            EditorGUILayout.LabelField(blockData.BlockName, Styles.LabelStyle);
-
-            // Description
-            EditorGUILayout.LabelField(blockData.Description, Styles.InfoStyle);
-
-            // Tags
-            DrawTags(blockData);
 
             EditorGUILayout.Space();
 
-            // Usage
-            DrawUsageInstructions(blockData);
+
+            // Sub-header
+            EditorGUILayout.LabelField("Information", EditorStyles.boldLabel);
+
+            // Block name
+            EditorGUILayout.PropertyField(serializedObject.FindProperty(nameof(BlockData.blockName)));
+
+            // Description
+            EditorGUILayout.PropertyField(serializedObject.FindProperty(nameof(BlockData.description)));
+
+            // Thumbnail
+            EditorGUILayout.PropertyField(serializedObject.FindProperty(nameof(BlockData.thumbnail)));
+
+            // Tags
+            EditorGUILayout.PropertyField(serializedObject.FindProperty(nameof(BlockData.tags)));
+
+            EditorGUILayout.Space();
+
+            // Sub-header
+            EditorGUILayout.Space();
+            EditorGUILayout.LabelField("Assets", EditorStyles.boldLabel);
+
+            // Prefab
+            EditorGUILayout.PropertyField(serializedObject.FindProperty(nameof(BlockData.prefab)));
 
             // Dependencies
-            DrawBlockDataList("Dependencies", blockData.GetAllDependencyDatas());
+            EditorGUILayout.Space();
+            _dependencyList.DoLayoutList();
+
+            // External block dependencies
+            EditorGUILayout.PropertyField(serializedObject.FindProperty(nameof(BlockData.externalBlockDependencies)));
+
+            // Package dependencies
+            EditorGUILayout.PropertyField(serializedObject.FindProperty(nameof(BlockData.packageDependencies)));
+
 
             serializedObject.ApplyModifiedProperties();
 
         }
+
 
 
         private void DrawThumbnail(BlockData blockData)
@@ -131,57 +152,6 @@ namespace Meta.XR.BuildingBlocks.Editor
                 ScaleMode.ScaleAndCrop);
         }
 
-        private void DrawUsageInstructions(BlockData blockData)
-        {
-            if (!string.IsNullOrEmpty(blockData.UsageInstructions))
-            {
-                var rect = EditorGUILayout.BeginVertical();
-                var textContent = new GUIContent(blockData.UsageInstructions);
-                _foldoutInstruction =
-                    EditorGUILayout.Foldout(_foldoutInstruction, "Block instructions", Styles.FoldoutBoldLabel);
-                if (_foldoutInstruction)
-                {
-                    var descStyle = new GUIStyle(EditorStyles.helpBox);
-                    descStyle.normal = new GUIStyleState()
-                    {
-                        textColor = Styles.Colors.LightGray,
-                        background = OVREditorUtils.MakeTexture(1, 1, Styles.Colors.DarkGray)
-                    };
-                    descStyle.fontSize = 11;
-                    descStyle.fixedHeight = descStyle.CalcHeight(textContent, rect.width);
-                    descStyle.alignment = TextAnchor.UpperLeft;
-
-                    EditorGUILayout.LabelField(blockData.UsageInstructions, descStyle);
-                }
-
-                EditorGUILayout.EndVertical();
-            }
-        }
-
-        private void DrawTags(BlockData blockData)
-        {
-            var tags = blockData.Tags;
-            if (tags.Any())
-            {
-                var tagStyle = new GUIStyle(EditorStyles.helpBox);
-                tagStyle.fontSize = 10;
-                tagStyle.stretchHeight = false;
-                tagStyle.normal = new GUIStyleState()
-                {
-                    background = OVREditorUtils.MakeTexture(1, 1, Styles.Colors.DarkBlue),
-                    textColor = Styles.Colors.LightGray
-                };
-
-                EditorGUILayout.BeginHorizontal();
-                foreach (var tag in tags)
-                {
-                    DrawTag(tag, true);
-                }
-
-                EditorGUILayout.EndHorizontal();
-            }
-        }
-
         private void DrawTag(Tag tag, bool overlay = false)
         {
             var tagBehavior = tag.Behavior;
@@ -207,69 +177,6 @@ namespace Meta.XR.BuildingBlocks.Editor
                     }
                 }
             }
-        }
-
-        private void DrawBlockDataList(string name, List<BlockData> list)
-        {
-            EditorGUILayout.LabelField(name, EditorStyles.boldLabel);
-
-            if (list.Count == 0)
-            {
-                EditorGUILayout.LabelField("No dependency blocks are required.", EditorStyles.helpBox);
-            }
-            else
-            {
-                foreach (var dependency in list)
-                {
-                    DrawBlock(dependency, true);
-                }
-            }
-        }
-
-        private void DrawBlock(BlockData data, bool asGridItem)
-        {
-            var previousIndent = EditorGUI.indentLevel;
-            EditorGUI.indentLevel = 0;
-
-            // Thumbnail
-            if (asGridItem)
-            {
-                var gridStyle = Styles.GridItemStyle;
-                gridStyle.margin = new RectOffset(0, 0, 0, 0);
-                EditorGUILayout.BeginHorizontal(gridStyle);
-                EditorGUILayout.BeginHorizontal(Styles.DescriptionAreaStyle);
-
-                var expectedSize = Styles.ItemHeight;
-                var rect = GUILayoutUtility.GetRect(0, expectedSize);
-                rect.y -= Styles.Padding;
-                rect.x -= Styles.Padding;
-                rect.width = Styles.ItemHeight;
-                GUI.DrawTexture(rect, data.Thumbnail, ScaleMode.ScaleAndCrop);
-
-                EditorGUILayout.Space(Styles.ItemHeight + 2);
-            }
-            else
-            {
-                EditorGUILayout.BeginHorizontal();
-                EditorGUILayout.BeginHorizontal();
-            }
-
-            // Label
-            EditorGUILayout.BeginVertical();
-            var labelStyle = Styles.LabelStyle;
-            var labelContent = new GUIContent(data.BlockName);
-            EditorGUILayout.LabelField(labelContent, labelStyle, GUILayout.Width(labelStyle.CalcSize(labelContent).x));
-            labelStyle = Styles.InfoStyle;
-            labelContent = new GUIContent(data.Description);
-            EditorGUILayout.LabelField(labelContent, labelStyle, GUILayout.Width(labelStyle.CalcSize(labelContent).x));
-            EditorGUILayout.EndVertical();
-
-            GUILayout.FlexibleSpace();
-
-            EditorGUILayout.EndHorizontal();
-            EditorGUILayout.EndHorizontal();
-
-            EditorGUI.indentLevel = previousIndent;
         }
     }
 }
