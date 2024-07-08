@@ -41,8 +41,13 @@ namespace Meta.XR.BuildingBlocks
             _spatialAnchorCore.OnAnchorEraseCompleted.AddListener(RemoveAnchorFromLocalStorage);
         }
 
-        internal void SaveAnchorUuidToLocalStorage(OVRSpatialAnchor anchor)
+        internal void SaveAnchorUuidToLocalStorage(OVRSpatialAnchor anchor, OVRSpatialAnchor.OperationResult result)
         {
+            if (result != OVRSpatialAnchor.OperationResult.Success)
+            {
+                return;
+            }
+
             if (!PlayerPrefs.HasKey(NumUuidsPlayerPref))
             {
                 PlayerPrefs.SetInt(NumUuidsPlayerPref, 0);
@@ -53,8 +58,11 @@ namespace Meta.XR.BuildingBlocks
             PlayerPrefs.SetInt(NumUuidsPlayerPref, ++playerNumUuids);
         }
 
-        internal void RemoveAnchorFromLocalStorage(Guid uuid)
+        internal void RemoveAnchorFromLocalStorage(Guid uuid, OVRSpatialAnchor.OperationResult result)
         {
+            if (result == OVRSpatialAnchor.OperationResult.Failure)
+                return;
+
             var playerUuidCount = PlayerPrefs.GetInt(NumUuidsPlayerPref, 0);
             for (int i = 0; i < playerUuidCount; i++)
             {

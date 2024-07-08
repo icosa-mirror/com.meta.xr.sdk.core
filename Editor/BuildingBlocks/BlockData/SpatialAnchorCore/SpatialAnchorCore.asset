@@ -24,6 +24,7 @@ MonoBehaviour:
   thumbnail: {fileID: 2800000, guid: df5b9490c9e8d0546b277a9ce0813d1c, type: 3}
   order: 14
   prefab: {fileID: 2837072267541810702, guid: 97dc87d8a31752848aa51059a8287dd2, type: 3}
+  externalBlockDependencies: []
   dependencies:
   - e47682b9-c270-40b1-b16d-90b627a5ce1b
   packageDependencies: []
@@ -31,6 +32,8 @@ MonoBehaviour:
   usageInstructions: "Use the following public methods to create, load, and erase
     anchors.\n\n- void InstantiateSpatialAnchor(GameObject prefab, Vector3 position,
     Quaternion rotation)\n- void LoadAndInstantiateAnchors(GameObject prefab, List<Guid>
-    uuids)\n- void EraseAllAnchors()\n- void EraseAnchorByUuid(Guid uuid)\n\nAnd,
-    the following event shall be fired on completion of the jobs.\n\n- OnAnchorCreateCompleted\r(OVRSpatialAnchor)\n-
-    OnAnchorsLoadCompleted\r\n- OnAnchorsEraseAllCompleted\r\n- OnAnchorEraseCompleted(Guid)"
+    uuids)\n- void EraseAllAnchors()\n- void EraseAnchorByUuid(Guid uuid)\n\n\nAnd,
+    the following event shall be fired on completion of the jobs.\n\n- OnAnchorCreateCompleted(OVRSpatialAnchor,
+    OVRSpatialAnchor.OperationResult)\r\n- OnAnchorsLoadCompleted(List<Guid>)\r\n-
+    OnAnchorsEraseAllCompleted(OVRSpatialAnchor.OperationResult)\r\n- OnAnchorEraseCompleted(Guid,
+    OVRSpatialAnchor.OperationResult)\r"

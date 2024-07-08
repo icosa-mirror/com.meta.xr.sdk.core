@@ -7,7 +7,11 @@
         "Meta.XR.BuildingBlocks",
         "Meta.XR.Editor.Tags",
         "Oculus.VR.Scripts.Editor",
-        "Oculus.Platform"
+        "Oculus.Platform",
+        "Meta.XR.Editor.UserInterface",
+        "Meta.XR.Editor.StatusMenu",
+        "Meta.XR.Editor.Callbacks",
+        "Meta.XR.GuidedSetups.Editor"
     ],
     "includePlatforms": [
         "Editor"

@@ -28,17 +28,20 @@ namespace Meta.XR.BuildingBlocks
 {
     public class SpatialAnchorCoreBuildingBlock : MonoBehaviour
     {
-        public UnityEvent<OVRSpatialAnchor> OnAnchorCreateCompleted { get => _onAnchorCreateCompleted; set => _onAnchorCreateCompleted = value; }
-        public UnityEvent OnAnchorsLoadCompleted { get => _onAnchorsLoadCompleted; set => _onAnchorsLoadCompleted = value; }
-        public UnityEvent OnAnchorsEraseAllCompleted { get => _onAnchorsEraseAllCompleted; set => _onAnchorsEraseAllCompleted = value; }
-        public UnityEvent<Guid> OnAnchorEraseCompleted { get => _onAnchorEraseCompleted; set => _onAnchorEraseCompleted = value; }
+        public UnityEvent<OVRSpatialAnchor, OVRSpatialAnchor.OperationResult> OnAnchorCreateCompleted { get => _onAnchorCreateCompleted; set => _onAnchorCreateCompleted = value; }
+        public UnityEvent<List<Guid>> OnAnchorsLoadCompleted { get => _onAnchorsLoadCompleted; set => _onAnchorsLoadCompleted = value; }
+        public UnityEvent<OVRSpatialAnchor.OperationResult> OnAnchorsEraseAllCompleted { get => _onAnchorsEraseAllCompleted; set => _onAnchorsEraseAllCompleted = value; }
+        public UnityEvent<Guid, OVRSpatialAnchor.OperationResult> OnAnchorEraseCompleted { get => _onAnchorEraseCompleted; set => _onAnchorEraseCompleted = value; }
 
         [Header("# Events")]
-        [SerializeField] private UnityEvent<OVRSpatialAnchor> _onAnchorCreateCompleted;
-        [SerializeField] private UnityEvent _onAnchorsLoadCompleted;
-        [SerializeField] private UnityEvent _onAnchorsEraseAllCompleted;
-        [SerializeField] private UnityEvent<Guid> _onAnchorEraseCompleted;
+        [SerializeField] private UnityEvent<OVRSpatialAnchor, OVRSpatialAnchor.OperationResult> _onAnchorCreateCompleted;
+        [SerializeField] private UnityEvent<List<Guid>> _onAnchorsLoadCompleted;
+        [SerializeField] private UnityEvent<OVRSpatialAnchor.OperationResult> _onAnchorsEraseAllCompleted;
+        [SerializeField] private UnityEvent<Guid, OVRSpatialAnchor.OperationResult> _onAnchorEraseCompleted;
 
+        protected OVRSpatialAnchor.OperationResult Result { get; set; } = OVRSpatialAnchor.OperationResult.Success;
+
+        protected virtual OVRSpatialAnchor.EraseOptions EraseOptions => new() { Storage = OVRSpace.StorageLocation.Local };
 
         /// <summary>
         /// Create an spatial anchor.
@@ -61,29 +64,57 @@ namespace Meta.XR.BuildingBlocks
         private IEnumerator InitSpatialAnchor(OVRSpatialAnchor anchor)
         {
             yield return WaitForInit(anchor);
+            if (Result == OVRSpatialAnchor.OperationResult.Failure)
+            {
+                OnAnchorCreateCompleted?.Invoke(anchor, Result);
+                yield break;
+            }
+
             yield return SaveLocalAsync(anchor);
-            OnAnchorCreateCompleted?.Invoke(anchor);
+            OnAnchorCreateCompleted?.Invoke(anchor, Result);
         }
 
         protected IEnumerator WaitForInit(OVRSpatialAnchor anchor)
         {
+            float timeoutThreshold = 5f;
+            float startTime = Time.time;
+
             while (anchor && !anchor.Created)
+            {
+                if (Time.time - startTime >= timeoutThreshold)
+                {
+                    Debug.LogWarning($"[{nameof(SpatialAnchorCoreBuildingBlock)}] Failed to create the spatial anchor.");
+                    Result = OVRSpatialAnchor.OperationResult.Failure;
+                    yield break;
+                }
                 yield return null;
+            }
 
             if (anchor == null)
             {
                 Debug.LogWarning($"[{nameof(SpatialAnchorCoreBuildingBlock)}] Failed to create the spatial anchor.");
+                Result = OVRSpatialAnchor.OperationResult.Failure;
             }
         }
 
         protected IEnumerator SaveLocalAsync(OVRSpatialAnchor anchor)
         {
-            var task = anchor.SaveAsync();
+            var saveOption = new OVRSpatialAnchor.SaveOptions
+            {
+                Storage = OVRSpace.StorageLocation.Local
+            };
+            using var _ = new OVRObjectPool.ListScope<OVRSpatialAnchor>(out var anchors);
+            anchors.Add(anchor);
+
+            var task = OVRSpatialAnchor.SaveAsync(anchors, saveOption);
             while (!task.IsCompleted)
                 yield return null;
 
-            if(!task.GetResult())
+            if (!task.TryGetResult(out var result))
+            {
                 Debug.LogWarning($"[{nameof(SpatialAnchorCoreBuildingBlock)}] Failed to save the spatial anchor.");
+                Result = result;
+            }
         }
 
         /// <summary>
@@ -156,11 +187,12 @@ namespace Meta.XR.BuildingBlocks
             var unboundAnchors = task.GetResult();
             if (unboundAnchors == null || unboundAnchors.Length == 0)
             {
-                Debug.Log($"[{nameof(SpatialAnchorCoreBuildingBlock)}] Failed to load the anchors.");
+                Debug.LogWarning($"[{nameof(SpatialAnchorCoreBuildingBlock)}] Failed to load the anchors.");
                 yield break;
             }
 
             // Localize the anchors
+            using var _ = new OVRObjectPool.ListScope<Guid>(out var loadedAnchors);
             foreach (var anchor in unboundAnchors)
             {
                 if (!anchor.Localized)
@@ -171,21 +203,22 @@ namespace Meta.XR.BuildingBlocks
 
                     if (!localizeTask.GetResult())
                     {
-                        Debug.Log($"[{nameof(SpatialAnchorCoreBuildingBlock)}] Failed to localize the anchor. Uuid: {anchor.Uuid}");
+                        Debug.LogWarning($"[{nameof(SpatialAnchorCoreBuildingBlock)}] Failed to localize the anchor. Uuid: {anchor.Uuid}");
                         continue;
                     }
                 }
 
                 var spatialAnchorGo = Instantiate(prefab, anchor.Pose.position, anchor.Pose.rotation);
                 anchor.BindTo(spatialAnchorGo.AddComponent<OVRSpatialAnchor>());
+                loadedAnchors.Add(anchor.Uuid);
             }
 
-            OnAnchorsLoadCompleted?.Invoke();
+            OnAnchorsLoadCompleted?.Invoke(loadedAnchors);
         }
 
         private IEnumerator EraseAnchorsRoutine()
         {
-            var anchorsToErase = OVRObjectPool.List<OVRSpatialAnchor>();
+            using var _ = new OVRObjectPool.ListScope<OVRSpatialAnchor>(out var anchorsToErase);
             foreach (var value in OVRSpatialAnchor.SpatialAnchors.Values)
             {
                 anchorsToErase.Add(value);
@@ -197,23 +230,29 @@ namespace Meta.XR.BuildingBlocks
                 yield return EraseAnchorByUuidRoutine(anchor);
             }
 
-            if(OVRSpatialAnchor.SpatialAnchors.Count == 0)
-                OnAnchorsEraseAllCompleted?.Invoke();
-
-            OVRObjectPool.Return(anchorsToErase);
+            var result = OVRSpatialAnchor.SpatialAnchors.Count == 0
+                ? OVRSpatialAnchor.OperationResult.Success
+                : OVRSpatialAnchor.OperationResult.Failure;
+            OnAnchorsEraseAllCompleted?.Invoke(result);
         }
 
         private IEnumerator EraseAnchorByUuidRoutine(OVRSpatialAnchor anchor)
         {
-            var task = anchor.EraseAsync();
-            if (!task.IsCompleted)
+            var task = anchor.EraseAsync(EraseOptions);
+            while (!task.IsCompleted)
                 yield return null;
+
+            if (!task.GetResult())
+            {
+                OnAnchorEraseCompleted?.Invoke(anchor.Uuid, OVRSpatialAnchor.OperationResult.Failure);
+                yield break;
+            }
 
             Destroy(anchor.gameObject);
             if (OVRSpatialAnchor.SpatialAnchors.ContainsKey(anchor.Uuid))
                 yield return null;
 
-            OnAnchorEraseCompleted?.Invoke(anchor.Uuid);
+            OnAnchorEraseCompleted?.Invoke(anchor.Uuid, OVRSpatialAnchor.OperationResult.Success);
         }
 
         internal static List<SpatialAnchorCoreBuildingBlock> GetBaseInstances()

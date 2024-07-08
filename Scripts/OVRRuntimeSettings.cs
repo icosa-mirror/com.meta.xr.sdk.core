@@ -22,7 +22,6 @@ using UnityEngine;
 using System.IO;
 using System;
 
-
 #if UNITY_EDITOR
 using UnityEditor;
 using System.Linq;
@@ -62,30 +61,6 @@ public class OVRRuntimeSettings : OVRRuntimeAssetsBase
         set => requestsAudioFaceTracking = value;
     }
 
-
-    [SerializeField] private bool hasSentConsentEvent;
-    [SerializeField] private bool hasSetTelemetryEnabled;
-    [SerializeField] private bool telemetryEnabled;
-
-    public bool HasSetTelemetryEnabled => hasSetTelemetryEnabled;
-
-    /// <summary>
-    /// Specify if PRE (Performance, Reliability and Efficiency) telemetry can be collected.
-    /// </summary>
-    internal bool TelemetryEnabled
-    {
-        get
-        {
-            if (!hasSetTelemetryEnabled)
-            {
-                const bool defaultTelemetryStatus = false;
-                return defaultTelemetryStatus;
-            }
-
-            return telemetryEnabled;
-        }
-    }
-
     [SerializeField] private string telemetryProjectGuid;
     internal string TelemetryProjectGuid
     {
@@ -101,6 +76,7 @@ public class OVRRuntimeSettings : OVRRuntimeAssetsBase
             return telemetryProjectGuid;
         }
     }
+
 
     [SerializeField] private OVRPlugin.BodyTrackingFidelity2 bodyTrackingFidelity = OVRPlugin.BodyTrackingFidelity2.Low;
 

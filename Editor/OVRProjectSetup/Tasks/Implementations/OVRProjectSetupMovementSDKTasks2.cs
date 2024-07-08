@@ -58,11 +58,11 @@ internal static class OVRProjectSetupMovementSDKTasks2
         OVRProjectSetup.AddTask(
             level: OVRProjectSetup.TaskLevel.Required,
             group: Group,
-            isDone: buildTargetGroup => OVRProjectSetupUtils.FindComponentInScene<T>() == null ||
+            isDone: _ => OVRProjectSetupUtils.FindComponentInScene<T>() == null ||
                                         supportLevel() != OVRProjectConfig.FeatureSupport.None,
             message: $"When using {featureName} in your project it's required to enable its capability " +
                      $"in the project config",
-            fix: buildTargetGroup =>
+            fix: _ =>
             {
                 var projectConfig = OVRProjectConfig.CachedProjectConfig;
                 enableSupport(projectConfig);
@@ -72,9 +72,9 @@ internal static class OVRProjectSetupMovementSDKTasks2
         );
 
         OVRProjectSetup.AddTask(
-            level: OVRProjectSetup.TaskLevel.Required,
+            level: OVRProjectSetup.TaskLevel.Optional,
             group: Group,
-            isDone: buildTargetGroup =>
+            isDone: _ =>
             {
                 if (supportLevel() == OVRProjectConfig.FeatureSupport.None)
                 {
@@ -85,14 +85,15 @@ internal static class OVRProjectSetupMovementSDKTasks2
                 return !ovrManager || permissionRequested(ovrManager);
             },
             message: $"Automatically request the {featureName} permission on startup",
-            fix: buildTargetGroup =>
+            fix: _ =>
             {
                 var ovrManager = OVRProjectSetupUtils.FindComponentInScene<OVRManager>();
-                if (ovrManager != null)
+                if (ovrManager == null)
                 {
-                    enablePermissionRequest(ovrManager);
-                    EditorUtility.SetDirty(ovrManager);
+                    return;
                 }
+                enablePermissionRequest(ovrManager);
+                EditorUtility.SetDirty(ovrManager);
             },
             fixMessage: $"Request {featureName} permission on startup"
         );

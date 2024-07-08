@@ -212,6 +212,10 @@ public class OVRPassthroughLayer : MonoBehaviour
         }
     }
 
+    /// <summary>
+    /// Occurs when a passthrough layer has been rendered and presented on the HMD screen for the first time after being restarted.
+    /// </summary>
+    public event Action PassthroughLayerResumed;
 
     /// <summary>
     /// This color map method allows to recolor the grayscale camera images by specifying a color lookup table.
@@ -1008,6 +1012,8 @@ public class OVRPassthroughLayer : MonoBehaviour
         passthroughOverlay = auxGameObject.AddComponent<OVROverlay>();
         passthroughOverlay.currentOverlayShape = overlayShape;
 
+        OVRManager.PassthroughLayerResumed += OnPassthroughLayerResumed;
+
         SyncToOverlay();
 
         // Surface geometries have been moved to the deferred additions queue in OnDisable() and will be re-added
@@ -1030,6 +1036,7 @@ public class OVRPassthroughLayer : MonoBehaviour
 
     void OnDisable()
     {
+        OVRManager.PassthroughLayerResumed -= OnPassthroughLayerResumed;
         if (OVRManager.loadedXRDevice == OVRManager.XRDevice.Oculus)
         {
             DestroySurfaceGeometries(true);
@@ -1049,6 +1056,18 @@ public class OVRPassthroughLayer : MonoBehaviour
         DestroySurfaceGeometries();
     }
 
+    private void OnPassthroughLayerResumed(int layerId)
+    {
+        if (passthroughOverlay != null && passthroughOverlay.layerId == layerId)
+
+        {
+            if (PassthroughLayerResumed != null)
+
+            {
+                PassthroughLayerResumed();
+            }
+        }
+    }
     #endregion
 
     #region Utility classes

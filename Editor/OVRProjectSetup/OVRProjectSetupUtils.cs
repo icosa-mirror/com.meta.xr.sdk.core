@@ -21,6 +21,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
+using Meta.XR.Editor.UserInterface;
 using UnityEditor;
 using UnityEditor.PackageManager;
 using UnityEditor.PackageManager.Requests;
@@ -87,10 +88,11 @@ internal static class OVRProjectSetupUtils
 
     private static ListRequest _packageManagerListRequest;
 
+    internal static readonly TextureContent.Category ProjectSetupToolIcons = new("OVRProjectSetup/Icons");
+
     static OVRProjectSetupUtils()
     {
         RefreshPackageList(false);
-        OVRGUIContent.RegisterContentPath(OVRGUIContent.Source.ProjectSetupToolIcons, "OVRProjectSetup/Icons");
     }
 
     public static bool PackageManagerListAvailable => _packageManagerListRequest.Status == StatusCode.Success;
@@ -101,8 +103,16 @@ internal static class OVRProjectSetupUtils
         {
             return null;
         }
+        // Package name might contain version info. E.g., com.meta.xr.example@1.0.0
+        var (name, version) = ParsePackageId(packageName);
+        return _packageManagerListRequest.Result.FirstOrDefault(package => package.name == name &&
+                                                                           (!version.Any() || package.version == version));
+    }
 
-        return _packageManagerListRequest.Result.FirstOrDefault(package => package.name == packageName);
+    private static (string name, string version) ParsePackageId(string packageName)
+    {
+        var packageNameParts = packageName.Split("@");
+        return (packageNameParts[0], packageNameParts.Length > 1 ? packageNameParts[1] : "");
     }
 
     public static bool IsPackageInstalled(string packageName) => GetPackage(packageName) != null;

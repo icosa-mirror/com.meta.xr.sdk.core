@@ -28,3 +28,5 @@ using System.Runtime.CompilerServices;
 [assembly: InternalsVisibleTo("Meta.XR.BuildingBlocks")]
 [assembly: InternalsVisibleTo("Meta.XR.BuildingBlocks.Editor")]
 [assembly: InternalsVisibleTo("Meta.XR.MRUtilityKit")]
+[assembly: InternalsVisibleTo("MetaXrSimulator.Editor")]
+[assembly: InternalsVisibleTo("Meta.XR.GuidedSetups.Editor")]

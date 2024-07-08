@@ -22,7 +22,11 @@ using System.Collections.Generic;
 using UnityEditor;
 using System;
 using System.Linq;
+using Meta.XR.Editor.StatusMenu;
+using Meta.XR.Editor.UserInterface;
 using UnityEngine;
+using Styles = Meta.XR.Editor.UserInterface.Styles;
+using static Meta.XR.Editor.UserInterface.Styles.Colors;
 
 /// <summary>
 /// Core System for the OVRProjectSetup Tool
@@ -74,6 +78,40 @@ public static class OVRProjectSetup
         { BuildTargetGroup.Android, BuildTargetGroup.Standalone };
 
 
+    internal const string PublicName = "Project Setup Tool";
+
+    internal static readonly TextureContent StatusIcon = TextureContent.CreateContent("ovr_icon_upst.png",
+        OVRProjectSetupUtils.ProjectSetupToolIcons, $"Open {PublicName}");
+
+    private const string DocumentationUrl ="https://developer.oculus.com/documentation/unity/unity-upst-overview";
+
+
+    internal static Item Item = new Item()
+    {
+        Name = PublicName,
+        Color = Styles.Colors.BrightGray,
+        Icon = StatusIcon,
+        InfoTextDelegate = ComputeInfoText,
+        PillIcon = ComputePillIcon,
+        OnClickDelegate = OnStatusMenuClick,
+        Order = 0,
+        HeaderIcons = new List<Item.HeaderIcon>()
+        {
+            new Item.HeaderIcon()
+            {
+                TextureContent = Styles.Contents.ConfigIcon,
+                Color = LightGray,
+                Action = OVRProjectSetupDrawer.ShowSettingsMenu
+            },
+            new Item.HeaderIcon()
+            {
+                TextureContent = Styles.Contents.DocumentationIcon,
+                Color = LightGray,
+                Action = () => Application.OpenURL(DocumentationUrl)
+            },
+        }
+    };
+
     static OVRProjectSetup()
     {
         _principalRegistry = new OVRConfigurationTaskRegistry();
@@ -82,17 +120,17 @@ public static class OVRProjectSetup
         RestoreRegistry();
 
         ProcessorQueue.OnProcessorCompleted += RefreshBuildStatusMenuSubText;
-        var statusItem = new OVRStatusMenu.Item()
+        var statusItem = new Item()
         {
             Name = OVRProjectSetupUtils.ProjectSetupToolPublicName,
-            Color = OVREditorUtils.HexToColor("#c4c4c4"),
-            Icon = OVREditorUtils.CreateContent("ovr_icon_upst.png", OVRGUIContent.Source.ProjectSetupToolIcons),
+            Color = Utils.HexToColor("#c4c4c4"),
+            Icon = TextureContent.CreateContent("ovr_icon_upst.png", OVRProjectSetupUtils.ProjectSetupToolIcons),
             InfoTextDelegate = ComputeInfoText,
             PillIcon = ComputePillIcon,
             OnClickDelegate = OnStatusMenuClick,
             Order = 0
         };
-        OVRStatusMenu.RegisterItem(statusItem);
+        StatusMenu.RegisterItem(statusItem);
     }
 
     private static string _statusMenuSubText;
@@ -108,20 +146,20 @@ public static class OVRProjectSetup
 
     private static (string, Color?) ComputeInfoText() => (_statusMenuSubText, null);
 
-    private static (OVRGUIContent, Color?) ComputePillIcon()
+    private static (TextureContent, Color?) ComputePillIcon()
     {
         return _latestSummary?.HighestFixLevel switch
         {
-            OVRProjectSetup.TaskLevel.Optional => (OVRProjectSetupDrawer.InfoIcon, OVRProjectSetupDrawer.Styles.InfoColor),
-            OVRProjectSetup.TaskLevel.Recommended => (OVRProjectSetupDrawer.WarningIcon, OVRProjectSetupDrawer.Styles.WarningColor),
-            OVRProjectSetup.TaskLevel.Required => (OVRProjectSetupDrawer.ErrorIcon, OVRProjectSetupDrawer.Styles.ErrorColor),
+            OVRProjectSetup.TaskLevel.Optional => (OVRProjectSetupDrawer.Styles.Contents.InfoIcon, InfoColor),
+            OVRProjectSetup.TaskLevel.Recommended => (OVRProjectSetupDrawer.Styles.Contents.WarningIcon, WarningColor),
+            OVRProjectSetup.TaskLevel.Required => (OVRProjectSetupDrawer.Styles.Contents.ErrorIcon, ErrorColor),
             _ => (null, null)
         };
     }
 
-    private static void OnStatusMenuClick()
+    private static void OnStatusMenuClick(Item.Origins origin)
     {
-        OVRProjectSetupSettingsProvider.OpenSettingsWindow(OVRProjectSetupSettingsProvider.Origins.Icon);
+        OVRProjectSetupSettingsProvider.OpenSettingsWindow(origin);
     }
 
     internal static void SetupTemporaryRegistry()
@@ -149,7 +187,7 @@ public static class OVRProjectSetup
         {
             if (href == OVRConfigurationTask.ConsoleLinkHref)
             {
-                OVRProjectSetupSettingsProvider.OpenSettingsWindow(OVRProjectSetupSettingsProvider.Origins.Console);
+                OVRProjectSetupSettingsProvider.OpenSettingsWindow(Item.Origins.Console);
             }
         }
     }

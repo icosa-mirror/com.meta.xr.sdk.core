@@ -22,13 +22,19 @@
 #define OVR_ANDROID_MRC
 #endif
 
+#if UNITY_EDITOR_WIN || UNITY_STANDALONE_WIN || OVR_ANDROID_MRC
+#define SUPPORTED_PLATFORM
+#endif
+
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
 public class OVRSpectatorModeDomeTest : MonoBehaviour
 {
+#if SUPPORTED_PLATFORM
     bool inited = false;
+#endif
 
     public Camera defaultExternalCamera;
     OVRPlugin.Fovf defaultFov;
@@ -60,7 +66,7 @@ public class OVRSpectatorModeDomeTest : MonoBehaviour
     // Use this for initialization
     void Start()
     {
-#if UNITY_EDITOR_WIN || UNITY_STANDALONE_WIN || OVR_ANDROID_MRC
+#if SUPPORTED_PLATFORM
         if (!defaultExternalCamera)
         {
             Debug.LogWarning("defaultExternalCamera undefined");
@@ -78,7 +84,7 @@ public class OVRSpectatorModeDomeTest : MonoBehaviour
 
     void Initialize()
     {
-#if UNITY_EDITOR_WIN || UNITY_STANDALONE_WIN || OVR_ANDROID_MRC
+#if SUPPORTED_PLATFORM
         if (inited)
             return;
 
@@ -114,7 +120,7 @@ public class OVRSpectatorModeDomeTest : MonoBehaviour
 
     void UpdateDefaultExternalCamera()
     {
-#if UNITY_EDITOR_WIN || UNITY_STANDALONE_WIN || OVR_ANDROID_MRC
+#if SUPPORTED_PLATFORM
         // always build a 1080p external camera
         const int cameraPixelWidth = 1920;
         const int cameraPixelHeight = 1080;
@@ -252,7 +258,7 @@ public class OVRSpectatorModeDomeTest : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
-#if UNITY_EDITOR_WIN || UNITY_STANDALONE_WIN || OVR_ANDROID_MRC
+#if SUPPORTED_PLATFORM
         if (!inited)
         {
             Initialize();

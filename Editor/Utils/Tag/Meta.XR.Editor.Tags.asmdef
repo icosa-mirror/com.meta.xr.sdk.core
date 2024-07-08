@@ -2,7 +2,8 @@
     "name": "Meta.XR.Editor.Tags",
     "rootNamespace": "",
     "references": [
-        "GUID:d2761a0af0f567748a72629d4bb18a26"
+        "GUID:d2761a0af0f567748a72629d4bb18a26",
+        "GUID:72a933f94d34d054baaa26f7ecc4b09f"
     ],
     "includePlatforms": [
         "Editor"

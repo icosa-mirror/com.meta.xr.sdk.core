@@ -27,6 +27,7 @@ internal static class OVRProjectSetupSceneTasks
 
     static OVRProjectSetupSceneTasks()
     {
+
         OVRProjectSetup.AddTask(
             level: OVRProjectSetup.TaskLevel.Required,
             group: Group,

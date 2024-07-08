@@ -51,6 +51,7 @@ internal static class OVRTelemetryConsent
     public static void SetTelemetryEnabled(bool enabled, OVRTelemetryConstants.OVRManager.ConsentOrigins origin)
     {
         TelemetryEnabled = enabled;
+        OVRPlugin.SetDeveloperTelemetryConsent(enabled ? OVRPlugin.Bool.True : OVRPlugin.Bool.False);
         OVRPlugin.Qpl.SetConsent(enabled ? OVRPlugin.Bool.True : OVRPlugin.Bool.False);
         SendConsentEvent(origin);
         OnTelemetrySet?.Invoke(enabled);

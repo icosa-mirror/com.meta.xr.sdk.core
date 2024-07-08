@@ -19,9 +19,13 @@
  */
 
 using System.Collections.Generic;
+using Meta.XR.Editor.StatusMenu;
 using Meta.XR.Editor.Tags;
+using Meta.XR.Editor.UserInterface;
 using UnityEditor;
 using UnityEngine;
+using static Meta.XR.Editor.UserInterface.Styles.Constants;
+using static Meta.XR.Editor.UserInterface.Utils;
 
 namespace Meta.XR.BuildingBlocks.Editor
 {
@@ -46,10 +50,17 @@ namespace Meta.XR.BuildingBlocks.Editor
             ShowThumbnail();
             ShowBlock(_blockData, _block, false, false, true);
             ShowTagList(_blockData.Tags, Tag.TagListType.Filters);
+            ShowAdditionals();
             ShowBlockDataList("Dependencies", _blockData.GetAllDependencyDatas());
             ShowBlockList("Used by", _blockData.GetUsingBlocksInScene());
             ShowInstructions();
 
+        }
+
+        internal virtual void ShowAdditionals()
+        {
+            // A placeholder for adding more details. E.g., Info box from GuidedSetup.
+            // Override this function to implement your additional details.
         }
 
         internal void ShowVersionInfo()
@@ -61,7 +72,7 @@ namespace Meta.XR.BuildingBlocks.Editor
             if (_blockData.IsUpdateAvailableForBlock(_block))
             {
                 EditorGUILayout.LabelField($"{currentVersionStr} Newest version: {_blockData.Version}.",
-                    Styles.InfoStyle);
+                    Styles.GUIStyles.InfoStyle);
 
                 if (GUILayout.Button($"Update to latest version ({_blockData.Version})"))
                 {
@@ -74,7 +85,7 @@ namespace Meta.XR.BuildingBlocks.Editor
             }
             else
             {
-                EditorGUILayout.LabelField($"{currentVersionStr} Block is up to date", Styles.InfoStyle);
+                EditorGUILayout.LabelField($"{currentVersionStr} Block is up to date", Styles.GUIStyles.InfoStyle);
             }
         }
 
@@ -84,7 +95,7 @@ namespace Meta.XR.BuildingBlocks.Editor
             {
                 EditorGUILayout.Space();
                 _foldoutInstruction =
-                    EditorGUILayout.Foldout(_foldoutInstruction, "Block instructions", Styles.FoldoutBoldLabel);
+                    EditorGUILayout.Foldout(_foldoutInstruction, "Block instructions", Styles.GUIStyles.FoldoutBoldLabel);
                 if (_foldoutInstruction)
                 {
                     EditorGUILayout.LabelField(_blockData.UsageInstructions, EditorStyles.helpBox);
@@ -95,7 +106,7 @@ namespace Meta.XR.BuildingBlocks.Editor
         internal void ShowThumbnail()
         {
             var currentWidth = EditorGUIUtility.currentViewWidth;
-            var expectedHeight = currentWidth / Styles.ThumbnailRatio;
+            var expectedHeight = currentWidth / Styles.Constants.ThumbnailRatio;
             expectedHeight *= 0.5f;
 
             // Thumbnail
@@ -105,8 +116,8 @@ namespace Meta.XR.BuildingBlocks.Editor
             rect.y -= 4;
             GUI.DrawTexture(rect, _blockData.Thumbnail, ScaleMode.ScaleAndCrop);
 
-            GUILayout.BeginArea(new Rect(Styles.TagStyle.margin.left,
-                Styles.TagStyle.margin.top, currentWidth, expectedHeight));
+            GUILayout.BeginArea(new Rect(Styles.GUIStyles.TagStyle.margin.left,
+                Styles.GUIStyles.TagStyle.margin.top, currentWidth, expectedHeight));
             ShowTagList(_blockData.Tags, Tag.TagListType.Overlays);
             GUILayout.EndArea();
 
@@ -115,7 +126,7 @@ namespace Meta.XR.BuildingBlocks.Editor
             rect.x -= 20;
             rect.width += 40;
             rect.y -= 4;
-            GUI.DrawTexture(rect, OVREditorUtils.MakeTexture(1, 1, Styles.Colors.AccentColor),
+            GUI.DrawTexture(rect, Styles.Colors.AccentColor.ToTexture(),
                 ScaleMode.ScaleAndCrop);
         }
 
@@ -144,17 +155,17 @@ namespace Meta.XR.BuildingBlocks.Editor
                     return;
             }
 
-            var style = tagBehavior.Icon != null ? Styles.TagStyleWithIcon : Styles.TagStyle;
-            var backgroundColors = listType == Tag.TagListType.Overlays ? Styles.TagOverlayBackgroundColors : Styles.TagBackgroundColors;
+            var style = tagBehavior.Icon != null ? Styles.GUIStyles.TagStyleWithIcon : Styles.GUIStyles.TagStyle;
+            var backgroundColors = listType == Tag.TagListType.Overlays ? Styles.GUIStyles.TagOverlayBackgroundColors : Styles.GUIStyles.TagBackgroundColors;
 
             var tagContent = new GUIContent(tag.Name);
             var tagSize = style.CalcSize(tagContent);
             var rect = GUILayoutUtility.GetRect(tagContent, style, GUILayout.MinWidth(tagSize.x + 1));
             Vector2 mousePosition = Event.current.mousePosition;
             var color = backgroundColors.GetColor(false, false);
-            using (new OVREditorUtils.OVRGUIColorScope(OVREditorUtils.OVRGUIColorScope.Scope.Background, color))
+            using (new ColorScope(ColorScope.Scope.Background, color))
             {
-                using (new OVREditorUtils.OVRGUIColorScope(OVREditorUtils.OVRGUIColorScope.Scope.Content, tagBehavior.Color))
+                using (new ColorScope(ColorScope.Scope.Content, tagBehavior.Color))
 
                 {
                     if (GUI.Button(rect, tagContent, style))
@@ -164,7 +175,7 @@ namespace Meta.XR.BuildingBlocks.Editor
 
                     if (tagBehavior.Icon != null)
                     {
-                        GUI.Label(rect, tagBehavior.Icon, Styles.TagIcon);
+                        GUI.Label(rect, tagBehavior.Icon, Styles.GUIStyles.TagIcon);
                     }
                 }
             }
@@ -174,7 +185,7 @@ namespace Meta.XR.BuildingBlocks.Editor
         {
             var previousColor = GUI.color;
             GUI.color = Color.white;
-            var hit = GUILayout.Button(icon, Styles.LargeButton);
+            var hit = GUILayout.Button(icon, Styles.GUIStyles.LargeButton);
             GUI.color = previousColor;
             EditorGUIUtility.AddCursorRect(GUILayoutUtility.GetLastRect(), MouseCursor.Link);
             return hit;
@@ -226,22 +237,22 @@ namespace Meta.XR.BuildingBlocks.Editor
             // Thumbnail
             if (asGridItem)
             {
-                var gridStyle = new GUIStyle(Styles.GridItemStyle);
+                var gridStyle = new GUIStyle(Styles.GUIStyles.GridItemStyle);
                 gridStyle.margin = new RectOffset(0, 0, 0, 0);
                 EditorGUILayout.BeginHorizontal(gridStyle);
-                EditorGUILayout.BeginHorizontal(Styles.DescriptionAreaStyle);
+                EditorGUILayout.BeginHorizontal(Styles.GUIStyles.DescriptionAreaStyle);
 
-                var expectedSize = Styles.ItemHeight;
+                var expectedSize = ItemHeight;
                 var rect = GUILayoutUtility.GetRect(0, expectedSize);
-                rect.y -= Styles.Padding;
-                rect.x -= Styles.Padding;
-                rect.width = Styles.ItemHeight;
+                rect.y -= Padding;
+                rect.x -= Padding;
+                rect.width = ItemHeight;
                 GUI.DrawTexture(rect, data.Thumbnail, ScaleMode.ScaleAndCrop);
 
-                EditorGUILayout.Space(Styles.ItemHeight - Styles.Padding - Styles.SmallIconSize * 0.5f - 2);
+                EditorGUILayout.Space(ItemHeight - Padding - SmallIconSize * 0.5f - 2);
 
-                EditorGUILayout.LabelField(block != null ? Styles.SuccessIcon : Styles.ErrorIcon, Styles.IconStyle,
-                    GUILayout.Width(Styles.SmallIconSize), GUILayout.Height(Styles.ItemHeight - Styles.Padding * 2));
+                EditorGUILayout.LabelField(block != null ? Styles.Contents.SuccessIcon : Styles.Contents.ErrorIcon, Styles.GUIStyles.IconStyle,
+                    GUILayout.Width(SmallIconSize), GUILayout.Height(ItemHeight - Padding * 2));
             }
             else
             {
@@ -252,11 +263,11 @@ namespace Meta.XR.BuildingBlocks.Editor
             // Label
             EditorGUILayout.BeginVertical();
             EditorGUILayout.BeginHorizontal();
-            var labelStyle = Styles.LabelStyle;
+            var labelStyle = Styles.GUIStyles.LabelStyle;
             EditorGUILayout.LabelField(data.BlockName, labelStyle);
-            labelStyle = Styles.SubtitleStyle;
+            labelStyle = Styles.GUIStyles.SubtitleStyle;
             EditorGUILayout.EndHorizontal();
-            EditorGUILayout.LabelField(block ? block.name : "Not Installed", Styles.InfoStyle);
+            EditorGUILayout.LabelField(block ? block.name : "Not Installed", Styles.GUIStyles.InfoStyle);
             EditorGUILayout.EndVertical();
 
             GUILayout.FlexibleSpace();
@@ -281,7 +292,7 @@ namespace Meta.XR.BuildingBlocks.Editor
 
             if (showBuildingBlock && ShowLargeButton(Utils.StatusIcon))
             {
-                BuildingBlocksWindow.ShowWindow("BuildingBlockEditor");
+                BuildingBlocksWindow.ShowWindow(Item.Origins.Component);
             }
 
             EditorGUILayout.EndHorizontal();
@@ -294,6 +305,14 @@ namespace Meta.XR.BuildingBlocks.Editor
             }
 
             EditorGUI.indentLevel = previousIndent;
+        }
+
+        internal void DrawMessageWithIcon(TextureContent icon, string msg)
+        {
+            EditorGUILayout.BeginHorizontal();
+            EditorGUILayout.LabelField(icon, Styles.GUIStyles.IconStyle, GUILayout.Width(16), GUILayout.Height(16));
+            EditorGUILayout.LabelField(msg, Styles.GUIStyles.LabelStyleWrapped);
+            EditorGUILayout.EndHorizontal();
         }
 
         private static void AddBlockHighlightListeners(BuildingBlock buildingBlock)

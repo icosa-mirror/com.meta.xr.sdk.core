@@ -58,6 +58,17 @@ internal static class OVRObjectPool
 
     public static List<T> List<T>() => Get<List<T>>();
 
+    public static List<T> List<T>(IEnumerable<T> source)
+    {
+        var list = Get<List<T>>();
+        foreach (var item in source.ToNonAlloc())
+        {
+            list.Add(item);
+        }
+
+        return list;
+    }
+
     public static Dictionary<TKey, TValue> Dictionary<TKey, TValue>() => Get<Dictionary<TKey, TValue>>();
 
     public static HashSet<T> HashSet<T>()
@@ -128,6 +139,7 @@ internal static class OVRObjectPool
     {
         List<T> _list;
         public ListScope(out List<T> list) => _list = list = List<T>();
+        public ListScope(IEnumerable<T> source, out List<T> list) => _list = list = List(source);
         public void Dispose() => Return(_list);
     }
 

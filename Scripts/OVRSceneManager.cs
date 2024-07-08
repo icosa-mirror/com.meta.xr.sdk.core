@@ -123,6 +123,7 @@ public class OVRSceneManager : MonoBehaviour
              "Changing this value does not affect existing scene anchors. May be null.")]
     internal Transform _initialAnchorParent;
 
+
     #region Events
 
 
@@ -418,6 +419,16 @@ public class OVRSceneManager : MonoBehaviour
             .Send();
     }
 
+    static OVRTask<bool> FetchAnchorsAsync<T>(List<OVRAnchor> anchors) where T : struct, IOVRAnchorComponent<T>
+    {
+        return OVRAnchor.FetchAnchorsAsync<T>(anchors);
+    }
+
+    static OVRTask<bool> FetchAnchorsAsync(IEnumerable<Guid> uuids, List<OVRAnchor> anchors)
+    {
+        return OVRAnchor.FetchAnchorsAsync(uuids, anchors);
+    }
+
     internal async void OnApplicationPause(bool isPaused)
     {
         // if we haven't loaded scene, we won't check anchor status
@@ -425,7 +436,7 @@ public class OVRSceneManager : MonoBehaviour
 
         using (new OVRObjectPool.ListScope<OVRAnchor>(out var anchors))
         {
-            var success = await OVRAnchor.FetchAnchorsAsync<OVRRoomLayout>(anchors);
+            var success = await FetchAnchorsAsync<OVRRoomLayout>(anchors);
             if (!success)
             {
                 Verbose?.Log(nameof(OVRSceneManager), "Failed to retrieve scene model information on resume.");
@@ -462,7 +473,7 @@ public class OVRSceneManager : MonoBehaviour
             }
 
             if (uuids.Any())
-                await OVRAnchor.FetchAnchorsAsync(uuids, anchors);
+                await FetchAnchorsAsync(uuids, anchors);
             UpdateAllSceneAnchors();
         }
     }
@@ -482,7 +493,7 @@ public class OVRSceneManager : MonoBehaviour
         DestroyExistingAnchors();
 
         var anchors = OVRObjectPool.List<OVRAnchor>();
-        var task = OVRAnchor.FetchAnchorsAsync<OVRRoomLayout>(anchors);
+        var task = FetchAnchorsAsync<OVRRoomLayout>(anchors);
         task.ContinueWith(_onAnchorsFetchCompleted, anchors);
 
         return task.IsPending;
@@ -556,7 +567,7 @@ public class OVRSceneManager : MonoBehaviour
             }
 
             // Make query by uuids to fetch floor anchors
-            OVRAnchor.FetchAnchorsAsync(floorUuids, _floorAnchors).ContinueWith(_onFloorAnchorsFetchCompleted);
+            FetchAnchorsAsync(floorUuids, _floorAnchors).ContinueWith(_onFloorAnchorsFetchCompleted);
         }
 
         roomLayoutAnchors.Clear();
@@ -578,7 +589,7 @@ public class OVRSceneManager : MonoBehaviour
                 }
 
                 _floorsPendingLocalization.Add(floorAnchor.Uuid);
-                tasks.Add((locatable.SetEnabledSafeAsync(true), floorAnchor));
+                tasks.Add((locatable.SetEnabledAsync(true), floorAnchor));
             }
 
             // Don't invoke the onComplete method until we've populated the _floorsPendingLocalization
@@ -730,7 +741,7 @@ public class OVRSceneManager : MonoBehaviour
         CheckIfClassificationsAreValid(requestedAnchorClassifications);
         using (new OVRObjectPool.ListScope<OVRAnchor>(out var roomAnchors))
         {
-            var roomsTask = OVRAnchor.FetchAnchorsAsync<OVRRoomLayout>(roomAnchors);
+            var roomsTask = FetchAnchorsAsync<OVRRoomLayout>(roomAnchors);
             roomsTask.ContinueWith((result, anchors) => CheckClassificationsInRooms(result, anchors, requestedAnchorClassifications, task), roomAnchors);
         }
         return task;
@@ -785,7 +796,7 @@ public class OVRSceneManager : MonoBehaviour
 
             using (new OVRObjectPool.ListScope<OVRAnchor>(out var roomAnchors))
             {
-                OVRAnchor.FetchAnchorsAsync(anchorUuids, roomAnchors)
+                FetchAnchorsAsync(anchorUuids, roomAnchors)
                     .ContinueWith(result => CheckIfAnchorsContainClassifications(result, roomAnchors, requestedAnchorClassifications, task));
             }
         }

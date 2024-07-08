@@ -221,6 +221,17 @@ public partial class OVRUnityHumanoidSkeletonRetargeter : OVRSkeleton
     [Tooltip("Controls if we run retargeting from FixedUpdate, Update, or both.")]
     protected UpdateType _updateType = UpdateType.UpdateOnly;
 
+    private OVRHumanBodyBonesMappingsInterface _bodyBonesMappingInterface =
+        new OVRHumanBodyBonesMappings();
+    /// <summary>
+    /// Returns body bone mappings interface.
+    /// </summary>
+    public OVRHumanBodyBonesMappingsInterface BodyBoneMappingsInterface
+    {
+        get => _bodyBonesMappingInterface;
+        set => _bodyBonesMappingInterface = value;
+    }
+
     protected override void Start()
     {
         base.Start();
@@ -233,7 +244,7 @@ public partial class OVRUnityHumanoidSkeletonRetargeter : OVRSkeleton
         CreateCustomBoneIdToHumanBodyBoneMapping();
         StoreTTargetPoseRotations();
 
-        _targetSkeletonData = new OVRSkeletonMetadata(_animatorTargetSkeleton);
+        _targetSkeletonData = new OVRSkeletonMetadata(_animatorTargetSkeleton, _bodyBonesMappingInterface);
         _targetSkeletonData.BuildCoordinateAxesForAllBones();
 
         PrecomputeAllRotationTweaks();
@@ -347,14 +358,14 @@ public partial class OVRUnityHumanoidSkeletonRetargeter : OVRSkeleton
         _customBoneIdToHumanBodyBone.Clear();
         if (_skeletonType == SkeletonType.FullBody)
         {
-            foreach (var keyValuePair in OVRHumanBodyBonesMappings.FullBodyBoneIdToHumanBodyBone)
+            foreach (var keyValuePair in _bodyBonesMappingInterface.GetFullBodyBoneIdToHumanBodyBone)
             {
                 _customBoneIdToHumanBodyBone.Add(keyValuePair.Key, keyValuePair.Value);
             }
         }
         else
         {
-            foreach (var keyValuePair in OVRHumanBodyBonesMappings.BoneIdToHumanBodyBone)
+            foreach (var keyValuePair in _bodyBonesMappingInterface.GetBoneIdToHumanBodyBone)
             {
                 _customBoneIdToHumanBodyBone.Add(keyValuePair.Key, keyValuePair.Value);
             }
@@ -462,19 +473,21 @@ public partial class OVRUnityHumanoidSkeletonRetargeter : OVRSkeleton
 
         if (_sourceSkeletonData == null)
         {
-            _sourceSkeletonData = new OVRSkeletonMetadata(this, false, _customBoneIdToHumanBodyBone
-                , _skeletonType == SkeletonType.FullBody
-            );
+            _sourceSkeletonData = new OVRSkeletonMetadata(this, false, _customBoneIdToHumanBodyBone,
+                _skeletonType == SkeletonType.FullBody,
+                _bodyBonesMappingInterface);
         }
         else
         {
             if (_skeletonType == SkeletonType.FullBody)
             {
-                _sourceSkeletonData.BuildBoneDataSkeletonFullBody(this, false, _customBoneIdToHumanBodyBone);
+                _sourceSkeletonData.BuildBoneDataSkeletonFullBody(this, false,
+                    _customBoneIdToHumanBodyBone, _bodyBonesMappingInterface);
             }
             else
             {
-                _sourceSkeletonData.BuildBoneDataSkeleton(this, false, _customBoneIdToHumanBodyBone);
+                _sourceSkeletonData.BuildBoneDataSkeleton(this, false,
+                    _customBoneIdToHumanBodyBone, _bodyBonesMappingInterface);
             }
         }
 
@@ -482,19 +495,21 @@ public partial class OVRUnityHumanoidSkeletonRetargeter : OVRSkeleton
 
         if (_sourceSkeletonTPoseData == null)
         {
-            _sourceSkeletonTPoseData = new OVRSkeletonMetadata(this, true, _customBoneIdToHumanBodyBone
-                , _skeletonType == SkeletonType.FullBody
-            );
+            _sourceSkeletonTPoseData = new OVRSkeletonMetadata(this, true, _customBoneIdToHumanBodyBone,
+                _skeletonType == SkeletonType.FullBody,
+                _bodyBonesMappingInterface);
         }
         else
         {
             if (_skeletonType == SkeletonType.FullBody)
             {
-                _sourceSkeletonTPoseData.BuildBoneDataSkeletonFullBody(this, true, _customBoneIdToHumanBodyBone);
+                _sourceSkeletonTPoseData.BuildBoneDataSkeletonFullBody(this, true,
+                    _customBoneIdToHumanBodyBone, _bodyBonesMappingInterface);
             }
             else
             {
-                _sourceSkeletonTPoseData.BuildBoneDataSkeleton(this, true, _customBoneIdToHumanBodyBone);
+                _sourceSkeletonTPoseData.BuildBoneDataSkeleton(this, true,
+                    _customBoneIdToHumanBodyBone, _bodyBonesMappingInterface);
             }
         }
 
@@ -518,7 +533,7 @@ public partial class OVRUnityHumanoidSkeletonRetargeter : OVRSkeleton
                 continue;
             }
 
-            var bodySection = OVRHumanBodyBonesMappings.BoneToBodySection[humanBodyBone];
+            var bodySection = _bodyBonesMappingInterface.GetBoneToBodySection[humanBodyBone];
 
             if (!IsBodySectionInArray(bodySection,
                     _skeletonType == SkeletonType.FullBody ? _fullBodySectionsToAlign : _bodySectionsToAlign
@@ -603,7 +618,7 @@ public partial class OVRUnityHumanoidSkeletonRetargeter : OVRSkeleton
             var correctionQuaternion = targetData.CorrectionQuaternion.Value;
             var adjustment = FindAdjustment(humanBodyBone);
 
-            var bodySectionOfJoint = OVRHumanBodyBonesMappings.BoneToBodySection[humanBodyBone];
+            var bodySectionOfJoint = _bodyBonesMappingInterface.GetBoneToBodySection[humanBodyBone];
             var shouldUpdatePosition = IsBodySectionInArray(
                 bodySectionOfJoint,
                 _skeletonType == SkeletonType.FullBody ? _fullBodySectionToPosition : _bodySectionToPosition

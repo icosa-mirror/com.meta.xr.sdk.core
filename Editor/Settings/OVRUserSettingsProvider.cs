@@ -19,8 +19,11 @@
  */
 
 using System.Collections.Generic;
+using Meta.XR.Editor.StatusMenu;
+using Meta.XR.Editor.UserInterface;
 using UnityEditor;
 using UnityEngine;
+using static Meta.XR.Editor.UserInterface.Styles.Colors;
 
 internal class OVRUserSettingsProvider : SettingsProvider
 {
@@ -39,14 +42,18 @@ internal class OVRUserSettingsProvider : SettingsProvider
 
     public override void OnGUI(string searchContext)
     {
+        EditorGUILayout.Space();
+
+        EditorGUI.indentLevel++;
+
         var previousLabelWidth = EditorGUIUtility.labelWidth;
-        EditorGUIUtility.labelWidth = 256;
+        EditorGUIUtility.labelWidth = 256.0f;
 
         EditorGUILayout.BeginVertical();
-
-        EditorGUILayout.LabelField("Telemetry", EditorStyles.boldLabel);
-        using (var check = new EditorGUI.ChangeCheckScope())
         {
+            EditorGUILayout.LabelField("Telemetry", EditorStyles.boldLabel);
+            using (var check = new EditorGUI.ChangeCheckScope())
+            {
                 var telemetryEnabled =
                     EditorGUILayout.Toggle(new GUIContent("Enable"), OVRTelemetryConsent.TelemetryEnabled);
                 if (check.changed)
@@ -54,15 +61,22 @@ internal class OVRUserSettingsProvider : SettingsProvider
                     OVRTelemetryConsent.SetTelemetryEnabled(telemetryEnabled,
                         OVRTelemetryConstants.OVRManager.ConsentOrigins.Settings);
                 }
-        }
+            }
 
+        }
         EditorGUILayout.EndVertical();
 
         EditorGUIUtility.labelWidth = previousLabelWidth;
+        EditorGUI.indentLevel--;
     }
 
-    public static void OpenSettingsWindow(OVRProjectSetupSettingsProvider.Origins origin)
+    public override void OnTitleBarGUI()
     {
-        SettingsService.OpenProjectSettings(SettingsPath);
+        OVREditorUtils.SettingsItem.DrawHeaderFromSettingProvider();
+    }
+
+    public static void OpenSettingsWindow(Item.Origins origin)
+    {
+        SettingsService.OpenUserPreferences(SettingsPath);
     }
 }

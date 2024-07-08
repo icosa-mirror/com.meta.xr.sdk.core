@@ -18,10 +18,13 @@
  * limitations under the License.
  */
 
+using static OVRTelemetry;
+
 namespace Meta.XR.Samples.Telemetry
 {
     internal static class SampleTelemetryEvents
     {
+        [Markers]
         public static class EventTypes
         {
             // Attention : Need to be kept in sync with QPL Event Ids

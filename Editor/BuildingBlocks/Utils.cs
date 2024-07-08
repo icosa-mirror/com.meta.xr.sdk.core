@@ -22,36 +22,51 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text.RegularExpressions;
+using Meta.XR.Editor.Callbacks;
+using Meta.XR.Editor.StatusMenu;
 using Meta.XR.Editor.Tags;
+using Meta.XR.Editor.UserInterface;
 using UnityEditor;
 using UnityEngine;
 using UnityEngine.SceneManagement;
+using static Meta.XR.Editor.UserInterface.Styles.Colors;
+using static Meta.XR.Editor.UserInterface.Styles.Contents;
 using Object = UnityEngine.Object;
 
 
 namespace Meta.XR.BuildingBlocks.Editor
 {
     [InitializeOnLoad]
-    public static class Utils
+    internal static class Utils
     {
         internal const string BlocksPublicName = "Building Blocks";
         internal const string BlockPublicName = "Building Block";
         internal const string BlockPublicTag = "[BuildingBlock]";
 
-        internal static readonly OVRGUIContent StatusIcon = OVREditorUtils.CreateContent("ovr_icon_bbw.png", OVRGUIContent.Source.BuildingBlocksIcons, $"Open {BlocksPublicName}");
+        internal static readonly TextureContent.Category BuildingBlocksIcons = new("BuildingBlocks/Icons");
+        internal static readonly TextureContent.Category BuildingBlocksThumbnails = new("BuildingBlocks/Thumbnails");
+        internal static readonly TextureContent.Category BuildingBlocksAnimations = new("BuildingBlocks/Animations");
 
-        internal static readonly OVRGUIContent GotoIcon = OVREditorUtils.CreateContent("ovr_icon_link.png", OVRGUIContent.Source.BuildingBlocksIcons, "Select Block");
+        internal static readonly TextureContent StatusIcon = TextureContent.CreateContent("ovr_icon_bbw.png",
+            Utils.BuildingBlocksIcons, $"Open {BlocksPublicName}");
 
-        internal static readonly OVRGUIContent AddIcon = OVREditorUtils.CreateContent("ovr_icon_addblock.png", OVRGUIContent.Source.BuildingBlocksIcons, "Add Block to current scene");
+        internal static readonly TextureContent GotoIcon = TextureContent.CreateContent("ovr_icon_link.png",
+            Utils.BuildingBlocksIcons, "Select Block");
 
-        internal const string ExperimentalTagName = "Experimental";
-        internal static readonly OVRGUIContent ExperimentalIcon =
-            OVREditorUtils.CreateContent("ovr_icon_experimental.png", OVRGUIContent.Source.BuildingBlocksIcons, ExperimentalTagName);
-        internal static Tag ExperimentalTag = new Tag(ExperimentalTagName)
+        internal static readonly TextureContent AddIcon = TextureContent.CreateContent("ovr_icon_addblock.png",
+            Utils.BuildingBlocksIcons, "Add Block to current scene");
+
+        private const string ExperimentalTagName = "Experimental";
+
+        internal static readonly TextureContent ExperimentalIcon =
+            TextureContent.CreateContent("ovr_icon_experimental.png", Utils.BuildingBlocksIcons,
+                ExperimentalTagName);
+
+        internal static Tag ExperimentalTag = new(ExperimentalTagName)
         {
             Behavior =
             {
-                Color = Styles.Colors.ExperimentalColor,
+                Color = ExperimentalColor,
                 Icon = ExperimentalIcon,
                 Order = 100,
                 ShowOverlay = true,
@@ -59,14 +74,17 @@ namespace Meta.XR.BuildingBlocks.Editor
             }
         };
 
-        internal const string PrototypingTagName = "Prototyping";
-        internal static readonly OVRGUIContent PrototypingIcon =
-            OVREditorUtils.CreateContent("ovr_icon_prototype.png", OVRGUIContent.Source.BuildingBlocksIcons, PrototypingTagName);
-        internal static Tag PrototypingTag = new Tag(PrototypingTagName)
+        private const string PrototypingTagName = "Prototyping";
+
+        internal static readonly TextureContent PrototypingIcon =
+            TextureContent.CreateContent("ovr_icon_prototype.png", Utils.BuildingBlocksIcons,
+                PrototypingTagName);
+
+        internal static Tag PrototypingTag = new(PrototypingTagName)
         {
             Behavior =
             {
-                Color = Styles.Colors.ExperimentalColor,
+                Color = ExperimentalColor,
                 Icon = PrototypingIcon,
                 Order = 101,
                 ShowOverlay = true,
@@ -74,14 +92,16 @@ namespace Meta.XR.BuildingBlocks.Editor
             }
         };
 
-        internal const string DebugTagName = "Debug";
-        internal static readonly OVRGUIContent DebugIcon =
-            OVREditorUtils.CreateContent("ovr_icon_debug.png", OVRGUIContent.Source.BuildingBlocksIcons, DebugTagName);
-        internal static Tag DebugTag = new Tag(DebugTagName)
+        private const string DebugTagName = "Debug";
+
+        internal static readonly TextureContent DebugIcon =
+            TextureContent.CreateContent("ovr_icon_debug.png", Utils.BuildingBlocksIcons, DebugTagName);
+
+        internal static Tag DebugTag = new(DebugTagName)
         {
             Behavior =
             {
-                Color = Styles.Colors.InternalColor,
+                Color = DebugColor,
                 Icon = DebugIcon,
                 Order = 90,
                 ShowOverlay = true,
@@ -90,7 +110,8 @@ namespace Meta.XR.BuildingBlocks.Editor
         };
 
         private const string InternalTagName = "Internal";
-        internal static Tag InternalTag = new Tag(InternalTagName)
+
+        internal static Tag InternalTag = new(InternalTagName)
         {
             Behavior =
             {
@@ -102,7 +123,8 @@ namespace Meta.XR.BuildingBlocks.Editor
         };
 
         private const string HiddenTagName = "Hidden";
-        internal static Tag HiddenTag = new Tag(HiddenTagName)
+
+        internal static Tag HiddenTag = new(HiddenTagName)
         {
             Behavior =
             {
@@ -113,13 +135,15 @@ namespace Meta.XR.BuildingBlocks.Editor
         };
 
         private const string DeprecatedTagName = "Deprecated";
-        internal static Tag DeprecatedTag = new Tag(DeprecatedTagName)
+
+        internal static Tag DeprecatedTag = new(DeprecatedTagName)
         {
             Behavior =
             {
                 Order = 203,
-                Color = Styles.Colors.ErrorColor,
-                Icon = OVREditorUtils.CreateContent("ovr_icon_deprecated.png", OVRGUIContent.Source.BuildingBlocksIcons, HiddenTagName),
+                Color = ErrorColor,
+                Icon = TextureContent.CreateContent("ovr_icon_deprecated.png", Utils.BuildingBlocksIcons,
+                    HiddenTagName),
                 Show = true,
                 ShowOverlay = true,
                 ToggleableVisibility = true,
@@ -128,43 +152,60 @@ namespace Meta.XR.BuildingBlocks.Editor
         };
 
         private const string NewTagName = "New";
-        internal static Tag NewTag = new Tag(NewTagName)
+
+        internal static Tag NewTag = new(NewTagName)
         {
             Behavior =
             {
                 Automated = true,
                 Order = 202,
-                Color = Styles.Colors.NewColor,
-                Icon = OVREditorUtils.CreateContent("ovr_icon_new.png", OVRGUIContent.Source.BuildingBlocksIcons, NewTagName),
+                Color = NewColor,
+                Icon = TextureContent.CreateContent("ovr_icon_new.png", Utils.BuildingBlocksIcons,
+                    NewTagName),
                 Show = true,
                 CanFilterBy = false,
                 ShowOverlay = true,
             }
         };
 
-        private static readonly Dictionary<string, BlockData> IDToBlockDataDictionary =
-            new Dictionary<string, BlockData>();
+        private static readonly Dictionary<string, BlockBaseData> IDToBlockDataDictionary = new();
 
         private static bool _dirty = true;
 
 
+
+        private const string DocumentationUrl = "https://developer.oculus.com/documentation/unity/unity-buildingblocks-overview";
+
+
+        internal static readonly Item Item = new()
+        {
+            Name = BlocksPublicName,
+            Color = Styles.Colors.AccentColor,
+            Icon = StatusIcon,
+            InfoTextDelegate = ComputeInfoText,
+            PillIcon = GetPillIcon,
+            OnClickDelegate = OnStatusMenuClick,
+            Order = 1,
+            HeaderIcons = new List<Item.HeaderIcon>()
+            {
+                new()
+                {
+                    TextureContent = ConfigIcon,
+                    Color = LightGray,
+                    Action = BuildingBlocksWindow.ShowSettingsMenu
+                },
+                new()
+                {
+                    TextureContent = DocumentationIcon,
+                    Color = LightGray,
+                    Action = () => Application.OpenURL(DocumentationUrl)
+                },
+            }
+        };
+
         static Utils()
         {
-            OVRGUIContent.RegisterContentPath(OVRGUIContent.Source.BuildingBlocksIcons, "BuildingBlocks/Icons");
-            OVRGUIContent.RegisterContentPath(OVRGUIContent.Source.BuildingBlocksThumbnails, "BuildingBlocks/Thumbnails");
-            OVRGUIContent.RegisterContentPath(OVRGUIContent.Source.BuildingBlocksAnimations, "BuildingBlocks/Animations");
-
-            var statusItem = new OVRStatusMenu.Item()
-            {
-                Name = BlocksPublicName,
-                Color = Styles.Colors.AccentColor,
-                Icon = StatusIcon,
-                InfoTextDelegate = ComputeInfoText,
-                PillIcon = GetPillIcon,
-                OnClickDelegate = OnStatusMenuClick,
-                Order = 1
-            };
-            OVRStatusMenu.RegisterItem(statusItem);
+            StatusMenu.RegisterItem(Item);
 
             EditorApplication.projectChanged -= OnProjectChanged;
             EditorApplication.projectChanged += OnProjectChanged;
@@ -176,37 +217,38 @@ namespace Meta.XR.BuildingBlocks.Editor
             _dirty = true;
         }
 
-        private static int ComputeNumberOfNewBlocks() => GetAllBlockDatas().Count(data => !data.Hidden && data.HasTag(NewTag));
+        private static int ComputeNumberOfNewBlocks() =>
+            GetAllBlockData().Count(data => !data.Hidden && data.Tags.Contains(NewTag));
 
         private static (string, Color?) ComputeInfoText()
         {
             var numberOfNewBlocks = ComputeNumberOfNewBlocks();
             if (numberOfNewBlocks > 0)
             {
-                return ($"There {OVREditorUtils.ChoosePlural(numberOfNewBlocks, "is", "are")} {numberOfNewBlocks} new {OVREditorUtils.ChoosePlural(numberOfNewBlocks, "block", "blocks")} available!", Styles.Colors.NewColor);
+                return (
+                    $"There {OVREditorUtils.ChoosePlural(numberOfNewBlocks, "is", "are")} {numberOfNewBlocks} new {OVREditorUtils.ChoosePlural(numberOfNewBlocks, "block", "blocks")} available!",
+                    NewColor);
             }
-            else
-            {
-                var numberOfBlocks = GetBlocksInScene().Count;
-                return ($"{numberOfBlocks} {OVREditorUtils.ChoosePlural(numberOfBlocks, "block", "blocks")} in current scene.", null);
-            }
+
+            var numberOfBlocks = GetBlocksInScene().Count;
+            return (
+                $"{numberOfBlocks} {OVREditorUtils.ChoosePlural(numberOfBlocks, "block", "blocks")} in current scene.",
+                null);
         }
 
-        private static (OVRGUIContent, Color?) GetPillIcon()
+        private static (TextureContent, Color?) GetPillIcon()
         {
             if (ComputeNumberOfNewBlocks() > 0)
             {
-                return (NewTag.Behavior.Icon, Styles.Colors.NewColor);
+                return (NewTag.Behavior.Icon, NewColor);
             }
-            else
-            {
-                return (null, null);
-            }
+
+            return (null, null);
         }
 
-        private static void OnStatusMenuClick()
+        private static void OnStatusMenuClick(Item.Origins origin)
         {
-            BuildingBlocksWindow.ShowWindow("StatusMenu");
+            BuildingBlocksWindow.ShowWindow(origin);
         }
 
         public static void RefreshList(bool force = false)
@@ -216,10 +258,10 @@ namespace Meta.XR.BuildingBlocks.Editor
                 return;
             }
 
-            var blockGuids = AssetDatabase.FindAssets($"t:{nameof(BlockBaseData)}");
-            var blockDataList = blockGuids.Select(id =>
-                    AssetDatabase.LoadAssetAtPath<BlockData>(AssetDatabase.GUIDToAssetPath(id))).Where(t => t != null)
-                .ToList();
+            var blockDataList =
+                AllBlockData
+                    .Where(t => t != null)
+                    .ToList();
 
             IDToBlockDataDictionary.Clear();
             foreach (var blockData in blockDataList)
@@ -240,10 +282,10 @@ namespace Meta.XR.BuildingBlocks.Editor
         {
             RefreshList();
             IDToBlockDataDictionary.TryGetValue(blockId, out var blockData);
-            return blockData;
+            return blockData as BlockData;
         }
 
-        public static BlockData[] GetAllBlockDatas()
+        private static IEnumerable<BlockBaseData> GetAllBlockData()
         {
             RefreshList();
             return IDToBlockDataDictionary.Values.ToArray();
@@ -251,7 +293,8 @@ namespace Meta.XR.BuildingBlocks.Editor
 
         public static BuildingBlock GetBlock(this BlockData data)
         {
-            return Object.FindObjectsByType<BuildingBlock>(FindObjectsSortMode.None).FirstOrDefault(x => x.BlockId == data.Id);
+            return Object.FindObjectsByType<BuildingBlock>(FindObjectsSortMode.None)
+                .FirstOrDefault(x => x.BlockId == data.Id);
         }
 
         public static BuildingBlock GetBlock(string blockId)
@@ -261,7 +304,8 @@ namespace Meta.XR.BuildingBlocks.Editor
 
         public static List<BuildingBlock> GetBlocks(this BlockData data)
         {
-            return Object.FindObjectsByType<BuildingBlock>(FindObjectsSortMode.None).Where(x => x.BlockId == data.Id).ToList();
+            return Object.FindObjectsByType<BuildingBlock>(FindObjectsSortMode.None).Where(x => x.BlockId == data.Id)
+                .ToList();
         }
 
         public static List<BuildingBlock> GetBlocks(string blockId)
@@ -271,7 +315,8 @@ namespace Meta.XR.BuildingBlocks.Editor
 
         public static List<T> GetBlocksWithType<T>() where T : Component
         {
-            return Object.FindObjectsByType<T>(FindObjectsSortMode.None).Where(controller => controller.GetComponent<BuildingBlock>() != null).ToList();
+            return Object.FindObjectsByType<T>(FindObjectsSortMode.None)
+                .Where(controller => controller.GetComponent<BuildingBlock>() != null).ToList();
         }
 
         public static List<T> GetBlocksWithBaseClassType<T>() where T : Component
@@ -283,27 +328,14 @@ namespace Meta.XR.BuildingBlocks.Editor
                 .ToList();
         }
 
-        public static bool IsRequiredBy(this BlockData data, BlockData other)
+        private static bool IsRequiredBy(this BlockData data, BlockData other)
         {
             if (data == null || other == null)
             {
                 return false;
             }
 
-            if (data == other)
-            {
-                return true;
-            }
-
-            foreach (var dependency in other.Dependencies)
-            {
-                if (data.IsRequiredBy(dependency))
-                {
-                    return true;
-                }
-            }
-
-            return false;
+            return data == other || other.Dependencies.Any(data.IsRequiredBy);
         }
 
         public static List<BuildingBlock> GetBlocksInScene()
@@ -365,7 +397,8 @@ namespace Meta.XR.BuildingBlocks.Editor
 
         public static int ComputeNumberOfBlocksInScene(this BlockData blockData)
         {
-            return Object.FindObjectsByType<BuildingBlock>(FindObjectsSortMode.None).Count(x => x.BlockId == blockData.Id);
+            return Object.FindObjectsByType<BuildingBlock>(FindObjectsSortMode.None)
+                .Count(x => x.BlockId == blockData.Id);
         }
 
         public static T FindComponentInScene<T>() where T : Component
@@ -375,6 +408,14 @@ namespace Meta.XR.BuildingBlocks.Editor
             return rootGameObjects.FirstOrDefault(go => go.GetComponentInChildren<T>())?.GetComponentInChildren<T>();
         }
 
+        public static IEnumerable<BlockBaseData> AllBlockData =>
+            AssetDatabase.FindAssets($"t:{nameof(BlockBaseData)}")
+                .Select(id =>
+                    AssetDatabase.LoadAssetAtPath<BlockBaseData>(AssetDatabase.GUIDToAssetPath(id))
+                );
+
+
+        public static TResult Let<TSource, TResult>(this TSource source, Func<TSource, TResult> func) => func(source);
 
     }
 }

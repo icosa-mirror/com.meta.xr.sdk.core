@@ -34,10 +34,12 @@ namespace Meta.XR.BuildingBlocks.Editor
         public const string PassthroughWindow = "4f06f550-8209-46c8-a4c9-879a368560f6";
         public const string SampleSpatialAnchorController = "1f4566e8-f4ba-46d2-9e47-3748c9869766";
         public const string SpatialAnchorCore = "a383f5ea-3856-4c23-a11c-7fdbb9408035";
+        public const string SharedSpatialAnchorCore = "975428dc-db04-4e43-be4a-232f192cd3eb";
         public const string ControllerButtonsMapper = "80aa2eb2-af2f-40a9-ad9e-18044ce65bee";
 
         // Utilities
         public const string Cube = "7358e191-33b7-43ca-b066-b2f00531ac66";
+        public const string AlertViewHUD = "dfd47015-f5ae-4435-8b15-8acde41b3871";
 
         // Interaction
         public const string GrabbableItem = "5c5184f2-c2f5-4063-b14b-3b1264fb3c1a";
@@ -52,6 +54,8 @@ namespace Meta.XR.BuildingBlocks.Editor
         public const string EffectMesh = "65c6e778-10b3-4490-89da-008a18aa116a";
         public const string RoomGuardian = "715d6e5e-2d15-475d-9b2b-43ce3eca2f3d";
         public const string SceneDebugger = "8ac24146-90e9-4802-8a61-9d72ceaa2450";
+        public const string AnchorPrefabSpawner = "b9d9309f-2bf0-40ca-9cee-803aa6a91dae";
+        public const string FindSpawnPositions = "93762ef0-9738-45f4-bb87-bdb9a0acb994";
 
     }
 }

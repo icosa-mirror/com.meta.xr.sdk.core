@@ -33,14 +33,9 @@ namespace Oculus.VR.Editor
 
     public class OVRPluginInfo : ScriptableObject
     {
-        private static readonly IOVRPluginInfoSupplier Supplier =
-#if OVR_UNITY_PACKAGE_MANAGER
-            new OVRPluginInfoOpenXR();
-#elif OVR_UNITY_ASSET_STORE
-            new OVRPluginUpdater();
-#else
-            new OVRPluginInfoStub();
-#endif
+        public const string PackageName = "com.meta.xr.sdk.core";
+
+        private static readonly IOVRPluginInfoSupplier Supplier = new OVRPluginInfoOpenXR();
 
         public static bool IsOVRPluginOpenXRActivated() => Supplier.IsOVRPluginOpenXRActivated();
 
@@ -83,7 +78,25 @@ namespace Oculus.VR.Editor
             var script = MonoScript.FromScriptableObject(so);
             string assetPath = AssetDatabase.GetAssetPath(script);
             return assetPath.StartsWith("Packages\\", StringComparison.InvariantCultureIgnoreCase) ||
-                   assetPath.StartsWith("Packages/", StringComparison.InvariantCultureIgnoreCase);
+                    assetPath.StartsWith("Packages/", StringComparison.InvariantCultureIgnoreCase);
+        }
+
+        public static string GetPluginRootPath()
+        {
+            if (IsInsidePackageDistribution())
+            {
+                return Path.Combine("Packages", PackageName, "Plugins");
+            }
+            else
+            {
+                return Path.Combine("Assets", "Oculus", "VR", "Plugins");
+            }
+        }
+
+        public static bool IsCoreSDKModifiable()
+        {
+            return !IsInsidePackageDistribution() ||
+                GetUtilitiesPackageInfo().source == UnityEditor.PackageManager.PackageSource.Local;
         }
 
         private class OVRPluginInfoStub : IOVRPluginInfoSupplier

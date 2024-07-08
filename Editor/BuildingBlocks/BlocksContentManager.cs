@@ -29,6 +29,7 @@ using System.Globalization;
 using System.IO;
 using System.Linq;
 using Assets.Oculus.VR.Editor;
+using Meta.XR.Editor.Tags;
 using UnityEditor;
 using UnityEngine;
 using UnityEngine.Networking;
@@ -39,15 +40,14 @@ namespace Meta.XR.BuildingBlocks.Editor
     internal static class BlocksContentManager
     {
         private const double CacheDurationInHours = 6;
-
-        private static BlockData[] _contentFilter;
-        private static OVRPlatformTool.EditorCoroutine _editorCoroutine;
-
         private static string CacheDirectory => Path.Combine(Path.GetTempPath(), "Meta", "Unity", "Editor");
         private static string CacheFilePath => Path.Combine(CacheDirectory, "bb_content.json");
 
+        private static string LastDownloadTimestampKey =>
+            $"BlocksContentManager.LastDownloadTimestamp.{SdkVersion.GetValueOrDefault(0)}";
 
-        private static string LastDownloadTimestampKey => $"BlocksContentManager.LastDownloadTimestamp.{SdkVersion.GetValueOrDefault(0)}";
+        private static BlockData[] _contentFilter;
+        private static OVRPlatformTool.EditorCoroutine _editorCoroutine;
 
 #if OVRPLUGIN_UNSUPPORTED_PLATFORM
         private static int? SdkVersion => null;
@@ -102,6 +102,7 @@ namespace Meta.XR.BuildingBlocks.Editor
             {
                 File.Delete(CacheFilePath);
             }
+
             SessionState.EraseString(LastDownloadTimestampKey);
         }
 
@@ -116,6 +117,7 @@ namespace Meta.XR.BuildingBlocks.Editor
             public string id;
             public string blockName;
             public string description;
+            public string[] tags;
         }
 
         [Serializable]
@@ -140,7 +142,7 @@ namespace Meta.XR.BuildingBlocks.Editor
 
         #endregion
 
-        #region Blocks Content
+        #region Blocks TextureContent
 
         internal static bool SetContentJsonData(string jsonData)
         {
@@ -154,17 +156,31 @@ namespace Meta.XR.BuildingBlocks.Editor
             ClearCache();
         }
 
-        public static List<BlockBaseData> FilterBlockWindowContent(List<BlockBaseData> content)
+
+        public static IReadOnlyList<BlockBaseData> FilterBlockWindowContent(IReadOnlyList<BlockBaseData> content)
         {
             return FilterBlockWindowContent(content, _contentFilter);
         }
 
-        internal static List<BlockBaseData> FilterBlockWindowContent(List<BlockBaseData> content, BlockData[] contentFilter)
+        private static void ClearOverrides(IEnumerable<BlockBaseData> content)
+        {
+            foreach (var block in content)
+            {
+                block.BlockName.RemoveOverride();
+                block.Description.RemoveOverride();
+                block.OverridableTags.RemoveOverride();
+            }
+        }
+
+        internal static IReadOnlyList<BlockBaseData> FilterBlockWindowContent(IReadOnlyList<BlockBaseData> content,
+            BlockData[] contentFilter)
         {
             if (contentFilter == null)
             {
+                ClearOverrides(content);
                 return content;
             }
+
 
             var contentFilterDictionary = contentFilter
                 .Select((value, index) => new { value, index })
@@ -177,15 +193,24 @@ namespace Meta.XR.BuildingBlocks.Editor
 
             foreach (var blockBaseData in filteredContent)
             {
-                var blockNameOverride = contentFilterDictionary[blockBaseData.Id].value.blockName;
-                blockBaseData.BlockNameOverride = string.IsNullOrEmpty(blockNameOverride) ? null : blockNameOverride;
-
-                var descriptionOverride = contentFilterDictionary[blockBaseData.Id].value.description;
-                blockBaseData.DescriptionOverride =
-                    string.IsNullOrEmpty(descriptionOverride) ? null : descriptionOverride;
+                blockBaseData.BlockName.SetOverride(contentFilterDictionary[blockBaseData.Id].value.blockName);
+                blockBaseData.Description.SetOverride(contentFilterDictionary[blockBaseData.Id].value.description);
+                blockBaseData.OverridableTags.SetOverride(GenerateTagArrayFromTags(contentFilterDictionary[blockBaseData.Id].value.tags));
             }
 
             return filteredContent;
+        }
+
+        private static TagArray GenerateTagArrayFromTags(string[] tags)
+        {
+            if (tags == null)
+            {
+                return null;
+            }
+
+            var tagArray = new TagArray();
+            tagArray.Add(tags.Select(tag => new Tag(tag)));
+            return tagArray;
         }
 
         #endregion

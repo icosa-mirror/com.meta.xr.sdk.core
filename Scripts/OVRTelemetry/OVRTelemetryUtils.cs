@@ -18,8 +18,17 @@
  * limitations under the License.
  */
 
+using System;
+using System.Collections.Generic;
+using UnityEngine;
+
 internal static partial class OVRTelemetry
 {
+    [AttributeUsage(AttributeTargets.Class)]
+    internal class MarkersAttribute : Attribute
+    {
+    }
+
     private static string _sdkVersionString;
 
     public static OVRTelemetryMarker AddSDKVersionAnnotation(this OVRTelemetryMarker marker)
@@ -30,5 +39,14 @@ internal static partial class OVRTelemetry
         }
 
         return marker.AddAnnotation("sdk_version", _sdkVersionString);
+    }
+
+    private static string GetPlayModeOrigin() => Application.isPlaying
+        ? Application.isEditor ? "Editor Play" : "Build Play"
+        : "Editor";
+
+    public static OVRTelemetryMarker AddPlayModeOrigin(this OVRTelemetryMarker marker)
+    {
+        return marker.AddAnnotation(OVRTelemetryConstants.OVRManager.AnnotationTypes.Origin, GetPlayModeOrigin());
     }
 }

@@ -122,6 +122,10 @@ internal static class OVRDeserialize
 
 
 
+    public struct PassthroughLayerResumedData
+    {
+        public int LayerId;
+    }
 
 
 }

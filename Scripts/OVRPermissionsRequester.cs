@@ -24,8 +24,14 @@ using UnityEngine;
 using UnityEngine.Android;
 
 /// <summary>
-/// This class handles android permission requests for the capabilities listed in <see cref = "Permission"/>.
+/// This class handles Android permission requests for the capabilities listed in <see cref="Permission"/>.
 /// </summary>
+/// <remarks>
+/// It is recommended to use Unity's Android Permission API directly to request permissions which
+/// require callbacks. Subscribing to events here may not be guaranteed to be called when
+/// using <see cref="OVRManager"/> startup permissions toggle, due to a potential race
+/// condition if the request completes before your callback has been registered.
+/// </remarks>
 public static class OVRPermissionsRequester
 {
     /// <summary>
@@ -170,16 +176,13 @@ public static class OVRPermissionsRequester
         {
             Debug.LogWarning($"[{nameof(OVRPermissionsRequester)}] Permission {permissionId} was denied.");
         };
-        permissionCallbacks.PermissionDeniedAndDontAskAgain += permissionId =>
-        {
-            Debug.LogWarning(
-                $"[{nameof(OVRPermissionsRequester)}] Permission {permissionId} was denied and blocked from being requested again.");
-        };
         permissionCallbacks.PermissionGranted += permissionId =>
         {
             Debug.Log($"[{nameof(OVRPermissionsRequester)}] Permission {permissionId} was granted.");
             PermissionGranted?.Invoke(permissionId);
         };
+        // as per Unity guidelines, PermissionDeniedAndDontAskAgain is unreliable
+        // Denied will be fired instead if this isn't subscribed to
         return permissionCallbacks;
     }
 }

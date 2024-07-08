@@ -19,19 +19,12 @@
  */
 
 using System.Globalization;
+using Meta.XR.Editor.StatusMenu;
 using UnityEditor;
 using UnityEngine.UIElements;
 
 internal class OVRProjectSetupSettingsProvider : SettingsProvider
 {
-    public enum Origins
-    {
-        Settings,
-        Menu,
-        Icon,
-        Console
-    }
-
     public enum Interaction
     {
         None,
@@ -44,7 +37,7 @@ internal class OVRProjectSetupSettingsProvider : SettingsProvider
     [MenuItem("Oculus/Tools/Project Setup Tool", false, 1)]
     static void OpenProjectSetupTool()
     {
-        OpenSettingsWindow(Origins.Menu);
+        OpenSettingsWindow(Item.Origins.Menu);
     }
 
     public const string SettingsName = OVREditorUtils.MetaXRPublicName;
@@ -52,7 +45,7 @@ internal class OVRProjectSetupSettingsProvider : SettingsProvider
 
     private OVRProjectSetupDrawer _ovrProjectSetupDrawer;
     private OVRProjectSetupDrawer OvrProjectSetupDrawer => _ovrProjectSetupDrawer ??= new OVRProjectSetupDrawer();
-    private static Origins? _lastOrigin = null;
+    private static Item.Origins? _lastOrigin = null;
     private static Interaction _lastInteraction = Interaction.None;
     private static bool _activated = false;
 
@@ -96,7 +89,7 @@ internal class OVRProjectSetupSettingsProvider : SettingsProvider
         {
             OpenTimestamp = EditorApplication.timeSinceStartup;
             _activated = true;
-            _lastOrigin = _lastOrigin ?? Origins.Settings;
+            _lastOrigin = _lastOrigin ?? Item.Origins.Settings;
 
             OVRTelemetry.Start(OVRProjectSetupTelemetryEvent.EventTypes.Open)
                 .AddAnnotation(OVRProjectSetupTelemetryEvent.AnnotationTypes.BuildTargetGroup,
@@ -136,20 +129,17 @@ internal class OVRProjectSetupSettingsProvider : SettingsProvider
         }
     }
 
-
     public override void OnTitleBarGUI()
     {
-        base.OnTitleBarGUI();
-        OvrProjectSetupDrawer.OnTitleBarGUI();
+        OVRProjectSetup.Item.DrawHeaderFromSettingProvider();
     }
 
     public override void OnGUI(string searchContext)
     {
-        base.OnGUI(searchContext);
         OvrProjectSetupDrawer.OnGUI();
     }
 
-    public static void OpenSettingsWindow(Origins origin)
+    public static void OpenSettingsWindow(Item.Origins origin)
     {
         _lastOrigin = origin;
         var buildTargetGroup = BuildPipeline.GetBuildTargetGroup(EditorUserBuildSettings.activeBuildTarget);

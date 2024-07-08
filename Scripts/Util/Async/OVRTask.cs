@@ -290,17 +290,6 @@ public readonly struct OVRTask<TResult> : IEquatable<OVRTask<TResult>>, IDisposa
     private static readonly HashSet<Action> IncrementalResultSubscriberClearers = new();
     #endregion
 
-    private static bool TryExtractValue<TKey, TValue>(Dictionary<TKey, TValue> dict, TKey key, out TValue value)
-    {
-        if (dict.TryGetValue(key, out value))
-        {
-            dict.Remove(key);
-            return true;
-        }
-
-        return false;
-    }
-
     /// <summary>
     /// Clears internal state for all tasks of type <typeparamref name="TResult"/>.
     /// </summary>
@@ -393,17 +382,17 @@ public readonly struct OVRTask<TResult> : IEquatable<OVRTask<TResult>>, IDisposa
     /// <param name="exception">The exception</param>
     internal void SetException(Exception exception)
     {
-        if (TryExtractValue(AwaitableSources, _id, out var awaitableSource))
+        if (AwaitableSources.Remove(_id, out var awaitableSource))
         {
             awaitableSource.SetException(exception);
         }
-        else if (TryExtractValue(Sources, _id, out var source))
+        else if (Sources.Remove(_id, out var source))
         {
             source.SetException(exception);
         }
         else if (TryRemoveInternalData())
         {
-            if (TryExtractValue(ContinueWithInvokers, _id, out var invoker))
+            if (ContinueWithInvokers.Remove(_id, out var invoker))
             {
                 // When using ContinueWith, there is no way for the caller to catch the exception.
                 // However, we discourage exceptions to signal anything other than API misuse.
@@ -432,12 +421,12 @@ public readonly struct OVRTask<TResult> : IEquatable<OVRTask<TResult>>, IDisposa
     {
         if (!Pending.Remove(_id)) return false;
 
-        if (TryExtractValue(InternalDataRemovers, _id, out var internalDataRemover))
+        if (InternalDataRemovers.Remove(_id, out var internalDataRemover))
         {
             internalDataRemover(_id);
         }
 
-        if (TryExtractValue(IncrementalResultSubscriberRemovers, _id, out var subscriberRemover))
+        if (IncrementalResultSubscriberRemovers.Remove(_id, out var subscriberRemover))
         {
             subscriberRemover(_id);
         }
@@ -447,7 +436,7 @@ public readonly struct OVRTask<TResult> : IEquatable<OVRTask<TResult>>, IDisposa
 
     bool TryInvokeContinuation()
     {
-        if (TryExtractValue(Continuations, _id, out var continuation))
+        if (Continuations.Remove(_id, out var continuation))
         {
             continuation();
             return true;
@@ -458,18 +447,18 @@ public readonly struct OVRTask<TResult> : IEquatable<OVRTask<TResult>>, IDisposa
 
     internal void SetResult(TResult result)
     {
-        if (TryExtractValue(AwaitableSources, _id, out var awaitableSource))
+        if (AwaitableSources.Remove(_id, out var awaitableSource))
         {
             awaitableSource.SetResultAndReturnToPool(result);
         }
-        else if (TryExtractValue(Sources, _id, out var source))
+        else if (Sources.Remove(_id, out var source))
         {
             source.SetResult(result);
         }
         // If false, no one was waiting on the task
         else if (TryRemoveInternalData())
         {
-            if (TryExtractValue(ContinueWithInvokers, _id, out var invoker))
+            if (ContinueWithInvokers.Remove(_id, out var invoker))
             {
                 invoker(_id, result);
             }
@@ -622,21 +611,34 @@ public readonly struct OVRTask<TResult> : IEquatable<OVRTask<TResult>>, IDisposa
             _userOwnedResultList = userOwnedResultList;
             _userOwnedResultList.Clear();
 
-            // Create a copy of the tasks
-            foreach (var task in tasks.ToNonAlloc())
+            // Copy the provided tasks to a temp list to avoid double enumeration
+            using (new OVRObjectPool.ListScope<OVRTask<TResult>>(out var taskList))
             {
-                _remainingTaskIds.Add(task._id);
-                _originalTaskOrder.Add(task._id);
-                task.ContinueWith(_onSingleTaskCompleted, new CombinedTaskDataWithCompletedTaskId
+                foreach (var task in tasks.ToNonAlloc())
                 {
-                    CompletedTaskId = task._id,
-                    CombinedData = this,
-                });
-            }
+                    taskList.Add(task);
+                    _remainingTaskIds.Add(task._id);
+                    _originalTaskOrder.Add(task._id);
+                }
 
-            if (_originalTaskOrder.Count == 0)
-            {
-                Task.SetResult(_userOwnedResultList);
+                if (taskList.Count == 0)
+                {
+                    Task.SetResult(_userOwnedResultList);
+                }
+                else
+                {
+                    foreach (var task in taskList)
+                    {
+                        // If the task is already complete, this delegate will be invoked immediately, so make sure
+                        // that all tasks have been added to the above collections before we start handling any
+                        // completion events.
+                        task.ContinueWith(_onSingleTaskCompleted, new CombinedTaskDataWithCompletedTaskId
+                        {
+                            CompletedTaskId = task._id,
+                            CombinedData = this,
+                        });
+                    }
+                }
             }
         }
 
@@ -732,7 +734,7 @@ public readonly struct OVRTask<TResult> : IEquatable<OVRTask<TResult>>, IDisposa
     /// </remarks>
     /// <returns>Returns the `Exception` associated with the task.</returns>
     /// <exception cref="InvalidOperationException">Thrown if <see cref="IsFaulted"/> is `False`.</exception>
-    public Exception GetException() => TryExtractValue(Exceptions, _id, out var exception)
+    public Exception GetException() => Exceptions.Remove(_id, out var exception)
         ? exception
         : throw new InvalidOperationException($"Task {_id} is not in a faulted state. Check with {nameof(IsFaulted)}");
 
@@ -754,7 +756,7 @@ public readonly struct OVRTask<TResult> : IEquatable<OVRTask<TResult>>, IDisposa
     /// <seealso cref="TryGetResult"/>
     public TResult GetResult()
     {
-        if (TryExtractValue(Exceptions, _id, out var exception))
+        if (Exceptions.Remove(_id, out var exception))
         {
             ExceptionDispatchInfo.Capture(exception).Throw();
         }
@@ -810,7 +812,7 @@ public readonly struct OVRTask<TResult> : IEquatable<OVRTask<TResult>>, IDisposa
     /// or if this method has already been called once.</exception>
     /// <seealso cref="HasResult"/>
     /// <seealso cref="GetResult"/>
-    public bool TryGetResult(out TResult result) => TryExtractValue(Results, _id, out result);
+    public bool TryGetResult(out TResult result) => Results.Remove(_id, out result);
 
     #endregion
 

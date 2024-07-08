@@ -45,8 +45,8 @@ namespace Meta.XR.BuildingBlocks.Editor
             get
             {
                 var dependencyIds =
-                    (dependencies ?? Enumerable.Empty<string>()).Concat(externalBlockDependencies ??
-                                                                        Enumerable.Empty<string>());
+                    (dependencies ?? Enumerable.Empty<string>())
+                    .Concat(externalBlockDependencies ?? Enumerable.Empty<string>());
 
                 return dependencyIds.Select(Utils.GetBlockData).ToList();
             }
@@ -114,15 +114,6 @@ namespace Meta.XR.BuildingBlocks.Editor
 
         internal void InstallWithDependenciesAndCommit(GameObject selectedGameObject = null)
         {
-            if (HasNonBuildingBlockCameraRig())
-            {
-                if (!EditorUtility.DisplayDialog("Confirmation",
-                        $"You already have a scene setup with OVRCameraRig that may not be compatible with {Utils.BlocksPublicName}. Do you want to proceed?", "Yes", "No"))
-                {
-                    return;
-                }
-            }
-
             Exception installException = null;
             try
             {
@@ -146,12 +137,6 @@ namespace Meta.XR.BuildingBlocks.Editor
                     .AddAnnotationIfNotNullOrEmpty(OVRTelemetryConstants.BB.AnnotationType.Error, installException?.Message)
                     .Send();
             }
-        }
-
-        internal static bool HasNonBuildingBlockCameraRig()
-        {
-            var cameraRig = FindAnyObjectByType<OVRCameraRig>();
-            return cameraRig != null && cameraRig.GetComponent<BuildingBlock>() == null;
         }
 
         internal static void FixSetupRules()
@@ -184,20 +169,17 @@ namespace Meta.XR.BuildingBlocks.Editor
         }
 
         internal override bool CanBeAdded => !HasMissingDependencies && !IsSingletonAndAlreadyPresent;
-        internal bool HasMissingDependencies
-        {
-            get
-            {
-                if (dependencies.Any(dependencyId => Utils.GetBlockData(dependencyId) == null))
-                {
-                    return true;
-                }
+        internal bool HasMissingDependencies => GetMissingDependencies.Any();
+        private IEnumerable<string> GetMissingDependencies =>
+            (dependencies ?? Enumerable.Empty<string>())
+                .Concat(
+                    PackageDependencies.All(OVRProjectSetupUtils.IsPackageInstalled)
+                        ? externalBlockDependencies ?? Enumerable.Empty<string>()
+                        : Enumerable.Empty<string>())
+                .Where(dependencyId => Utils.GetBlockData(dependencyId) == null)
+                .ToList();
 
-                return PackageDependencies.All(OVRProjectSetupUtils.IsPackageInstalled)
-                       && externalBlockDependencies.Any(dependencyId => Utils.GetBlockData(dependencyId) == null);
-            }
-        }
-        private bool IsSingletonAndAlreadyPresent => IsSingleton && IsBlockPresentInScene(Id);
+        private bool IsSingletonAndAlreadyPresent => IsSingleton && IsBlockPresentInScene();
 
         private (bool, int) InstallPackageDependencies()
         {
@@ -239,7 +221,7 @@ namespace Meta.XR.BuildingBlocks.Editor
 
             if (HasMissingDependencies)
             {
-                throw new InvalidOperationException($"A dependency of block {BlockName} is not present in the project.");
+                throw new InvalidOperationException($"A dependency of block {BlockName} is not present in the project: {string.Join(", ", GetMissingDependencies)}");
             }
 
             using (new OVREditorUtils.UndoScope($"Install {Utils.BlockPublicTag} {BlockName}"))
@@ -276,18 +258,13 @@ namespace Meta.XR.BuildingBlocks.Editor
             return spawnedObjects;
         }
 
-        protected virtual List<GameObject> InstallRoutine()
+        protected virtual List<GameObject> InstallRoutine(GameObject selectedGameObject)
         {
             var instance = Instantiate(Prefab, Vector3.zero, Quaternion.identity);
             instance.SetActive(true);
             instance.name = $"{Utils.BlockPublicTag} {BlockName}";
             Undo.RegisterCreatedObjectUndo(instance, "Create " + instance.name);
             return new List<GameObject> { instance };
-        }
-
-        protected virtual List<GameObject> InstallRoutine(GameObject selectedGameObject)
-        {
-            return InstallRoutine();
         }
 
         private static void InstallDependencies(IEnumerable<BlockData> dependencies, GameObject selectedGameObject = null)
@@ -303,12 +280,12 @@ namespace Meta.XR.BuildingBlocks.Editor
             }
         }
 
-        internal static bool IsBlockPresentInScene(string blockId)
+        private static bool IsBlockPresentInScene(string blockId)
         {
             return FindObjectsByType<BuildingBlock>(FindObjectsSortMode.None).Any(x => x.BlockId == blockId);
         }
 
-        public bool IsBlockPresentInScene()
+        private bool IsBlockPresentInScene()
         {
             return IsBlockPresentInScene(Id);
         }

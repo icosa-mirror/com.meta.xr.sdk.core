@@ -19,6 +19,7 @@
  */
 
 using System;
+using System.Text;
 using UnityEngine;
 using static OVRTelemetry;
 
@@ -106,6 +107,7 @@ internal struct OVRTelemetryMarker : IDisposable
 
         State = new OVRTelemetryMarkerState(true, Result);
         _client.MarkerEnd(MarkerId, Result, InstanceKey);
+
         return this;
     }
 
@@ -133,4 +135,5 @@ internal struct OVRTelemetryMarker : IDisposable
             Send();
         }
     }
+
 }

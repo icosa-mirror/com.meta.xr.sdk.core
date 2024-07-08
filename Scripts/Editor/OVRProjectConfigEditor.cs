@@ -89,7 +89,7 @@ public class OVRProjectConfigEditor : Editor
         }
     }
 
-    enum eProjectConfigTab
+    internal enum eProjectConfigTab
     {
         General = 0,
         BuildSettings,
@@ -97,7 +97,7 @@ public class OVRProjectConfigEditor : Editor
         Experimental,
     }
 
-    static eProjectConfigTab selectedTab = 0;
+    internal static eProjectConfigTab selectedTab = 0;
     static string[] projectConfigTabStrs = null;
 
     public static void DrawProjectConfigInspector(OVRProjectConfig projectConfig)
@@ -208,7 +208,8 @@ public class OVRProjectConfigEditor : Editor
                             "Provides a consistent typing experience across Meta Quest VR applications."),
                         ref projectConfig.virtualKeyboardSupport, ref hasModified);
 
-                    if (projectConfig.requiresSystemKeyboard)
+                    if (projectConfig.requiresSystemKeyboard
+                        && projectConfig.virtualKeyboardSupport != OVRProjectConfig.FeatureSupport.None)
                     {
                         EditorGUILayout.HelpBox(
                             "Using the System Keyboard with Virtual Keyboard is not recommended.",

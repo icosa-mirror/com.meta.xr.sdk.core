@@ -22,13 +22,19 @@
 #define OVR_ANDROID_MRC
 #endif
 
+#if UNITY_EDITOR_WIN || UNITY_STANDALONE_WIN || OVR_ANDROID_MRC
+#define SUPPORTED_PLATFORM
+#endif
+
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
 public class OVRMixedRealityCaptureTest : MonoBehaviour
 {
+#if SUPPORTED_PLATFORM
     bool inited = false;
+#endif
 
     enum CameraMode
     {
@@ -37,7 +43,9 @@ public class OVRMixedRealityCaptureTest : MonoBehaviour
         ThirdPerson,
     }
 
+#if SUPPORTED_PLATFORM
     CameraMode currentMode = CameraMode.Normal;
+#endif
 
     public Camera defaultExternalCamera;
     OVRPlugin.Fovf defaultFov;
@@ -45,7 +53,7 @@ public class OVRMixedRealityCaptureTest : MonoBehaviour
     // Use this for initialization
     void Start()
     {
-#if UNITY_EDITOR_WIN || UNITY_STANDALONE_WIN || OVR_ANDROID_MRC
+#if SUPPORTED_PLATFORM
         if (!defaultExternalCamera)
         {
             Debug.LogWarning("defaultExternalCamera undefined");
@@ -63,7 +71,7 @@ public class OVRMixedRealityCaptureTest : MonoBehaviour
 
     void Initialize()
     {
-#if UNITY_EDITOR_WIN || UNITY_STANDALONE_WIN || OVR_ANDROID_MRC
+#if SUPPORTED_PLATFORM
         if (inited)
             return;
 
@@ -96,7 +104,7 @@ public class OVRMixedRealityCaptureTest : MonoBehaviour
 
     void UpdateDefaultExternalCamera()
     {
-#if UNITY_EDITOR_WIN || UNITY_STANDALONE_WIN || OVR_ANDROID_MRC
+#if SUPPORTED_PLATFORM
         // always build a 1080p external camera
         const int cameraPixelWidth = 1920;
         const int cameraPixelHeight = 1080;
@@ -162,7 +170,7 @@ public class OVRMixedRealityCaptureTest : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
-#if UNITY_EDITOR_WIN || UNITY_STANDALONE_WIN || OVR_ANDROID_MRC
+#if SUPPORTED_PLATFORM
         if (!inited)
         {
             Initialize();

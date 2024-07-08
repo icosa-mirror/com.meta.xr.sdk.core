@@ -350,6 +350,8 @@ public readonly partial struct OVRAnchor : IEquatable<OVRAnchor>, IDisposable
         public OVRTask<bool> Task;
         public bool EnabledDesired;
         public ulong RequestId;
+        public double Timeout;
+        public float StartTime;
     }
 
     struct DeferredKey : IEquatable<DeferredKey>
@@ -372,7 +374,7 @@ public readonly partial struct OVRAnchor : IEquatable<OVRAnchor>, IDisposable
     [RuntimeInitializeOnLoadMethod]
     internal static void Init() => _deferredTasks.Clear();
 
-    internal static OVRTask<bool> CreateDeferredSpaceComponentStatusTask(ulong space, SpaceComponentType componentType, bool enabledDesired)
+    internal static OVRTask<bool> CreateDeferredSpaceComponentStatusTask(ulong space, SpaceComponentType componentType, bool enabledDesired, double timeout)
     {
         var key = new DeferredKey
         {
@@ -392,6 +394,8 @@ public readonly partial struct OVRAnchor : IEquatable<OVRAnchor>, IDisposable
         {
             EnabledDesired = enabledDesired,
             Task = task,
+            Timeout = timeout,
+            StartTime = Time.realtimeSinceStartup,
         });
 
         return task;
@@ -430,15 +434,29 @@ public readonly partial struct OVRAnchor : IEquatable<OVRAnchor>, IDisposable
                 // If there's no other change pending, then try to change the component status
                 else if (!changePending)
                 {
-                    if (SetSpaceComponentStatus(eventData.Space, eventData.ComponentType, value.EnabledDesired,
-                            0, out var requestId))
+                    var timeout = value.Timeout;
+                    if (timeout > 0)
                     {
-                        value.RequestId = requestId;
-                        list[i] = value;
+                        // Subtract elapsed time
+                        timeout -= Time.realtimeSinceStartup - value.StartTime;
+                        if (timeout <= 0)
+                        {
+                            result = false;
+                        }
                     }
-                    else
+
+                    if (result == null)
                     {
-                        result = false;
+                        if (SetSpaceComponentStatus(eventData.Space, eventData.ComponentType, value.EnabledDesired,
+                                timeout, out var requestId))
+                        {
+                            value.RequestId = requestId;
+                            list[i] = value;
+                        }
+                        else
+                        {
+                            result = false;
+                        }
                     }
                 }
 

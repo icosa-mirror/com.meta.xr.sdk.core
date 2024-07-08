@@ -65,8 +65,9 @@ namespace Meta.XR.BuildingBlocks.Editor
                                                              Directory.GetDirectories(InstallPath).Length > 0);
         }
 
-        private void OnEnable()
+        internal override void OnEnable()
         {
+            base.OnEnable();
             UpdateInstalledState();
         }
 

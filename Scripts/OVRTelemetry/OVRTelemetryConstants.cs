@@ -19,11 +19,13 @@
  */
 
 using MarkerPoint = OVRTelemetry.MarkerPoint;
+using static OVRTelemetry;
 
 internal static class OVRTelemetryConstants
 {
     public static class OVRManager
     {
+        [Markers]
         public static class MarkerId
         {
             public const int Init = 163069401;
@@ -53,6 +55,7 @@ internal static class OVRTelemetryConstants
 
     public static class Editor
     {
+        [Markers]
         public static class MarkerId
         {
             public const int Start = 163067235;
@@ -67,6 +70,7 @@ internal static class OVRTelemetryConstants
 
     public static class BB
     {
+        [Markers]
         public static class MarkerId
         {
             public const int OpenWindow = 163062905;
@@ -92,8 +96,47 @@ internal static class OVRTelemetryConstants
         }
     }
 
+    public static class GuidedSetup
+    {
+        [Markers]
+        public static class MarkerId
+        {
+            public const int OpenSSAWindow = 163069502;
+            public const int CloseSSAWindow = 163064312;
+            public const int SetAppIdFromGuidedSetup = 163061548;
+            public const int URLOpen = 163066819;
+        }
+
+        public static class AnnotationType
+        {
+            public const string ActionTrigger = "action_trigger";
+            public const string HasAppId = "app_id_exist";
+            public const string GSTSource = "gst_source";
+            public const string URL = "url";
+        }
+    }
+
+    public static class XRSim
+    {
+        [Markers]
+        public static class MarkerId
+        {
+            public const int SESInteraction = 163056472;
+            public const int ToggleState = 163059165;
+            public const int EditorRun = 163063015;
+        }
+
+        public static class AnnotationType
+        {
+            public const string IsActive = "active";
+            public const string Action = "action";
+            public const string XRSimEnabled = "xrsimenabled";
+        }
+    }
+
     public static class Scene
     {
+        [Markers]
         public static class MarkerId
         {
             public const int UseOVRSceneManager = 163061745;

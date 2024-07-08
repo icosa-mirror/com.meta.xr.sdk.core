@@ -21,157 +21,147 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using Meta.XR.Editor.UserInterface;
 using UnityEditor;
 using UnityEngine;
+using static Meta.XR.Editor.UserInterface.Styles;
+using static Meta.XR.Editor.UserInterface.Styles.Constants;
+using static Meta.XR.Editor.UserInterface.Styles.Colors;
+using static Meta.XR.Editor.UserInterface.Styles.Contents;
 
 internal class OVRProjectSetupDrawer
 {
-    internal class Styles
+    internal static class Styles
     {
-        private const float SmallIconSize = 16.0f;
-        private const float FixButtonWidth = 64.0f;
-        private const float FixAllButtonWidth = 80.0f;
-        internal const float GroupSelectionWidth = 244.0f;
-        internal const float LabelWidth = 96f;
-        internal const float TitleLabelWidth = 196f;
-
-        internal readonly GUIStyle Wrap = new GUIStyle(EditorStyles.label)
+        public static class Constants
         {
-            wordWrap = true,
-            alignment = TextAnchor.MiddleLeft,
-            padding = new RectOffset(0, 5, 1, 1)
-        };
+            public const float FixButtonWidth = 64.0f;
+            public const float FixAllButtonWidth = 80.0f;
+            public const float GroupSelectionWidth = 244.0f;
+            public const float LabelWidth = 96f;
+            public const float TitleLabelWidth = 196f;
+        }
 
-        internal readonly GUIStyle IssuesBackground = new GUIStyle("ScrollViewAlt")
+        public static class Contents
         {
-        };
+            public static readonly TextureContent WarningIcon =
+                TextureContent.CreateContent("ovr_icon_category_error.png", OVRProjectSetupUtils.ProjectSetupToolIcons);
+            public static readonly TextureContent ErrorIcon =
+                TextureContent.CreateContent("ovr_icon_category_error.png", OVRProjectSetupUtils.ProjectSetupToolIcons);
+            public static readonly TextureContent InfoIcon =
+                TextureContent.CreateContent("ovr_icon_category_neutral.png", OVRProjectSetupUtils.ProjectSetupToolIcons);
+            public static readonly TextureContent TestPassedIcon =
+                TextureContent.CreateContent("ovr_icon_category_success.png", OVRProjectSetupUtils.ProjectSetupToolIcons);
+        }
 
-        internal readonly GUIStyle ListLabel = new GUIStyle("TV Selection")
+        public class GUIStylesContainer
         {
-            border = new RectOffset(0, 0, 0, 0),
-            padding = new RectOffset(5, 5, 5, 3),
-            margin = new RectOffset(4, 4, 4, 5)
-        };
-
-        internal readonly GUIStyle IssuesTitleLabel = new GUIStyle(EditorStyles.label)
-        {
-            fontSize = 14,
-            wordWrap = false,
-            stretchWidth = false,
-            fontStyle = FontStyle.Bold,
-            padding = new RectOffset(10, 10, 0, 0)
-        };
-
-        internal readonly GUIStyle GenerateReportButton = new GUIStyle(EditorStyles.miniButton)
-        {
-            margin = new RectOffset(0, 10, 2, 2),
-            stretchWidth = false,
-        };
-
-        internal readonly GUIStyle FixButton = new GUIStyle(EditorStyles.miniButton)
-        {
-            margin = new RectOffset(0, 10, 2, 2),
-            stretchWidth = false,
-            fixedWidth = FixButtonWidth,
-        };
-
-        internal readonly GUIStyle FixAllButton = new GUIStyle(EditorStyles.miniButton)
-        {
-            margin = new RectOffset(0, 10, 2, 2),
-            stretchWidth = false,
-            fixedWidth = FixAllButtonWidth,
-        };
-
-        internal readonly GUIStyle InlinedIconStyle = new GUIStyle(EditorStyles.label)
-        {
-            margin = new RectOffset(0, 0, 0, 0),
-            padding = new RectOffset(0, 0, 0, 0),
-            fixedWidth = SmallIconSize,
-            fixedHeight = SmallIconSize
-        };
-
-        internal readonly GUIStyle IconStyle = new GUIStyle(EditorStyles.label)
-        {
-            margin = new RectOffset(5, 5, 4, 5),
-            padding = new RectOffset(0, 0, 0, 0),
-            fixedWidth = SmallIconSize,
-            fixedHeight = SmallIconSize
-        };
-
-        internal readonly GUIStyle SubtitleHelpText = new GUIStyle(EditorStyles.miniLabel)
-        {
-            margin = new RectOffset(10, 0, 0, 0),
-            wordWrap = true
-        };
-
-        internal readonly GUIStyle InternalHelpBox = new GUIStyle(EditorStyles.helpBox)
-        {
-            margin = new RectOffset(5, 5, 5, 5)
-        };
-
-        internal readonly GUIStyle InternalHelpText = new GUIStyle(EditorStyles.miniLabel)
-        {
-            margin = new RectOffset(10, 0, 0, 0),
-            wordWrap = true,
-            fontStyle = FontStyle.Italic,
-            normal =
+            internal readonly GUIStyle Wrap = new GUIStyle(EditorStyles.label)
             {
-                textColor = new Color(0.58f, 0.72f, 0.95f)
-            }
-        };
+                wordWrap = true,
+                alignment = TextAnchor.MiddleLeft,
+                padding = new RectOffset(0, 5, 1, 1)
+            };
 
-        internal readonly GUIStyle NormalStyle = new GUIStyle(EditorStyles.label)
-        {
-            margin = new RectOffset(10, 0, 0, 0),
-            wordWrap = true,
-            stretchWidth = false
-        };
+            internal readonly GUIStyle IssuesBackground = new GUIStyle("ScrollViewAlt")
+            {
+            };
 
-        internal readonly GUIStyle BoldStyle = new GUIStyle(EditorStyles.label)
-        {
-            margin = new RectOffset(0, 0, 0, 0),
-            stretchWidth = false,
-            wordWrap = true,
-            fontStyle = FontStyle.Bold
-        };
+            internal readonly GUIStyle ListLabel = new GUIStyle("TV Selection")
+            {
+                border = new RectOffset(0, 0, 0, 0),
+                padding = new RectOffset(5, 5, 5, 3),
+                margin = new RectOffset(4, 4, 4, 5)
+            };
 
-        internal readonly GUIStyle MiniButton = new GUIStyle(EditorStyles.miniButton)
-        {
-            clipping = TextClipping.Overflow,
-            fixedHeight = 18.0f,
-            fixedWidth = 18.0f,
-            margin = new RectOffset(2, 2, 2, 2),
-            padding = new RectOffset(2, 2, 2, 2)
-        };
+            internal readonly GUIStyle IssuesTitleLabel = new GUIStyle(EditorStyles.label)
+            {
+                fontSize = 14,
+                wordWrap = false,
+                stretchWidth = false,
+                fontStyle = FontStyle.Bold,
+                padding = new RectOffset(10, 10, 0, 0)
+            };
 
-        internal readonly GUIStyle Foldout = new GUIStyle(EditorStyles.foldoutHeader)
-        {
-            margin = new RectOffset(0, 0, 0, 0),
-            padding = new RectOffset(16, 5, 5, 5),
-            fixedHeight = 26.0f
-        };
+            internal readonly GUIStyle GenerateReportButton = new GUIStyle(EditorStyles.miniButton)
+            {
+                margin = new RectOffset(0, 10, 2, 2),
+                stretchWidth = false,
+            };
 
-        internal readonly GUIStyle FoldoutHorizontal = new GUIStyle(EditorStyles.label)
-        {
-            fixedHeight = 26.0f
-        };
+            internal readonly GUIStyle FixButton = new GUIStyle(EditorStyles.miniButton)
+            {
+                margin = new RectOffset(0, 10, 2, 2),
+                stretchWidth = false,
+                fixedWidth = Constants.FixButtonWidth,
+            };
 
-        internal readonly GUIStyle List = new GUIStyle(EditorStyles.helpBox)
-        {
-            margin = new RectOffset(3, 3, 3, 3),
-            padding = new RectOffset(3, 3, 3, 3)
-        };
+            internal readonly GUIStyle FixAllButton = new GUIStyle(EditorStyles.miniButton)
+            {
+                margin = new RectOffset(0, 10, 2, 2),
+                stretchWidth = false,
+                fixedWidth = Constants.FixAllButtonWidth,
+            };
 
-        internal static readonly Color ErrorColor = OVREditorUtils.HexToColor("d55e5e");
-        internal static readonly Color WarningColor = OVREditorUtils.HexToColor("e9974e");
-        internal static readonly Color InfoColor = OVREditorUtils.HexToColor("c4c4c4");
-        internal static readonly Color SuccessColor = OVREditorUtils.HexToColor("4ee99e");
-        internal static readonly Color InternalColor = OVREditorUtils.HexToColor("66aaff");
-        internal static readonly Color LightGray = OVREditorUtils.HexToColor("aaaaaa");
+            internal readonly GUIStyle InlinedIconStyle = new GUIStyle(EditorStyles.label)
+            {
+                margin = new RectOffset(0, 0, 0, 0),
+                padding = new RectOffset(0, 0, 0, 0),
+                fixedWidth = SmallIconSize,
+                fixedHeight = SmallIconSize
+            };
+
+            internal readonly GUIStyle IconStyle = new GUIStyle(EditorStyles.label)
+            {
+                margin = new RectOffset(5, 5, 4, 5),
+                padding = new RectOffset(0, 0, 0, 0),
+                fixedWidth = SmallIconSize,
+                fixedHeight = SmallIconSize
+            };
+
+            internal readonly GUIStyle SubtitleHelpText = new GUIStyle(EditorStyles.miniLabel)
+            {
+                margin = new RectOffset(10, 0, 0, 0),
+                wordWrap = true
+            };
+
+            internal readonly GUIStyle NormalStyle = new GUIStyle(EditorStyles.label)
+            {
+                margin = new RectOffset(10, 0, 0, 0),
+                wordWrap = true,
+                stretchWidth = false
+            };
+
+            internal readonly GUIStyle BoldStyle = new GUIStyle(EditorStyles.label)
+            {
+                margin = new RectOffset(0, 0, 0, 0),
+                stretchWidth = false,
+                wordWrap = true,
+                fontStyle = FontStyle.Bold
+            };
+
+            internal readonly GUIStyle Foldout = new GUIStyle(EditorStyles.foldoutHeader)
+            {
+                margin = new RectOffset(0, 0, 0, 0),
+                padding = new RectOffset(16, 5, 5, 5),
+                fixedHeight = 26.0f
+            };
+
+            internal readonly GUIStyle FoldoutHorizontal = new GUIStyle(EditorStyles.label)
+            {
+                fixedHeight = 26.0f
+            };
+
+            internal readonly GUIStyle List = new GUIStyle(EditorStyles.helpBox)
+            {
+                margin = new RectOffset(3, 3, 3, 3),
+                padding = new RectOffset(3, 3, 3, 3)
+            };
+        }
+
+        private static GUIStylesContainer _guiStyles;
+        public static GUIStylesContainer GUIStyles => _guiStyles ??= new GUIStylesContainer();
     }
-
-    private static Styles _styles;
-    private static Styles styles => _styles ??= new Styles();
 
     private readonly OVRProjectSetupSettingBool _showOutstandingItems =
         new OVRProjectSetupUserSettingBool("ShowOutstandingItems", true);
@@ -189,7 +179,7 @@ internal class OVRProjectSetupDrawer
 
     private static readonly GUIContent Description =
         new GUIContent("This tool maintains a checklist of required setup tasks as well as best practices to " +
-                       "ensure your project is ready to go. Follow our suggestions and fixes to quickly setup your project.");
+                       "ensure your project is ready to go.\nFollow our suggestions and fixes to quickly setup your project.");
 
     private static readonly GUIContent SummaryLabel = new GUIContent("Current project status: ");
     private static readonly GUIContent ListTitle = new GUIContent("Checklist");
@@ -214,12 +204,6 @@ internal class OVRProjectSetupDrawer
     private static readonly GUIContent GenerateReportButtonContent =
         new GUIContent("Generate report", "Generate a report of all the issues");
 
-    internal static readonly OVRGUIContent WarningIcon = OVREditorUtils.CreateContent("ovr_icon_category_error.png", OVRGUIContent.Source.ProjectSetupToolIcons);
-    internal static readonly OVRGUIContent ErrorIcon = OVREditorUtils.CreateContent("ovr_icon_category_error.png", OVRGUIContent.Source.ProjectSetupToolIcons);
-    internal static readonly OVRGUIContent InfoIcon = OVREditorUtils.CreateContent("ovr_icon_category_neutral.png", OVRGUIContent.Source.ProjectSetupToolIcons);
-    internal static readonly OVRGUIContent TestPassedIcon =
-        OVREditorUtils.CreateContent("ovr_icon_category_success.png", OVRGUIContent.Source.ProjectSetupToolIcons);
-
     private const string OutstandingItems = "Outstanding Issues";
     private const string RecommendedItems = "Recommended Items";
     private const string VerifiedItems = "Verified Items";
@@ -232,14 +216,6 @@ internal class OVRProjectSetupDrawer
     private const string TasksRefreshErrorMessage = "Could not refresh the checklist.";
     private const string TasksRefreshSuccessMessage = "Tasks refreshed successfully.";
     private const string OkButton = "ok";
-
-    private static readonly OVRGUIContent ConfigIcon =
-        OVREditorUtils.CreateContent("ovr_icon_cog.png", OVRGUIContent.Source.GenericIcons, "Additional options");
-    private static readonly OVRGUIContent DocumentationIcon =
-        OVREditorUtils.CreateContent("ovr_icon_documentation.png",  OVRGUIContent.Source.GenericIcons, "Go to Documentation");
-
-    private const string DocumentationUrl ="https://developer.oculus.com/documentation/unity/unity-upst-overview";
-
 
     // Internals
     private OVRProjectSetup.TaskGroup _selectedTaskGroup;
@@ -272,9 +248,9 @@ internal class OVRProjectSetupDrawer
         where TEnumType : Enum, IComparable
     {
         var previousLabelWidth = EditorGUIUtility.labelWidth;
-        EditorGUIUtility.labelWidth = Styles.LabelWidth;
+        EditorGUIUtility.labelWidth = Styles.Constants.LabelWidth;
         TEnumType newValue =
-            (TEnumType)EditorGUILayout.EnumPopup(content, currentValue, GUILayout.Width(Styles.GroupSelectionWidth));
+            (TEnumType)EditorGUILayout.EnumPopup(content, currentValue, GUILayout.Width(Styles.Constants.GroupSelectionWidth));
         EditorGUIUtility.labelWidth = previousLabelWidth;
 
         if (!newValue.Equals(currentValue))
@@ -292,7 +268,7 @@ internal class OVRProjectSetupDrawer
         EditorGUIUtility.labelWidth = rect.width - 8;
 
         bool foldout;
-        using (new EditorGUILayout.HorizontalScope(styles.FoldoutHorizontal))
+        using (new EditorGUILayout.HorizontalScope(Styles.GUIStyles.FoldoutHorizontal))
         {
             foldout = Foldout(key, label);
             inlineAdditionalAction?.Invoke();
@@ -305,7 +281,7 @@ internal class OVRProjectSetupDrawer
     private bool Foldout(OVRProjectSetupSettingBool key, string label)
     {
         var currentValue = key.Value;
-        var newValue = EditorGUILayout.Foldout(currentValue, label, true, styles.Foldout);
+        var newValue = EditorGUILayout.Foldout(currentValue, label, true, Styles.GUIStyles.Foldout);
         if (newValue != currentValue)
         {
             key.Value = newValue;
@@ -314,19 +290,19 @@ internal class OVRProjectSetupDrawer
         return newValue;
     }
 
-    private (OVRGUIContent, Color) GetTaskIcon(OVRConfigurationTask task, BuildTargetGroup buildTargetGroup)
+    private (TextureContent, Color) GetTaskIcon(OVRConfigurationTask task, BuildTargetGroup buildTargetGroup)
     {
-        return task.IsDone(buildTargetGroup) ? (TestPassedIcon, Styles.SuccessColor) : GetTaskIcon(task.Level.GetValue(buildTargetGroup));
+        return task.IsDone(buildTargetGroup) ? (Styles.Contents.TestPassedIcon, SuccessColor) : GetTaskIcon(task.Level.GetValue(buildTargetGroup));
     }
 
-    private (OVRGUIContent, Color) GetTaskIcon(OVRProjectSetup.TaskLevel? taskLevel)
+    private (TextureContent, Color) GetTaskIcon(OVRProjectSetup.TaskLevel? taskLevel)
     {
         return taskLevel switch
         {
-            OVRProjectSetup.TaskLevel.Required => (ErrorIcon, Styles.ErrorColor),
-            OVRProjectSetup.TaskLevel.Recommended => (WarningIcon, Styles.WarningColor),
-            OVRProjectSetup.TaskLevel.Optional => (InfoIcon, Styles.InfoColor),
-            _ => (TestPassedIcon, Styles.SuccessColor)
+            OVRProjectSetup.TaskLevel.Required => (Styles.Contents.ErrorIcon, ErrorColor),
+            OVRProjectSetup.TaskLevel.Recommended => (Styles.Contents.WarningIcon, WarningColor),
+            OVRProjectSetup.TaskLevel.Optional => (Styles.Contents.InfoIcon, InfoColor),
+            _ => (Styles.Contents.TestPassedIcon, SuccessColor)
         };
     }
 
@@ -358,7 +334,7 @@ internal class OVRProjectSetupDrawer
         _lastSummary = updater?.Summary;
     }
 
-    private void ShowSettingsMenu()
+    internal static void ShowSettingsMenu()
     {
         var menu = new GenericMenu();
         OVRProjectSetup.Enabled.AppendToMenu(menu);
@@ -392,31 +368,14 @@ internal class OVRProjectSetupDrawer
         menu.ShowAsContext();
     }
 
-    internal void OnTitleBarGUI()
-    {
-        using (new OVREditorUtils.OVRGUIColorScope(OVREditorUtils.OVRGUIColorScope.Scope.Content,
-                   Styles.LightGray))
-        {
-            if (GUILayout.Button(ConfigIcon, styles.MiniButton))
-            {
-                ShowSettingsMenu();
-            }
-
-            if (GUILayout.Button(DocumentationIcon, styles.MiniButton))
-            {
-                Application.OpenURL(DocumentationUrl);
-            }
-        }
-
-    }
-
     internal void OnGUI()
     {
-        // Title
-        GUILayout.Label(Title, styles.IssuesTitleLabel);
-
-        // Short Description
-        GUILayout.Label(Description, styles.SubtitleHelpText);
+        EditorGUILayout.BeginHorizontal(GUIStyles.DialogBox);
+        EditorGUILayout.LabelField(DialogIcon, GUIStyles.DialogIconStyle, GUILayout.Width(GUIStyles.DialogIconStyle.fixedWidth));
+        EditorGUILayout.BeginVertical();
+        EditorGUILayout.LabelField(Description, GUIStyles.DialogTextStyle);
+        EditorGUILayout.EndVertical();
+        EditorGUILayout.EndHorizontal();
 
         EditorGUILayout.Space();
 
@@ -426,19 +385,19 @@ internal class OVRProjectSetupDrawer
             // Summary
             using (new EditorGUILayout.HorizontalScope())
             {
-                GUILayout.Label(SummaryLabel, styles.NormalStyle);
+                GUILayout.Label(SummaryLabel, Styles.GUIStyles.NormalStyle);
                 if (enabled)
                 {
                     var (icon, color) = GetTaskIcon(_lastSummary?.HighestFixLevel);
-                    using (new OVREditorUtils.OVRGUIColorScope(OVREditorUtils.OVRGUIColorScope.Scope.Content, color))
+                    using (new Utils.ColorScope(Utils.ColorScope.Scope.Content, color))
                     {
-                        GUILayout.Label(icon, styles.InlinedIconStyle);
+                        GUILayout.Label(icon, Styles.GUIStyles.InlinedIconStyle);
                     }
-                    GUILayout.Label(_lastSummary?.ComputeNoticeMessage() ?? "", styles.BoldStyle);
+                    GUILayout.Label(_lastSummary?.ComputeNoticeMessage() ?? "", Styles.GUIStyles.BoldStyle);
                 }
                 else
                 {
-                    GUILayout.Label($"{OVRProjectSetupUtils.ProjectSetupToolPublicName} is disabled", styles.BoldStyle);
+                    GUILayout.Label($"{OVRProjectSetupUtils.ProjectSetupToolPublicName} is disabled", Styles.GUIStyles.BoldStyle);
                 }
             }
 
@@ -472,7 +431,7 @@ internal class OVRProjectSetupDrawer
             {
                 // Title
                 GUILayout.Label(ListTitle,
-                    styles.IssuesTitleLabel, GUILayout.Width(Styles.TitleLabelWidth));
+                    Styles.GUIStyles.IssuesTitleLabel, GUILayout.Width(Styles.Constants.TitleLabelWidth));
 
                 GUILayout.FlexibleSpace();
 
@@ -485,7 +444,7 @@ internal class OVRProjectSetupDrawer
             }
 
             // Scroll View
-            _scrollViewPos = EditorGUILayout.BeginScrollView(_scrollViewPos, styles.IssuesBackground,
+            _scrollViewPos = EditorGUILayout.BeginScrollView(_scrollViewPos, Styles.GUIStyles.IssuesBackground,
                 GUILayout.ExpandHeight(true));
 
             DrawCategory(_showOutstandingItems, tasks => tasks
@@ -542,7 +501,7 @@ internal class OVRProjectSetupDrawer
             return;
         }
 
-        using (var scope = new EditorGUILayout.VerticalScope(styles.List))
+        using (var scope = new EditorGUILayout.VerticalScope(Styles.GUIStyles.List))
         {
             var rect = scope.rect;
 
@@ -560,7 +519,7 @@ internal class OVRProjectSetupDrawer
                             : ApplyAllButtonContent;
                         EditorGUI.BeginDisabledGroup(
                             OVRProjectSetup.ProcessorQueue.BusyWith(OVRConfigurationTaskProcessor.ProcessorType.Fixer));
-                        if (GUILayout.Button(content, styles.FixAllButton))
+                        if (GUILayout.Button(content, Styles.GUIStyles.FixAllButton))
                         {
                             OVRProjectSetupSettingsProvider.SetNewInteraction(OVRProjectSetupSettingsProvider
                                 .Interaction.Fixed);
@@ -604,17 +563,17 @@ internal class OVRProjectSetupDrawer
 
         // Note : We're not using scopes, because in this very case, we've got a cross of scopes
         EditorGUI.BeginDisabledGroup(disabled);
-        var clickArea = EditorGUILayout.BeginHorizontal(styles.ListLabel);
+        var clickArea = EditorGUILayout.BeginHorizontal(Styles.GUIStyles.ListLabel);
 
         // Icon
         var (icon, color) = GetTaskIcon(task, buildTargetGroup);
-        using (new OVREditorUtils.OVRGUIColorScope(OVREditorUtils.OVRGUIColorScope.Scope.Content, color))
+        using (new Utils.ColorScope(Utils.ColorScope.Scope.Content, color))
         {
-            GUILayout.Label(icon, styles.IconStyle);
+            GUILayout.Label(icon, Styles.GUIStyles.IconStyle);
         }
 
         // Message
-        GUILayout.Label(new GUIContent(task.Message.GetValue(buildTargetGroup)), styles.Wrap);
+        GUILayout.Label(new GUIContent(task.Message.GetValue(buildTargetGroup)), Styles.GUIStyles.Wrap);
 
         EditorGUI.EndDisabledGroup();
 
@@ -628,7 +587,7 @@ internal class OVRProjectSetupDrawer
             var fixMessage = task.FixMessage.GetValue(buildTargetGroup);
             var tooltip = fixMessage != null ? $"{content.tooltip} :\n{fixMessage}" : content.tooltip;
             content = new GUIContent(content.text, tooltip);
-            if (GUILayout.Button(content, styles.FixButton))
+            if (GUILayout.Button(content, Styles.GUIStyles.FixButton))
             {
                 OVRProjectSetupSettingsProvider.SetNewInteraction(OVRProjectSetupSettingsProvider.Interaction.Fixed);
 

@@ -174,14 +174,12 @@ public class OVRProjectConfig : ScriptableObject, ISerializationCallbackReceiver
     [SerializeField]
     internal SystemLoadingScreenBackground _systemLoadingScreenBackground = SystemLoadingScreenBackground.Black;
 
-#if OVR_UNITY_PACKAGE_MANAGER
     // Store the checksum of native plugins to compare and prompt for editor restarts when changed
     [SerializeField]
     internal string ovrPluginMd5Win64 = null;
 
     [SerializeField]
     internal string ovrPluginMd5Android = null;
-#endif
 
     //public const string OculusProjectConfigAssetPath = "Assets/Oculus/OculusProjectConfig.asset";
 

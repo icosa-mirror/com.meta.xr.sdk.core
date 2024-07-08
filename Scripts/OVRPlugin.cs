@@ -30,6 +30,10 @@
 #define OVRPLUGIN_UNSUPPORTED_PLATFORM
 #endif
 
+#if !(UNITY_EDITOR_WIN || UNITY_EDITOR_OSX || UNITY_STANDALONE_WIN || (UNITY_ANDROID && !UNITY_EDITOR))
+#define OVRPLUGIN_QPL_UNSUPPORTED_PLATFORM
+#endif
+
 
 #if UNITY_ANDROID && !UNITY_EDITOR
 #define OVRPLUGIN_INCLUDE_MRC_ANDROID
@@ -46,19 +50,19 @@ using Unity.Collections.LowLevel.Unsafe;
 
 public static partial class OVRPlugin
 {
-#if OVRPLUGIN_UNSUPPORTED_PLATFORM
+#if OVRPLUGIN_UNSUPPORTED_PLATFORM && OVRPLUGIN_QPL_UNSUPPORTED_PLATFORM
     public const bool isSupportedPlatform = false;
 #else
     public const bool isSupportedPlatform = true;
 #endif
 
-#if OVRPLUGIN_UNSUPPORTED_PLATFORM
+#if OVRPLUGIN_UNSUPPORTED_PLATFORM && OVRPLUGIN_QPL_UNSUPPORTED_PLATFORM
     public static readonly System.Version wrapperVersion = _versionZero;
 #else
-    public static readonly System.Version wrapperVersion = OVRP_1_94_0.version;
+    public static readonly System.Version wrapperVersion = OVRP_1_95_0.version;
 #endif
 
-#if !OVRPLUGIN_UNSUPPORTED_PLATFORM
+#if !(OVRPLUGIN_UNSUPPORTED_PLATFORM && OVRPLUGIN_QPL_UNSUPPORTED_PLATFORM)
     private static System.Version _version;
 #endif
     public static System.Version version
@@ -67,7 +71,7 @@ public static partial class OVRPlugin
         {
 #if OVRPLUGIN_EDITOR_MOCK_ENABLED
             return wrapperVersion;
-#elif OVRPLUGIN_UNSUPPORTED_PLATFORM
+#elif OVRPLUGIN_UNSUPPORTED_PLATFORM && OVRPLUGIN_QPL_UNSUPPORTED_PLATFORM
             Debug.LogWarning("Platform is not currently supported by OVRPlugin");
             return _versionZero;
 #else
@@ -108,14 +112,14 @@ public static partial class OVRPlugin
         }
     }
 
-#if !OVRPLUGIN_UNSUPPORTED_PLATFORM
+#if !(OVRPLUGIN_UNSUPPORTED_PLATFORM && OVRPLUGIN_QPL_UNSUPPORTED_PLATFORM)
     private static System.Version _nativeSDKVersion;
 #endif
     public static System.Version nativeSDKVersion
     {
         get
         {
-#if OVRPLUGIN_UNSUPPORTED_PLATFORM
+#if OVRPLUGIN_UNSUPPORTED_PLATFORM && OVRPLUGIN_QPL_UNSUPPORTED_PLATFORM
             return _versionZero;
 #else
             if (_nativeSDKVersion == null)
@@ -704,10 +708,19 @@ public static partial class OVRPlugin
         public float w;
         public static readonly Quatf identity = new Quatf { x = 0.0f, y = 0.0f, z = 0.0f, w = 1.0f };
 
+        public Quatf(float x, float y, float z, float w)
+        {
+            this.x = x;
+            this.y = y;
+            this.z = z;
+            this.w = w;
+        }
+
         public override string ToString()
         {
             return string.Format(System.Globalization.CultureInfo.InvariantCulture, "{0}, {1}, {2}, {3}", x, y, z, w);
         }
+
     }
 
     [StructLayout(LayoutKind.Sequential)]
@@ -2904,6 +2917,8 @@ public static partial class OVRPlugin
         VirtualKeyboardHidden = 205,
 
 
+
+        PassthroughLayerResumed = 500,
 
 
     }
@@ -5219,6 +5234,7 @@ public static partial class OVRPlugin
         }
 #endif
     }
+
 
     public static bool SetWideMotionModeHandPoses(bool wideMotionModeFusionHandPoses)
     {
@@ -8069,6 +8085,8 @@ public static partial class OVRPlugin
     }
 
     private static HandStateInternal cachedHandState = new HandStateInternal();
+    private static Quaternion LeftBoneRotator = Quaternion.AngleAxis(180f, Vector3.right) * Quaternion.AngleAxis(270f, Vector3.up);
+    private static Quaternion RightBoneRotator = Quaternion.AngleAxis(270f, Vector3.up);
 
     public static bool GetHandState(Step stepId, Hand hand, ref HandState handState)
     {
@@ -8106,30 +8124,33 @@ public static partial class OVRPlugin
                 // unrolling the arrays is necessary to avoid per-frame allocations during marshaling
                 handState.Status = cachedHandState.Status;
                 handState.RootPose = cachedHandState.RootPose;
-                handState.BoneRotations[0] = cachedHandState.BoneRotations_0;
-                handState.BoneRotations[1] = cachedHandState.BoneRotations_1;
-                handState.BoneRotations[2] = cachedHandState.BoneRotations_2;
-                handState.BoneRotations[3] = cachedHandState.BoneRotations_3;
-                handState.BoneRotations[4] = cachedHandState.BoneRotations_4;
-                handState.BoneRotations[5] = cachedHandState.BoneRotations_5;
-                handState.BoneRotations[6] = cachedHandState.BoneRotations_6;
-                handState.BoneRotations[7] = cachedHandState.BoneRotations_7;
-                handState.BoneRotations[8] = cachedHandState.BoneRotations_8;
-                handState.BoneRotations[9] = cachedHandState.BoneRotations_9;
-                handState.BoneRotations[10] = cachedHandState.BoneRotations_10;
-                handState.BoneRotations[11] = cachedHandState.BoneRotations_11;
-                handState.BoneRotations[12] = cachedHandState.BoneRotations_12;
-                handState.BoneRotations[13] = cachedHandState.BoneRotations_13;
-                handState.BoneRotations[14] = cachedHandState.BoneRotations_14;
-                handState.BoneRotations[15] = cachedHandState.BoneRotations_15;
-                handState.BoneRotations[16] = cachedHandState.BoneRotations_16;
-                handState.BoneRotations[17] = cachedHandState.BoneRotations_17;
-                handState.BoneRotations[18] = cachedHandState.BoneRotations_18;
-                handState.BoneRotations[19] = cachedHandState.BoneRotations_19;
-                handState.BoneRotations[20] = cachedHandState.BoneRotations_20;
-                handState.BoneRotations[21] = cachedHandState.BoneRotations_21;
-                handState.BoneRotations[22] = cachedHandState.BoneRotations_22;
-                handState.BoneRotations[23] = cachedHandState.BoneRotations_23;
+
+                        handState.BoneRotations[0] = cachedHandState.BoneRotations_0;
+                        handState.BoneRotations[1] = cachedHandState.BoneRotations_1;
+                        handState.BoneRotations[2] = cachedHandState.BoneRotations_2;
+                        handState.BoneRotations[3] = cachedHandState.BoneRotations_3;
+                        handState.BoneRotations[4] = cachedHandState.BoneRotations_4;
+                        handState.BoneRotations[5] = cachedHandState.BoneRotations_5;
+                        handState.BoneRotations[6] = cachedHandState.BoneRotations_6;
+                        handState.BoneRotations[7] = cachedHandState.BoneRotations_7;
+                        handState.BoneRotations[8] = cachedHandState.BoneRotations_8;
+                        handState.BoneRotations[9] = cachedHandState.BoneRotations_9;
+                        handState.BoneRotations[10] = cachedHandState.BoneRotations_10;
+                        handState.BoneRotations[11] = cachedHandState.BoneRotations_11;
+                        handState.BoneRotations[12] = cachedHandState.BoneRotations_12;
+                        handState.BoneRotations[13] = cachedHandState.BoneRotations_13;
+                        handState.BoneRotations[14] = cachedHandState.BoneRotations_14;
+                        handState.BoneRotations[15] = cachedHandState.BoneRotations_15;
+                        handState.BoneRotations[16] = cachedHandState.BoneRotations_16;
+                        handState.BoneRotations[17] = cachedHandState.BoneRotations_17;
+                        handState.BoneRotations[18] = cachedHandState.BoneRotations_18;
+                        handState.BoneRotations[19] = cachedHandState.BoneRotations_19;
+                        handState.BoneRotations[20] = cachedHandState.BoneRotations_20;
+                        handState.BoneRotations[21] = cachedHandState.BoneRotations_21;
+                        handState.BoneRotations[22] = cachedHandState.BoneRotations_22;
+                        handState.BoneRotations[23] = cachedHandState.BoneRotations_23;
+
+
                 handState.Pinches = cachedHandState.Pinches;
                 handState.PinchStrength[0] = cachedHandState.PinchStrength_0;
                 handState.PinchStrength[1] = cachedHandState.PinchStrength_1;
@@ -8159,7 +8180,7 @@ public static partial class OVRPlugin
             return false;
         }
 #endif
-    }
+            }
 
 
     public static bool IsValidBone(BoneId bone, SkeletonType skeletonType)
@@ -8378,6 +8399,7 @@ public static partial class OVRPlugin
         () => cachedSkeleton3.Bones_82,
         () => cachedSkeleton3.Bones_83,
     };
+
     public static bool GetSkeleton2(SkeletonType skeletonType, ref Skeleton2 skeleton)
     {
 #if OVRPLUGIN_UNSUPPORTED_PLATFORM
@@ -10958,6 +10980,8 @@ public static partial class OVRPlugin
 
 
 
+
+
     public class UnityOpenXR
     {
         public static bool Enabled = false; // OculusXRFeature will set it to true when being used
@@ -11138,6 +11162,20 @@ public static partial class OVRPlugin
 #endif // OVRPLUGIN_UNSUPPORTED_PLATFORM
     }
 
+
+    public static Result SetDeveloperTelemetryConsent(Bool consent)
+    {
+#if OVRPLUGIN_UNSUPPORTED_PLATFORM
+        return Result.Failure_Unsupported;
+#else
+        if (version < OVRP_1_95_0.version)
+        {
+            return Result.Failure_Unsupported;
+        }
+        return OVRP_1_95_0.ovrp_SetDeveloperTelemetryConsent(consent);
+#endif
+    }
+
     public static class Qpl
     {
         public const int DefaultInstanceKey = 0;
@@ -11153,7 +11191,7 @@ public static partial class OVRPlugin
 
         public static void SetConsent(Bool consent)
         {
-#if !(UNITY_EDITOR_WIN || UNITY_STANDALONE_WIN || (UNITY_ANDROID && !UNITY_EDITOR))
+#if OVRPLUGIN_QPL_UNSUPPORTED_PLATFORM
             return;
 #else
             if (version < OVRP_1_92_0.version) return;
@@ -11164,7 +11202,7 @@ public static partial class OVRPlugin
         public static void MarkerStart(int markerId, int instanceKey = DefaultInstanceKey,
             long timestampMs = AutoSetTimestampMs)
         {
-#if OVRPLUGIN_UNSUPPORTED_PLATFORM
+#if OVRPLUGIN_QPL_UNSUPPORTED_PLATFORM
             return;
 #else
             if (version < OVRP_1_79_0.version) return;
@@ -11175,7 +11213,7 @@ public static partial class OVRPlugin
         public static void MarkerEnd(int markerId, Qpl.ResultType resultTypeId = Qpl.ResultType.Success,
             int instanceKey = Qpl.DefaultInstanceKey, long timestampMs = Qpl.AutoSetTimestampMs)
         {
-#if OVRPLUGIN_UNSUPPORTED_PLATFORM
+#if OVRPLUGIN_QPL_UNSUPPORTED_PLATFORM
             return;
 #else
             if (version < OVRP_1_79_0.version) return;
@@ -11186,7 +11224,7 @@ public static partial class OVRPlugin
         public static void MarkerPointCached(int markerId, int nameHandle,
             int instanceKey = Qpl.DefaultInstanceKey, long timestampMs = Qpl.AutoSetTimestampMs)
         {
-#if OVRPLUGIN_UNSUPPORTED_PLATFORM
+#if OVRPLUGIN_QPL_UNSUPPORTED_PLATFORM
             return;
 #else
             if (version < OVRP_1_79_0.version) return;
@@ -11197,7 +11235,7 @@ public static partial class OVRPlugin
         public static void MarkerAnnotation(int markerId, string annotationKey,
             string annotationValue, int instanceKey = Qpl.DefaultInstanceKey)
         {
-#if OVRPLUGIN_UNSUPPORTED_PLATFORM
+#if OVRPLUGIN_QPL_UNSUPPORTED_PLATFORM
             return;
 #else
             if (version < OVRP_1_79_0.version) return;
@@ -11208,7 +11246,7 @@ public static partial class OVRPlugin
 
         public static bool CreateMarkerHandle(string name, out int nameHandle)
         {
-#if OVRPLUGIN_UNSUPPORTED_PLATFORM
+#if OVRPLUGIN_QPL_UNSUPPORTED_PLATFORM
             nameHandle = 0;
             return false;
 #else
@@ -11224,7 +11262,7 @@ public static partial class OVRPlugin
 
         public static bool DestroyMarkerHandle(int nameHandle)
         {
-#if OVRPLUGIN_UNSUPPORTED_PLATFORM
+#if OVRPLUGIN_QPL_UNSUPPORTED_PLATFORM
             return false;
 #else
             if (version < OVRPlugin.OVRP_1_79_0.version) return false;
@@ -11237,7 +11275,7 @@ public static partial class OVRPlugin
     private static System.Version _versionZero = new System.Version(0, 0, 0);
 
     // Disable all the DllImports when the platform is not supported
-#if !OVRPLUGIN_UNSUPPORTED_PLATFORM
+#if !(OVRPLUGIN_UNSUPPORTED_PLATFORM && OVRPLUGIN_QPL_UNSUPPORTED_PLATFORM)
 
     private static class OVRP_0_1_0
     {
@@ -11445,7 +11483,6 @@ public static partial class OVRPlugin
         [DllImport(pluginName, CallingConvention = CallingConvention.Cdecl)]
         public static extern Bool ovrp_SetUserEyeHeight(float value);
     }
-
     private static class OVRP_1_2_0
     {
         public static readonly System.Version version = new System.Version(1, 2, 0);
@@ -12329,7 +12366,7 @@ public static partial class OVRPlugin
         public static extern Result ovrp_UpdateInsightPassthroughGeometryTransform(ulong geometryInstanceHandle,
             Matrix4x4 T_world_model);
     }
-#endif // !OVRPLUGIN_UNSUPPORTED_PLATFORM
+#endif // !(OVRPLUGIN_UNSUPPORTED_PLATFORM && OVRPLUGIN_QPL_UNSUPPORTED_PLATFORM)
 
     private static class OVRP_1_64_0
     {
@@ -12980,8 +13017,16 @@ public static partial class OVRPlugin
     private static class OVRP_1_94_0
     {
         public static readonly System.Version version = new System.Version(1, 94, 0);
+
     }
 
-    /* INSERT NEW OVRP CLASS ABOVE THIS LINE */
-    // After modify this file, run `fbpython arvr/projects/integrations/codegen/generate_mockovrplugin.py` to update OculusInternal/Tests/MockOVRPlugin.cs
+    private static class OVRP_1_95_0
+    {
+        public static readonly System.Version version = new System.Version(1, 95, 0);
+
+
+        [DllImport(pluginName, CallingConvention = CallingConvention.Cdecl)]
+        public static extern Result ovrp_SetDeveloperTelemetryConsent(Bool consent);
+    }
+
 }

@@ -20,9 +20,12 @@
 
 using System;
 using Meta.XR.Editor.Tags;
+using Meta.XR.Editor.UserInterface;
 using UnityEditor;
 using UnityEditorInternal;
 using UnityEngine;
+using static Meta.XR.Editor.UserInterface.Styles.Constants;
+using static Meta.XR.Editor.UserInterface.Utils;
 
 namespace Meta.XR.BuildingBlocks.Editor
 {
@@ -122,7 +125,7 @@ namespace Meta.XR.BuildingBlocks.Editor
         private void DrawThumbnail(BlockData blockData)
         {
             var currentWidth = EditorGUIUtility.currentViewWidth;
-            var expectedHeight = currentWidth / Styles.ThumbnailRatio;
+            var expectedHeight = currentWidth / Styles.Constants.ThumbnailRatio;
             expectedHeight *= 0.5f;
 
             // Thumbnail
@@ -133,7 +136,7 @@ namespace Meta.XR.BuildingBlocks.Editor
             GUI.DrawTexture(rect, blockData.Thumbnail, ScaleMode.ScaleAndCrop);
 
             // Statuses
-            GUILayout.BeginArea(new Rect(Styles.TagStyle.margin.left, Styles.TagStyle.margin.top, currentWidth, expectedHeight));
+            GUILayout.BeginArea(new Rect(Styles.GUIStyles.TagStyle.margin.left, Styles.GUIStyles.TagStyle.margin.top, currentWidth, expectedHeight));
             foreach (var tag in blockData.Tags)
             {
                 if (tag.Behavior.ShowOverlay)
@@ -148,23 +151,23 @@ namespace Meta.XR.BuildingBlocks.Editor
             rect.x -= 20;
             rect.width += 40;
             rect.y -= 4;
-            GUI.DrawTexture(rect, OVREditorUtils.MakeTexture(1, 1, Styles.Colors.AccentColor),
+            GUI.DrawTexture(rect, Styles.Colors.AccentColor.ToTexture(),
                 ScaleMode.ScaleAndCrop);
         }
 
         private void DrawTag(Tag tag, bool overlay = false)
         {
             var tagBehavior = tag.Behavior;
-            var style = tagBehavior.Icon != null ? Styles.TagStyleWithIcon : Styles.TagStyle;
-            var backgroundColors = overlay ? Styles.TagOverlayBackgroundColors : Styles.TagBackgroundColors;
+            var style = tagBehavior.Icon != null ? Styles.GUIStyles.TagStyleWithIcon : Styles.GUIStyles.TagStyle;
+            var backgroundColors = overlay ? Styles.GUIStyles.TagOverlayBackgroundColors : Styles.GUIStyles.TagBackgroundColors;
 
             var tagContent = new GUIContent(tag.Name);
             var tagSize = style.CalcSize(tagContent);
             var rect = GUILayoutUtility.GetRect(tagContent, style, GUILayout.MinWidth(tagSize.x + 1));
             var color = backgroundColors.GetColor(false, false);
-            using (new OVREditorUtils.OVRGUIColorScope(OVREditorUtils.OVRGUIColorScope.Scope.Background, color))
+            using (new ColorScope(ColorScope.Scope.Background, color))
             {
-                using (new OVREditorUtils.OVRGUIColorScope(OVREditorUtils.OVRGUIColorScope.Scope.Content,
+                using (new ColorScope(ColorScope.Scope.Content,
                            tagBehavior.Color))
                 {
                     if (GUI.Button(rect, tagContent, style))
@@ -173,7 +176,7 @@ namespace Meta.XR.BuildingBlocks.Editor
 
                     if (tagBehavior.Icon != null)
                     {
-                        GUI.Label(rect, tagBehavior.Icon, Styles.TagIcon);
+                        GUI.Label(rect, tagBehavior.Icon, Styles.GUIStyles.TagIcon);
                     }
                 }
             }

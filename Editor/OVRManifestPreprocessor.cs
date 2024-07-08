@@ -401,8 +401,7 @@ public class OVRManifestPreprocessor
             "uses-permission",
             "com.oculus.permission.IMPORT_EXPORT_IOT_MAP_DATA",
             sharedAnchorEntryNeeded,
-            modifyIfFound,
-            "required", targetSharedAnchorSupport.ToRequiredAttributeValue());
+            modifyIfFound);
 
 
         //============================================================================

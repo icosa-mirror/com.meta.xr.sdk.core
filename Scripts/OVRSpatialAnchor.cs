@@ -457,17 +457,17 @@ public partial class OVRSpatialAnchor : MonoBehaviour
 
         if (_anchor.TryGetComponent<OVRLocatable>(out var locatable))
         {
-            locatable.SetEnabledSafeAsync(true);
+            locatable.SetEnabledAsync(true);
         }
 
         if (_anchor.TryGetComponent<OVRStorable>(out var storable))
         {
-            storable.SetEnabledSafeAsync(true);
+            storable.SetEnabledAsync(true);
         }
 
         if (_anchor.TryGetComponent<OVRSharable>(out var sharable))
         {
-            sharable.SetEnabledSafeAsync(true);
+            sharable.SetEnabledAsync(true);
         }
 
         // Try to update the pose as soon as we can.
@@ -607,9 +607,6 @@ public partial class OVRSpatialAnchor : MonoBehaviour
         }
     }
 
-    private static bool TryExtractValue<TKey, TValue>(Dictionary<TKey, TValue> dict, TKey key, out TValue value) =>
-        dict.TryGetValue(key, out value) && dict.Remove(key);
-
     private struct MultiAnchorDelegatePair
     {
         public List<OVRSpatialAnchor> Anchors;
@@ -660,7 +657,7 @@ public partial class OVRSpatialAnchor : MonoBehaviour
     private static void InvokeMultiAnchorDelegate(ulong requestId, OperationResult result,
         MultiAnchorActionType actionType)
     {
-        if (!TryExtractValue(MultiAnchorCompletionDelegates, requestId, out var value))
+        if (!MultiAnchorCompletionDelegates.Remove(requestId, out var value))
         {
             return;
         }
@@ -722,7 +719,7 @@ public partial class OVRSpatialAnchor : MonoBehaviour
             $"[{uuid}] Spatial anchor created.",
             $"Failed to create spatial anchor. Destroying {nameof(OVRSpatialAnchor)} component.");
 
-        if (!TryExtractValue(CreationRequests, requestId, out var anchor)) return;
+        if (!CreationRequests.Remove(requestId, out var anchor)) return;
 
         if (success && anchor)
         {
@@ -760,17 +757,17 @@ public partial class OVRSpatialAnchor : MonoBehaviour
     }
 
     /// <summary>
-    /// Options for loading unbound spatial anchors used by <see cref="OVRSpatialAnchor.LoadUnboundAnchors"/>.
+    /// Options for loading unbound spatial anchors used by <see cref="OVRSpatialAnchor.LoadUnboundAnchorsAsync"/>.
     /// </summary>
     /// <example>
     /// This example shows how to create LoadOptions for loading anchors when given a set of UUIDs.
-    /// <code>
+    /// <example><code><![CDATA[
     /// OVRSpatialAnchor.LoadOptions options = new OVRSpatialAnchor.LoadOptions
     /// {
     ///     Timeout = 0,
     ///     Uuids = savedAnchorUuids
     /// };
-    /// </code>
+    /// ]]></code></example>
     /// </example>
     public struct LoadOptions
     {
@@ -812,10 +809,10 @@ public partial class OVRSpatialAnchor : MonoBehaviour
         /// The set of spatial anchors to query, identified by their UUIDs.
         /// </summary>
         /// <remarks>
-        /// The UUIDs are copied by the <see cref="OVRSpatialAnchor.LoadUnboundAnchors"/> method and no longer
+        /// The UUIDs are copied by the <see cref="OVRSpatialAnchor.LoadUnboundAnchorsAsync"/> method and no longer
         /// referenced internally afterwards.
         ///
-        /// You must supply a list of UUIDs. <see cref="OVRSpatialAnchor.LoadUnboundAnchors"/> will throw if this
+        /// You must supply a list of UUIDs. <see cref="OVRSpatialAnchor.LoadUnboundAnchorsAsync"/> will throw if this
         /// property is null.
         /// </remarks>
         /// <exception cref="System.ArgumentException">Thrown if <see cref="Uuids"/> contains more
@@ -899,24 +896,11 @@ public partial class OVRSpatialAnchor : MonoBehaviour
             }
         }
 
-        private void ValidateLocalization()
-        {
-            if (!OVRPlugin.GetSpaceComponentStatus(_space, OVRPlugin.SpaceComponentType.Locatable, out var enabled,
-                    out var changePending))
-                throw new InvalidOperationException($"[{Uuid}] {nameof(UnboundAnchor)} does not support localization.");
-
-            if (enabled)
-                throw new InvalidOperationException($"[{Uuid}] Anchor has already been localized.");
-
-            if (changePending)
-                throw new InvalidOperationException($"[{Uuid}] Anchor is currently being localized.");
-        }
-
         /// <summary>
         /// Localizes an anchor.
         /// </summary>
         /// <remarks>
-        /// The delegate supplied to <see cref="OVRSpatialAnchor.LoadUnboundAnchors"/> receives an array of unbound
+        /// The delegate supplied to <see cref="OVRSpatialAnchor.LoadUnboundAnchorsAsync"/> receives an array of unbound
         /// spatial anchors. You can choose whether to localize each one and be notified when localization completes.
         ///
         /// Upon successful localization, your delegate should instantiate an <see cref="OVRSpatialAnchor"/>, then bind
@@ -929,36 +913,22 @@ public partial class OVRSpatialAnchor : MonoBehaviour
         /// <returns>
         /// An <see cref="OVRTask{TResult}"/> with a boolean type parameter indicating the success of the localization.
         /// </returns>
-        /// <exception cref="InvalidOperationException">Thrown if
-        /// - The anchor does not support localization, e.g., because it is invalid.
-        /// - The anchor has already been localized.
-        /// - The anchor is being localized, e.g., because <see cref="Localize"/> was previously called.
-        /// </exception>
+        /// <exception cref="InvalidOperationException">Thrown if the anchor does not support localization, e.g.,
+        /// because it is invalid.</exception>
         public OVRTask<bool> LocalizeAsync(double timeout = 0)
         {
-            ValidateLocalization();
-
-            var setStatus = OVRPlugin.SetSpaceComponentStatus(_space, OVRPlugin.SpaceComponentType.Locatable, true,
-                timeout, out var requestId);
-
-            if (!setStatus)
+            var anchor = new OVRAnchor(_space, Uuid);
+            if (anchor.TryGetComponent<OVRStorable>(out var storable))
             {
-                Development.LogError($"[{Uuid}] {nameof(OVRPlugin.SetSpaceComponentStatus)} failed.");
-                return OVRTask.FromResult(false);
+                storable.SetEnabledAsync(true);
             }
 
-            Development.LogRequest(requestId,
-                $"[{Uuid}] {nameof(OVRPlugin.SetSpaceComponentStatus)} enable {nameof(OVRPlugin.SpaceComponentType.Locatable)}.");
+            if (anchor.TryGetComponent<OVRSharable>(out var sharable))
+            {
+                sharable.SetEnabledAsync(true);
+            }
 
-            AddStorableAndShareableComponents();
-
-            return OVRTask.FromRequest<bool>(requestId);
-        }
-
-        private void AddStorableAndShareableComponents()
-        {
-            OVRPlugin.SetSpaceComponentStatus(_space, OVRPlugin.SpaceComponentType.Storable, true, 0, out _);
-            OVRPlugin.SetSpaceComponentStatus(_space, OVRPlugin.SpaceComponentType.Sharable, true, 0, out _);
+            return anchor.GetComponent<OVRLocatable>().SetEnabledAsync(true, timeout);
         }
 
         /// <summary>
@@ -1036,6 +1006,7 @@ public partial class OVRSpatialAnchor : MonoBehaviour
         Development.LogRequest(requestId, $"{nameof(OVRPlugin.QuerySpaces)}: Query created.");
         return OVRTask.FromRequest<UnboundAnchor[]>(requestId);
     }
+
 
     /// <summary>
     /// Create an unbound spatial anchor from an <seealso cref="OVRAnchor"/>.

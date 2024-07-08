@@ -18,14 +18,10 @@
  * limitations under the License.
  */
 
-using System.Collections.Generic;
-
 namespace Meta.XR.Editor.Tags
 {
     internal interface ITaggable
     {
         TagArray Tags { get; }
-        bool HasTag(Tag tag);
-        bool HasAnyTag(IEnumerable<Tag> tags);
     }
 }

@@ -28,7 +28,7 @@ namespace Meta.XR.BuildingBlocks.Editor
 {
     public class HandTrackingBlockData : BlockData
     {
-        protected override List<GameObject> InstallRoutine()
+        protected override List<GameObject> InstallRoutine(GameObject selectedGameObject)
         {
             var cameraRigBB = Utils.GetBlocksWithType<OVRCameraRig>().First();
 

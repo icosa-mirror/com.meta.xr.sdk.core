@@ -146,7 +146,7 @@ public class OVRSceneRoom : MonoBehaviour, IOVRSceneComponent
                 continue;
             }
 
-            locatableComponent.SetEnabledSafeAsync(true).ContinueWith(_onAnchorLocalizationCompleted, anchor);
+            locatableComponent.SetEnabledAsync(true).ContinueWith(_onAnchorLocalizationCompleted, anchor);
         }
     }
 

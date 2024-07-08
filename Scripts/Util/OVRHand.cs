@@ -90,7 +90,8 @@ public class OVRHand : MonoBehaviour,
 
     private void Awake()
     {
-        _pointerPoseGO = new GameObject();
+        _pointerPoseGO = new GameObject($"{HandType} {nameof(PointerPose)}");
+        _pointerPoseGO.hideFlags = HideFlags.HideAndDontSave;
         PointerPose = _pointerPoseGO.transform;
         if (_pointerPoseRoot != null)
         {

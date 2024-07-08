@@ -27,8 +27,31 @@ public partial class OVRUnityHumanoidSkeletonRetargeter
     /// <summary>
     /// This class contains mappings between Unity Humanoid Rig bones and Oculus Body Tracking bones
     /// </summary>
-    public static class OVRHumanBodyBonesMappings
+    public class OVRHumanBodyBonesMappings : OVRHumanBodyBonesMappingsInterface
     {
+        /// <inheritdoc />
+        public Dictionary<HumanBodyBones, Tuple<HumanBodyBones, HumanBodyBones>> GetBoneToJointPair
+            => BoneToJointPair;
+
+        /// <inheritdoc />
+        public Dictionary<HumanBodyBones, BodySection> GetBoneToBodySection => BoneToBodySection;
+
+        /// <inheritdoc />
+        public Dictionary<OVRSkeleton.BoneId, HumanBodyBones> GetFullBodyBoneIdToHumanBodyBone
+            => FullBodyBoneIdToHumanBodyBone;
+
+        /// <inheritdoc />
+        public Dictionary<OVRSkeleton.BoneId, HumanBodyBones> GetBoneIdToHumanBodyBone
+            => BoneIdToHumanBodyBone;
+
+        /// <inheritdoc />
+        public Dictionary<OVRSkeleton.BoneId, Tuple<OVRSkeleton.BoneId, OVRSkeleton.BoneId>>
+            GetFullBodyBoneIdToJointPair => FullBoneIdToJointPair;
+
+        /// <inheritdoc />
+        public Dictionary<OVRSkeleton.BoneId, Tuple<OVRSkeleton.BoneId, OVRSkeleton.BoneId>>
+            GetBoneIdToJointPair => BoneIdToJointPair;
+
         /// <summary>
         /// Corresponds to major sections of the body (left food, chest, etc).
         /// </summary>
@@ -51,7 +74,7 @@ public partial class OVRUnityHumanoidSkeletonRetargeter
         /// <summary>
         /// Body tracking bone IDs that should be exposed through the inspector.
         /// BoneId has enum values that map to the same integers, which would not work
-        /// with a serialized field that expects unique integers. BodyTrackingBoneId
+        /// with a serialized field that expects unique integers. FullBodyTrackingBoneId
         /// is an enum that restricts BoneId to the values that we care about.
         /// </summary>
         public enum FullBodyTrackingBoneId
@@ -148,6 +171,13 @@ public partial class OVRUnityHumanoidSkeletonRetargeter
             NoOverride = OVRPlugin.BoneId.FullBody_End + 1,
             Remove = OVRPlugin.BoneId.FullBody_End + 2
         };
+
+        /// <summary>
+        /// Body tracking bone IDs that should be exposed through the inspector.
+        /// BoneId has enum values that map to the same integers, which would not work
+        /// with a serialized field that expects unique integers. BodyTrackingBoneId
+        /// is an enum that restricts BoneId to the values that we care about.
+        /// </summary>
         public enum BodyTrackingBoneId
         {
             Body_Start = OVRPlugin.BoneId.Body_Start,
@@ -637,6 +667,7 @@ public partial class OVRUnityHumanoidSkeletonRetargeter
                 { OVRSkeleton.BoneId.FullBody_RightFootAnkle, HumanBodyBones.RightFoot },
                 { OVRSkeleton.BoneId.FullBody_RightFootBall, HumanBodyBones.RightToes },
             };
+
         public static readonly Dictionary<OVRSkeleton.BoneId, HumanBodyBones> BoneIdToHumanBodyBone =
             new Dictionary<OVRSkeleton.BoneId, HumanBodyBones>()
             {
@@ -905,7 +936,7 @@ public partial class OVRUnityHumanoidSkeletonRetargeter
                 {
                     OVRSkeleton.BoneId.FullBody_LeftHandLittleTip,
                     new Tuple<OVRSkeleton.BoneId, OVRSkeleton.BoneId>(OVRSkeleton.BoneId.FullBody_LeftHandLittleDistal,
-                        OVRSkeleton.BoneId.FullBody_LeftHandRingTip)
+                        OVRSkeleton.BoneId.FullBody_LeftHandLittleTip)
                 },
 
                 {
@@ -1075,7 +1106,7 @@ public partial class OVRUnityHumanoidSkeletonRetargeter
                 {
                     OVRSkeleton.BoneId.FullBody_RightHandLittleTip,
                     new Tuple<OVRSkeleton.BoneId, OVRSkeleton.BoneId>(OVRSkeleton.BoneId.FullBody_RightHandLittleDistal,
-                        OVRSkeleton.BoneId.FullBody_RightHandRingTip)
+                        OVRSkeleton.BoneId.FullBody_RightHandLittleTip)
                 },
 
                 {
@@ -1120,6 +1151,7 @@ public partial class OVRUnityHumanoidSkeletonRetargeter
                         OVRSkeleton.BoneId.FullBody_RightFootBall)
                 },
             };
+
         public static readonly Dictionary<OVRSkeleton.BoneId, Tuple<OVRSkeleton.BoneId, OVRSkeleton.BoneId>>
             BoneIdToJointPair = new Dictionary<OVRSkeleton.BoneId, Tuple<OVRSkeleton.BoneId, OVRSkeleton.BoneId>>()
             {
@@ -1321,7 +1353,7 @@ public partial class OVRUnityHumanoidSkeletonRetargeter
                 {
                     OVRSkeleton.BoneId.Body_LeftHandLittleTip,
                     new Tuple<OVRSkeleton.BoneId, OVRSkeleton.BoneId>(OVRSkeleton.BoneId.Body_LeftHandLittleDistal,
-                        OVRSkeleton.BoneId.Body_LeftHandRingTip)
+                        OVRSkeleton.BoneId.Body_LeftHandLittleTip)
                 },
 
                 {
@@ -1481,7 +1513,7 @@ public partial class OVRUnityHumanoidSkeletonRetargeter
                 {
                     OVRSkeleton.BoneId.Body_RightHandLittleTip,
                     new Tuple<OVRSkeleton.BoneId, OVRSkeleton.BoneId>(OVRSkeleton.BoneId.Body_RightHandLittleDistal,
-                        OVRSkeleton.BoneId.Body_RightHandRingTip)
+                        OVRSkeleton.BoneId.Body_RightHandLittleTip)
                 },
             };
     }

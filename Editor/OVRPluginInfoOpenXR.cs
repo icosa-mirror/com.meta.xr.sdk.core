@@ -19,32 +19,51 @@
  */
 
 
-#if OVR_UNITY_PACKAGE_MANAGER
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Security.Cryptography;
+using System.Text;
 using UnityEditor;
 using UnityEngine;
 
 namespace Oculus.VR.Editor
 {
+    public enum PluginPlatform
+    {
+        Android,
+        AndroidUniversal,
+        AndroidOpenXR,
+        OSXUniversal,
+        Win,
+        Win64,
+        Win64OpenXR,
+    }
+
+    public struct PluginPlatformInfo
+    {
+        public string pluginName;
+        public string folderName;
+
+        public PluginPlatformInfo(string pluginName, string folderName)
+        {
+            this.pluginName = pluginName;
+            this.folderName = folderName;
+        }
+    }
+
     [InitializeOnLoad]
     public class OVRPluginInfoOpenXR : IOVRPluginInfoSupplier
     {
-        private const string PackageName = "com.meta.xr.sdk.core";
-
-        private static readonly string PluginsRelPath =
-            Path.Combine("Packages", PackageName, "Plugins");
-
-        private static readonly string PluginRelPathWin64 =
-            Path.Combine(PluginsRelPath, "Win64OpenXR", "OVRPlugin.dll");
-
-        private static readonly string PluginRelPathAndroid =
-            Path.Combine(PluginsRelPath, "AndroidOpenXR", "OVRPlugin.aar");
-
         private static bool _unityRunningInBatchMode;
-        private static bool _restartPending;
+        private static readonly string _isRestartPendingKey = "OVRPluginInfoOpenXR_IsRestartPending";
+
+        public static readonly IReadOnlyDictionary<PluginPlatform, PluginPlatformInfo> _pluginInfos =
+            new Dictionary<PluginPlatform, PluginPlatformInfo>(){
+                {PluginPlatform.AndroidOpenXR, new PluginPlatformInfo("OVRPlugin.aar", "AndroidOpenXR") },
+                {PluginPlatform.Win64OpenXR, new PluginPlatformInfo("OVRPlugin.dll", "Win64OpenXR") },
+            };
 
         public bool IsOVRPluginOpenXRActivated() => true;
 
@@ -62,32 +81,63 @@ namespace Oculus.VR.Editor
                 _unityRunningInBatchMode = true;
             }
 
-            if (_restartPending)
+            if (GetIsRestartPending())
             {
                 return;
             }
 
-            CheckHasPluginChanged();
+            CheckHasPluginChanged(false);
         }
 
-        private static void CheckHasPluginChanged()
+        private static void CheckHasPluginChanged(bool forceUpdate)
         {
+            string win64Path = GetOVRPluginPath(PluginPlatform.Win64OpenXR);
+            string androidPath = GetOVRPluginPath(PluginPlatform.AndroidOpenXR);
+            string win64FullPath = Path.GetFullPath(win64Path);
+            string androidFullPath = Path.GetFullPath(androidPath);
+
+            string md5Win64Actual = "";
+            string md5AndroidActual = "";
+            if (File.Exists(win64FullPath))
+            {
+                md5Win64Actual = GetFileChecksum(win64FullPath);
+            }
+            if (File.Exists(androidFullPath))
+            {
+                md5AndroidActual = GetFileChecksum(androidFullPath);
+            }
+
             var projectConfig = OVRProjectConfig.GetProjectConfig();
-            string md5Win64Actual = GetFileChecksum(Path.GetFullPath(PluginRelPathWin64));
-            string md5AndroidActual = GetFileChecksum(Path.GetFullPath(PluginRelPathAndroid));
-            if (projectConfig.ovrPluginMd5Win64 == md5Win64Actual &&
+            if (!forceUpdate && projectConfig.ovrPluginMd5Win64 == md5Win64Actual &&
                 projectConfig.ovrPluginMd5Android == md5AndroidActual)
             {
                 return;
             }
-            bool userAgreedToRestart = EditorUtility.DisplayDialog(
+
+            if (OVRPluginInfo.IsCoreSDKModifiable())
+            {
+                if (File.Exists(win64FullPath))
+                {
+                    PluginImporter win64Plugin = AssetImporter.GetAtPath(win64Path) as PluginImporter;
+                    ConfigurePlugin(win64Plugin, PluginPlatform.Win64OpenXR);
+                }
+                if (File.Exists(androidFullPath))
+                {
+                    PluginImporter androidPlugin = AssetImporter.GetAtPath(androidPath) as PluginImporter;
+                    ConfigurePlugin(androidPlugin, PluginPlatform.AndroidOpenXR);
+                }
+            }
+
+            projectConfig.ovrPluginMd5Win64 = md5Win64Actual;
+            projectConfig.ovrPluginMd5Android = md5AndroidActual;
+            OVRProjectConfig.CommitProjectConfig(projectConfig);
+
+            bool userAgreedToRestart = !_unityRunningInBatchMode && EditorUtility.DisplayDialog(
                 "Restart Unity",
                 "Changes to OVRPlugin detected. Plugin updates require a restart. Please restart Unity to complete the update.",
                 "Restart Editor",
                 "Not Now");
-            projectConfig.ovrPluginMd5Win64 = md5Win64Actual;
-            projectConfig.ovrPluginMd5Android = md5AndroidActual;
-            OVRProjectConfig.CommitProjectConfig(projectConfig);
+            SetIsRestartPending(true);
             if (userAgreedToRestart)
             {
                 RestartUnityEditor();
@@ -98,11 +148,33 @@ namespace Oculus.VR.Editor
             }
         }
 
+        public static void BatchmodeCheckHasPluginChanged()
+        {
+            CheckHasPluginChanged(true);
+        }
+
+        private static string GetOVRPluginPath(PluginPlatform platform)
+        {
+            if (!_pluginInfos.ContainsKey(platform))
+            {
+                throw new ArgumentException("Unsupported BuildTarget: " + platform);
+            }
+
+            string folderName = _pluginInfos[platform].folderName;
+            string pluginName = _pluginInfos[platform].pluginName;
+            string rootPluginPath = OVRPluginInfo.GetPluginRootPath();
+            string pluginPath = Path.Combine(rootPluginPath, folderName, pluginName);
+
+
+            return pluginPath;
+        }
+
         private static string GetFileChecksum(string filePath)
         {
             using var md5 = new MD5CryptoServiceProvider();
             byte[] buffer = md5.ComputeHash(File.ReadAllBytes(filePath));
-            return string.Join(null, buffer.Select(b => b.ToString("x2")));
+            byte[] pathBuffer = md5.ComputeHash(Encoding.UTF8.GetBytes(filePath));
+            return string.Join(null, buffer.Select(b => b.ToString("x2"))) + string.Join(null, pathBuffer.Select(b => b.ToString("x2")));
         }
 
         private static void RestartUnityEditor()
@@ -113,7 +185,7 @@ namespace Oculus.VR.Editor
                 return;
             }
 
-            _restartPending = true;
+            SetIsRestartPending(true);
             EditorApplication.OpenProject(GetCurrentProjectPath());
         }
 
@@ -126,7 +198,45 @@ namespace Oculus.VR.Editor
             }
             return projectPath.FullName;
         }
+
+        private static void ConfigurePlugin(PluginImporter plugin, PluginPlatform platform)
+        {
+            plugin.SetCompatibleWithEditor(false);
+            plugin.SetCompatibleWithAnyPlatform(false);
+            plugin.SetCompatibleWithPlatform(BuildTarget.Android, false);
+            plugin.SetCompatibleWithPlatform(BuildTarget.StandaloneWindows, false);
+            plugin.SetCompatibleWithPlatform(BuildTarget.StandaloneWindows64, false);
+            plugin.SetCompatibleWithPlatform(BuildTarget.StandaloneOSX, false);
+
+            switch (platform)
+            {
+                case PluginPlatform.AndroidOpenXR:
+                    plugin.SetCompatibleWithPlatform(BuildTarget.Android, true);
+                    break;
+                case PluginPlatform.Win64OpenXR:
+                    plugin.SetCompatibleWithPlatform(BuildTarget.StandaloneWindows64, true);
+                    plugin.SetCompatibleWithEditor(true);
+                    plugin.SetEditorData("CPU", "X86_64");
+                    plugin.SetEditorData("OS", "Windows");
+                    plugin.SetPlatformData("Editor", "CPU", "X86_64");
+                    plugin.SetPlatformData("Editor", "OS", "Windows");
+                    break;
+                default:
+                    throw new ArgumentException("Unsupported BuildTarget: " + platform);
+            }
+
+            plugin.SaveAndReimport();
+        }
+
+        private static bool GetIsRestartPending()
+        {
+            return SessionState.GetBool(_isRestartPendingKey, false);
+        }
+
+        private static void SetIsRestartPending(bool isRestartPending)
+        {
+            SessionState.SetBool(_isRestartPendingKey, isRestartPending);
+        }
+
     }
 }
-
-#endif

@@ -172,7 +172,10 @@ public class OVRScreenFade : MonoBehaviour
     /// </summary>
     void OnDestroy()
     {
-        instance = null;
+        if (instance == this)
+        {
+            instance = null;
+        }
 
         if (fadeRenderer != null)
             Destroy(fadeRenderer);

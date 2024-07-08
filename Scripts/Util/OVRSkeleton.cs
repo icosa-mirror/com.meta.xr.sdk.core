@@ -672,15 +672,15 @@ public class OVRSkeleton : MonoBehaviour
             }
             else if (IsHandSkeleton(_skeletonType))
             {
-                boneTransform.localRotation = data.BoneRotations[i].FromFlippedXQuatf();
+                    boneTransform.localRotation = data.BoneRotations[i].FromFlippedXQuatf();
 
-                if (_bones[i].Id == BoneId.Hand_WristRoot)
-                {
-                    boneTransform.localRotation *= wristFixupRotation;
-                }
+                    if (_bones[i].Id == BoneId.Hand_WristRoot)
+                    {
+                        boneTransform.localRotation *= wristFixupRotation;
+                    }
             }
             else
-            {
+                {
                 boneTransform.localRotation = data.BoneRotations[i].FromFlippedZQuatf();
             }
         }

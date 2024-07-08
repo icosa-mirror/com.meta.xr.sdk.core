@@ -22,6 +22,7 @@ using static OVRTelemetry;
 
 internal static class OVRProjectSetupTelemetryEvent
 {
+    [Markers]
     public static class EventTypes
     {
         // Attention : Need to be kept in sync with QPL Event Ids

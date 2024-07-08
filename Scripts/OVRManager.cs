@@ -369,6 +369,13 @@ public partial class OVRManager : MonoBehaviour, OVRMixedRealityCaptureConfigura
 
 
 
+    /// <summary>
+    /// Occurs when a passthrough layer has been rendered and presented on the HMD screen for the first time after being restarted.
+    /// </summary>
+    /// <remarks>
+    /// @params (int layerId)
+    /// </remarks>
+    public static event Action<int> PassthroughLayerResumed;
 
 
     /// <summary>
@@ -384,22 +391,6 @@ public partial class OVRManager : MonoBehaviour, OVRMixedRealityCaptureConfigura
     private static bool _isHmdPresent = false;
     private static bool _wasHmdPresent = false;
 
-    protected virtual void OnValidate()
-    {
-        // Block dual enablement of body API and simultaneous hands and controllers
-        if (requestBodyTrackingPermissionOnStartup && SimultaneousHandsAndControllersEnabled)
-        {
-            Debug.LogWarning("Currently, Body API and simultaneous hands and controllers cannot be enabled at the same time", this);
-            requestBodyTrackingPermissionOnStartup = false;
-            SimultaneousHandsAndControllersEnabled = false;
-        }
-
-        if (launchSimultaneousHandsControllersOnStartup && !SimultaneousHandsAndControllersEnabled)
-        {
-            Debug.LogWarning("Enabling simultaneous hands and controllers because launch on startup was selected for the feature", this);
-            SimultaneousHandsAndControllersEnabled = true;
-        }
-    }
 
     /// <summary>
     /// If true, a head-mounted display is connected and present.
@@ -690,7 +681,6 @@ public partial class OVRManager : MonoBehaviour, OVRMixedRealityCaptureConfigura
     /// </summary>
     [HideInInspector]
     public bool expandMixedRealityCapturePropertySheet = false;
-
 
     /// <summary>
     /// If true, Mixed Reality mode will be enabled
@@ -1180,6 +1170,7 @@ public partial class OVRManager : MonoBehaviour, OVRMixedRealityCaptureConfigura
     [HideInInspector, Tooltip("Specify if Insight Passthrough should be enabled. " +
                               "Passthrough layers can only be used if passthrough is enabled.")]
     public bool isInsightPassthroughEnabled = false;
+
 
 
 
@@ -2288,6 +2279,7 @@ public partial class OVRManager : MonoBehaviour, OVRMixedRealityCaptureConfigura
 
     private void Awake()
     {
+
 #if !USING_XR_SDK
         //For legacy, we should initialize OVRManager in all cases.
         //For now, in XR SDK, only initialize if OVRPlugin is initialized.
@@ -2745,6 +2737,7 @@ public partial class OVRManager : MonoBehaviour, OVRMixedRealityCaptureConfigura
             }
         }
 
+
         if (_readOnlyWideMotionModeHandPosesEnabled != wideMotionModeHandPosesEnabled)
         {
             _readOnlyWideMotionModeHandPosesEnabled = wideMotionModeHandPosesEnabled;
@@ -2763,6 +2756,7 @@ public partial class OVRManager : MonoBehaviour, OVRMixedRealityCaptureConfigura
         UpdateInsightPassthrough(isInsightPassthroughEnabled);
 
     }
+
 
     private void UpdateHMDEvents()
     {
@@ -2865,15 +2859,28 @@ public partial class OVRManager : MonoBehaviour, OVRMixedRealityCaptureConfigura
 
                     break;
                 case OVRPlugin.EventType.SceneCaptureComplete:
-                    if (SceneCaptureComplete != null)
+                {
+                    var data =
+                        OVRDeserialize.ByteArrayToStructure<OVRDeserialize.SceneCaptureCompleteData>(eventDataBuffer
+                            .EventData);
+                    SceneCaptureComplete?.Invoke(data.RequestId, data.Result >= 0);
+                    OVRTask.SetResult(data.RequestId, data.Result >= 0);
+                }
+
+                break;
+                case OVRPlugin.EventType.PassthroughLayerResumed:
+                {
+                    if (PassthroughLayerResumed != null)
+
                     {
                         var data =
-                            OVRDeserialize.ByteArrayToStructure<OVRDeserialize.SceneCaptureCompleteData>(eventDataBuffer
-                                .EventData);
-                        SceneCaptureComplete(data.RequestId, data.Result >= 0);
-                    }
+                            OVRDeserialize.ByteArrayToStructure<OVRDeserialize.PassthroughLayerResumedData>(
+                                eventDataBuffer.EventData);
 
+                        PassthroughLayerResumed(data.LayerId);
+                    }
                     break;
+                }
                 default:
                     foreach (var listener in eventListeners)
                     {
@@ -3413,6 +3420,7 @@ public partial class OVRManager : MonoBehaviour, OVRMixedRealityCaptureConfigura
         return (preferences.Flags & OVRPlugin.PassthroughPreferenceFlags.DefaultToActive) ==
             OVRPlugin.PassthroughPreferenceFlags.DefaultToActive;
     }
+
     #region Utils
 
     private class Observable<T>

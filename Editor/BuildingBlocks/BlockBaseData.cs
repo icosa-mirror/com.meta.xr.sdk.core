@@ -25,6 +25,7 @@ using Meta.XR.Editor.Tags;
 using UnityEngine;
 using UnityEngine.Assertions;
 using UnityEditor;
+using Meta.XR.Editor.UserInterface;
 
 namespace Meta.XR.BuildingBlocks.Editor
 {
@@ -36,26 +37,32 @@ namespace Meta.XR.BuildingBlocks.Editor
         [SerializeField, OVRReadOnly] internal int version = 1;
         public int Version => version;
 
-        private static readonly OVRGUIContent DefaultThumbnailTexture = OVREditorUtils.CreateContent("bb_thumb_default.jpg",
-            OVRGUIContent.Source.BuildingBlocksThumbnails);
+        private static readonly TextureContent DefaultThumbnailTexture = TextureContent.CreateContent("bb_thumb_default.jpg",
+            Utils.BuildingBlocksThumbnails);
 
-        private static readonly OVRGUIContent DefaultInternalThumbnailTexture = OVREditorUtils.CreateContent("bb_thumb_internal.jpg",
-            OVRGUIContent.Source.BuildingBlocksThumbnails);
+        private static readonly TextureContent DefaultInternalThumbnailTexture = TextureContent.CreateContent("bb_thumb_internal.jpg",
+            Utils.BuildingBlocksThumbnails);
 
         [SerializeField] internal string blockName;
-        internal string BlockNameOverride;
-        public string BlockName => string.IsNullOrEmpty(BlockNameOverride) ? blockName : BlockNameOverride;
+        public Overridable<string> BlockName { get; private set; } = new("");
 
         [SerializeField] internal string description;
-        internal string DescriptionOverride;
-        public string Description => string.IsNullOrEmpty(DescriptionOverride) ? description : DescriptionOverride;
+        public Overridable<string> Description { get; private set; } = new("");
+
+        #region Tags
 
         [SerializeField] internal TagArray tags;
 
-        #region Tags
-        public TagArray Tags => tags ??= new TagArray();
-        public bool HasTag(Tag tag) => Tags.Contains(tag);
-        public bool HasAnyTag(IEnumerable<Tag> tagArray) => Tags.Intersect(tagArray).Any();
+        private TagArray SerializedTags => tags ??= new TagArray();
+        private Overridable<TagArray> _overridableTags;
+        public Overridable<TagArray> OverridableTags => _overridableTags ??= new Overridable<TagArray>(SerializedTags);
+        public TagArray Tags => OverridableTags.Value;
+
+        internal virtual void OnEnable()
+        {
+            Description = new Overridable<string>(description);
+            BlockName = new Overridable<string>(blockName);
+        }
 
         public void OnAwake()
         {
@@ -124,16 +131,17 @@ namespace Meta.XR.BuildingBlocks.Editor
 
                 if (!Hidden)
                 {
-                    return DefaultThumbnailTexture.Content.image as Texture2D;
+                    return DefaultThumbnailTexture.Image as Texture2D;
                 }
 
-                return DefaultInternalThumbnailTexture.Content.image as Texture2D;
+                return DefaultInternalThumbnailTexture.Image as Texture2D;
             }
         }
 
-        public virtual bool Hidden => HasTag(Utils.HiddenTag);
+        public virtual bool Hidden => Tags.Contains(Utils.HiddenTag);
 
-        public bool Experimental => HasTag(Utils.ExperimentalTag);
+        public bool Experimental => Tags.Contains(Utils.ExperimentalTag);
+
 
 
         [SerializeField] internal int order;

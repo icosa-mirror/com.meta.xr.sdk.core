@@ -11,7 +11,9 @@
         "Unity.RenderPipelines.Universal.Runtime",
         "Unity.XR.CoreUtils.Editor",
         "Meta.XR.BuildingBlocks",
-        "Meta.XR.Editor.Callbacks"
+        "Meta.XR.Editor.Callbacks",
+        "Meta.XR.Editor.UserInterface",
+        "Meta.XR.Editor.StatusMenu"
     ],
     "includePlatforms": [
         "Editor"

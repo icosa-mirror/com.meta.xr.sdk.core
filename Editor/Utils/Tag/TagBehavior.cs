@@ -20,6 +20,7 @@
 
 using System;
 using System.Collections.Generic;
+using Meta.XR.Editor.UserInterface;
 using UnityEngine;
 
 namespace Meta.XR.Editor.Tags
@@ -34,8 +35,8 @@ namespace Meta.XR.Editor.Tags
         public int Order { get; set; } = 0;
         public bool Show { get; set; } = true;
         public bool Automated { get; set; } = false;
-        public Color Color { get; set; } = OVREditorUtils.HexToColor("#DDDDDD");
-        public OVRGUIContent Icon { get; set; } = null;
+        public Color Color { get; set; } = Utils.HexToColor("#DDDDDD");
+        public TextureContent Icon { get; set; } = null;
         public bool CanFilterBy { get; set; } = true;
         public bool ShowOverlay { get; set; } = false;
         public bool ToggleableVisibility { get; set; } = false;

@@ -28,7 +28,7 @@ namespace Meta.XR.BuildingBlocks.Editor
 {
     public class VirtualKeyboardBlockData : BlockData
     {
-        protected override List<GameObject> InstallRoutine()
+        protected override List<GameObject> InstallRoutine(GameObject selectedGameObject)
         {
             var virtualKeyboardGo = Instantiate(Prefab, Vector3.zero, Quaternion.identity);
             virtualKeyboardGo.name = $"{Utils.BlockPublicTag} Virtual Keyboard";

@@ -29,7 +29,7 @@ namespace Meta.XR.Editor.Tags
     [Serializable]
     public class TagArray : IEnumerable<Tag>
     {
-        [SerializeField] private Tag[] array = System.Array.Empty<Tag>();
+        [SerializeField] private Tag[] array = Array.Empty<Tag>();
 
         public IEnumerator<Tag> GetEnumerator() => array.AsEnumerable().GetEnumerator();
         IEnumerator IEnumerable.GetEnumerator() => array.GetEnumerator();
@@ -39,7 +39,9 @@ namespace Meta.XR.Editor.Tags
             array = otherArray.ToArray();
         }
 
-        internal void Add(Tag tag)
+        public bool HasAnyTag(IEnumerable<Tag> tagArray) => this.Intersect(tagArray).Any();
+
+        private void Add(Tag tag)
         {
             if (array.Contains(tag))
             {
@@ -47,33 +49,49 @@ namespace Meta.XR.Editor.Tags
             }
 
             var index = array.Length;
-            System.Array.Resize(ref array, index + 1);
+            Array.Resize(ref array, index + 1);
             array[index] = tag;
 
             _sortedTagsDirty = true;
         }
 
-        internal void Remove(Tag tag)
+        public void Add(params Tag[] tags)
         {
-            var index = System.Array.IndexOf(array, tag);
+            foreach (var tag in tags)
+            {
+                Add(tag);
+            }
+        }
+
+        public void Add(IEnumerable<Tag> tags)
+        {
+            foreach (var tag in tags)
+            {
+                Add(tag);
+            }
+        }
+
+        public void Remove(Tag tag)
+        {
+            var index = Array.IndexOf(array, tag);
             if (index == -1) return;
 
             for (var i = index; i < array.Length - 1; i++)
             {
                 array[i] = array[i + 1];
             }
-            System.Array.Resize(ref array, array.Length - 1);
+            Array.Resize(ref array, array.Length - 1);
 
             _sortedTagsDirty = true;
         }
 
-        internal void Clear()
+        public void Clear()
         {
-            array = System.Array.Empty<Tag>();
+            array = Array.Empty<Tag>();
             _sortedTagsDirty = true;
         }
 
-        private List<Tag> _sortedTags = null;
+        private List<Tag> _sortedTags;
         private bool _sortedTagsDirty = true;
         internal List<Tag> SortedTags
         {

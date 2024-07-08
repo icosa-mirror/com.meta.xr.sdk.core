@@ -20,8 +20,8 @@
 
 using System;
 using System.Linq;
-using UnityEngine;
 using UnityEditor;
+using UnityEngine;
 
 namespace Meta.XR.Editor.Tags
 {
@@ -31,8 +31,8 @@ namespace Meta.XR.Editor.Tags
         internal const string AddNewTag = "Add New Tag";
         internal const string NewTagTextField = "NewTagTextField";
 
-        private static bool _addingNewTag = false;
-        private static string _newTag = null;
+        private static bool _addingNewTag;
+        private static string _newTag;
 
         public static string[] GetTagOptions()
         {

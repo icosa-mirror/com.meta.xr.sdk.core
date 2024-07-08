@@ -138,11 +138,7 @@ namespace Meta.XR.BuildingBlocks.Editor
         private static void InstallBlock(BlockData blockData, GameObject selectedGameObject)
         {
             blockData.InstallWithDependenciesAndCommit(selectedGameObject);
-            var windows = Resources.FindObjectsOfTypeAll<BuildingBlocksWindow>();
-            if (windows.Length > 0)
-            {
-                windows[0].RefreshBlockList();
-            }
+            BuildingBlocksWindow.RefreshBlockList();
         }
     }
 }

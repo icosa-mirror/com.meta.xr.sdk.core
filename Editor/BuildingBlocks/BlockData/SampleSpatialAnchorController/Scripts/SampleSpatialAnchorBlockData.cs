@@ -30,7 +30,7 @@ namespace Meta.XR.BuildingBlocks
 {
     public class SampleSpatialAnchorBlockData : BlockData
     {
-        protected override List<GameObject> InstallRoutine()
+        protected override List<GameObject> InstallRoutine(GameObject selectedGameObject)
         {
             var spatialAnchorControllerGameObject = Instantiate(Prefab, Vector3.zero, Quaternion.identity);
             spatialAnchorControllerGameObject.name = $"{Utils.BlockPublicTag} {BlockName}";
