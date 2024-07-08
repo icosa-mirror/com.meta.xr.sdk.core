@@ -21,9 +21,12 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using Meta.XR.Util;
 using UnityEngine;
 using UnityEngine.EventSystems;
+using UnityEngine.SceneManagement;
 
+[Feature(Feature.Hands)]
 public class OVRHand : MonoBehaviour,
     OVRInputModule.InputSource,
     OVRSkeleton.IOVRSkeletonDataProvider,
@@ -87,19 +90,37 @@ public class OVRHand : MonoBehaviour,
     public bool IsTracked { get; private set; }
     public bool IsSystemGestureInProgress { get; private set; }
     public bool IsPointerPoseValid { get; private set; }
-    public Transform PointerPose { get; private set; }
+    public Transform PointerPose { get
+        {
+            if (_pointerPoseGO == null)
+            {
+                InitializePointerPose();
+            }
+            return _pointerPoseGO.transform;
+        }
+    }
     public float HandScale { get; private set; }
     public TrackingConfidence HandConfidence { get; private set; }
     public bool IsDominantHand { get; private set; }
 
-    private void Awake()
+    private void InitializePointerPose()
     {
         _pointerPoseGO = new GameObject($"{HandType} {nameof(PointerPose)}");
         _pointerPoseGO.hideFlags = HideFlags.HideAndDontSave;
-        PointerPose = _pointerPoseGO.transform;
         if (_pointerPoseRoot != null)
         {
             PointerPose.SetParent(_pointerPoseRoot, false);
+        } else
+        {
+            PointerPose.SetParent(transform, false);
+        }
+    }
+
+    private void Awake()
+    {
+        if( _pointerPoseGO == null )
+        {
+            InitializePointerPose();
         }
 
         if (RayHelper != null)
@@ -317,6 +338,7 @@ public class OVRHand : MonoBehaviour,
     public void OnEnable()
     {
         OVRInputModule.TrackInputSource(this);
+        SceneManager.activeSceneChanged += OnSceneChanged;
         if (RayHelper && ShouldShowHandUIRay())
         {
             RayHelper.gameObject.SetActive(true);
@@ -326,10 +348,17 @@ public class OVRHand : MonoBehaviour,
     public void OnDisable()
     {
         OVRInputModule.UntrackInputSource(this);
+        SceneManager.activeSceneChanged -= OnSceneChanged;
         if (RayHelper)
         {
             RayHelper.gameObject.SetActive(false);
         }
+    }
+
+    // handle scene changes if we're marked Don't Destroy On Load.
+    private void OnSceneChanged(Scene unloading, Scene loading)
+    {
+        OVRInputModule.TrackInputSource(this);
     }
 
     public void OnValidate()

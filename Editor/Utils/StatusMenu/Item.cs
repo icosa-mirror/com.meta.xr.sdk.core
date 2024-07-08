@@ -33,11 +33,13 @@ namespace Meta.XR.Editor.StatusMenu
     {
         public enum Origins
         {
+            Unknown = -1,
             Settings,
             Menu,
             StatusMenu,
             Console,
-            Component
+            Component,
+            Toolbar
         }
 
         public struct HeaderIcon
@@ -73,6 +75,7 @@ namespace Meta.XR.Editor.StatusMenu
         public PillIconDelegate PillIcon;
         public TextDelegate InfoTextDelegate;
         public Action<Origins> OnClickDelegate;
+        public bool CloseOnClick = true;
 
         private Vector2 _headerSize = Vector2.zero;
 
@@ -102,7 +105,10 @@ namespace Meta.XR.Editor.StatusMenu
             if (hover && Event.current.type == EventType.MouseUp)
             {
                 OnClickDelegate?.Invoke(origin);
-                onClick?.Invoke();
+                if (CloseOnClick)
+                {
+                    onClick?.Invoke();
+                }
             }
         }
 
@@ -120,8 +126,7 @@ namespace Meta.XR.Editor.StatusMenu
         {
             EditorGUILayout.BeginVertical();
             {
-                EditorGUILayout.LabelField(Name,
-                    hover ? GUIStyles.BoldLabelHover : GUIStyles.BoldLabel);
+                EditorGUILayout.LabelField(Name, hover ? GUIStyles.BoldLabelHover : GUIStyles.BoldLabel);
                 ShowInfoText();
             }
             EditorGUILayout.EndVertical();
@@ -139,8 +144,7 @@ namespace Meta.XR.Editor.StatusMenu
 
         private void ShowIcon(Rect rect)
         {
-            EditorGUILayout.LabelField(Icon, Styles.GUIStyles.IconStyle,
-                GUILayout.Width( ItemHeight));
+            EditorGUILayout.LabelField(Icon, Styles.GUIStyles.IconStyle, GUILayout.Width(ItemHeight));
             ShowPill(rect);
         }
 

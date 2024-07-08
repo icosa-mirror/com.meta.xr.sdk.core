@@ -22,10 +22,11 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.IO;
+using Meta.XR.Util;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using UnityEngine.UI;
-
+[Feature(Feature.Scene)]
 public class OVRSceneLoader : MonoBehaviour
 {
     public const string externalStoragePath = "/sdcard/Android/data";

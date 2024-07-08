@@ -20,6 +20,7 @@
 
 using System;
 using System.Collections.Generic;
+using Meta.XR.Util;
 using UnityEngine;
 using Object = UnityEngine.Object;
 
@@ -36,6 +37,7 @@ using Object = UnityEngine.Object;
 [DisallowMultipleComponent]
 [HelpURL("https://developer.oculus.com/documentation/unity/unity-scene-use-scene-anchors/#ovrsceneanchor")]
 [Obsolete(OVRSceneManager.DeprecationMessage)]
+[Feature(Feature.Scene)]
 public sealed class OVRSceneAnchor : MonoBehaviour
 {
     /// <summary>

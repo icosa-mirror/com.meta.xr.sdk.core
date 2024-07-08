@@ -23,7 +23,9 @@ using UnityEngine.UI;
 using System.Collections;
 using System.Collections.Generic;
 using System.Text;
+using Meta.XR.Util;
 
+[Feature(Feature.Hands)]
 public class OVRHandTest : MonoBehaviour
 {
     public class BoolMonitor

@@ -21,6 +21,7 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using Meta.XR.Util;
 #if DEVELOPMENT_BUILD || UNITY_EDITOR
 #pragma warning disable OVR004
 using System.Linq;
@@ -45,6 +46,7 @@ using Debug = UnityEngine.Debug;
 /// </remarks>
 [DisallowMultipleComponent]
 [HelpURL("https://developer.oculus.com/documentation/unity/unity-colocation-deep-dive/#using-the-alignmentanchormanager-class")]
+[Feature(Feature.Anchors)]
 public partial class OVRSpatialAnchor : MonoBehaviour
 {
     private bool _startCalled;
@@ -927,6 +929,7 @@ public partial class OVRSpatialAnchor : MonoBehaviour
 
         return Execute(uuids, unboundAnchors);
     }
+
 
     static async OVRTask<OVRResult<List<UnboundAnchor>, OVRAnchor.FetchResult>> LoadUnboundAnchorsAsync(
         OVRAnchor.FetchOptions fetchOptions, List<UnboundAnchor> unboundAnchors,

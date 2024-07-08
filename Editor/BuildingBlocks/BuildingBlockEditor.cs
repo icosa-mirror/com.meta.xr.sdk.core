@@ -54,7 +54,7 @@ namespace Meta.XR.BuildingBlocks.Editor
             ShowAdditionals();
 
             EditorGUILayout.Space();
-            ShowBlockDataList("Dependencies", "No dependency blocks are required.",_blockData.GetAllDependencies().ToList());
+            ShowBlockDataList("Dependencies", "No dependency blocks are required.", _blockData.GetAllDependencies().ToList());
 
             EditorGUILayout.Space();
             ShowBlockDataList("Used by", "No other blocks depend on this one.", _blockData.GetUsingBlockDatasInScene());
@@ -216,7 +216,7 @@ namespace Meta.XR.BuildingBlocks.Editor
             }
         }
 
-        private void ShowBlock(BlockData data, BuildingBlock block, bool asGridItem,
+        private async void ShowBlock(BlockData data, BuildingBlock block, bool asGridItem,
             bool showAction, bool showBuildingBlock)
         {
             var previousIndent = EditorGUI.indentLevel;
@@ -288,7 +288,7 @@ namespace Meta.XR.BuildingBlocks.Editor
                 {
                     if (ShowLargeButton(Utils.AddIcon))
                     {
-                        data.AddToProject();
+                        await data.AddToProject();
                     }
                 }
             }

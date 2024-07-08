@@ -21,6 +21,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading.Tasks;
 using Meta.XR.Editor.Tags;
 using UnityEngine;
 using UnityEngine.Assertions;
@@ -29,7 +30,7 @@ using Meta.XR.Editor.UserInterface;
 
 namespace Meta.XR.BuildingBlocks.Editor
 {
-    public abstract class BlockBaseData : ScriptableObject, ITaggable, IIdentified
+    public abstract class BlockBaseData : ScriptableObject, ITaggable, IIdentified, IComparable<BlockBaseData>
     {
         internal static readonly CachedIdDictionary<BlockBaseData> Registry = new();
 
@@ -42,7 +43,7 @@ namespace Meta.XR.BuildingBlocks.Editor
         private static readonly TextureContent DefaultThumbnailTexture = TextureContent.CreateContent("bb_thumb_default.jpg",
             Utils.BuildingBlocksThumbnails);
 
-        private static readonly TextureContent DefaultInternalThumbnailTexture = TextureContent.CreateContent("bb_thumb_internal.jpg",
+        internal static readonly TextureContent DefaultInternalThumbnailTexture = TextureContent.CreateContent("bb_thumb_internal.jpg",
             Utils.BuildingBlocksThumbnails);
 
         [SerializeField] internal string blockName;
@@ -151,18 +152,22 @@ namespace Meta.XR.BuildingBlocks.Editor
 
         internal abstract bool CanBeAdded { get; }
 
-        internal abstract void AddToProject(GameObject selectedGameObject = null, Action onInstall = null);
+        internal abstract Task AddToProject(GameObject selectedGameObject = null, Action onInstall = null);
 
-        internal virtual void AddToObjects(List<GameObject> selectedGameObjects)
+        internal virtual async Task AddToObjects(List<GameObject> selectedGameObjects)
         {
             foreach (var obj in selectedGameObjects.DefaultIfEmpty())
             {
-                AddToProject(obj);
+                await AddToProject(obj);
             }
         }
 
         internal virtual bool RequireListRefreshAfterInstall => false;
 
         internal virtual bool OverridesInstallRoutine => false;
+        public int CompareTo(BlockBaseData other)
+        {
+            return other == null ? 0 : string.Compare(other.BlockName.Value, BlockName.Value, StringComparison.CurrentCultureIgnoreCase);
+        }
     }
 }

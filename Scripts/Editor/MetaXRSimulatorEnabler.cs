@@ -36,8 +36,24 @@ using UnityEditor;
 // TODO: rename to MetaXRSimulatorDownloader after UPM migration
 public class MetaXRSimulatorEnabler : MonoBehaviour
 {
+#if UNITY_EDITOR_OSX
+    const string kUseSimulator = "Meta/Use Meta XR Simulator";
+
+    [MenuItem(kUseSimulator, false, 10000)]
+    private static void UseMetaXRSimulator()
+    {
+        if (EditorUtility.DisplayDialog("Meta XR Simulator", "Meta XR Simulator is a lightweight OpenXR runtime that allows you to iterate your OpenXR project on Mac without a headset.\n\nIt can be installed through Homnebrew and is compatible with Unity OpenXR Plugin.\n\nClick 'More Info' button to find more information.", "More Info", "Cancel"))
+        {
+            string moreInfoUrl = "https://github.com/Oculus-VR/homebrew-repo/blob/main/meta-xr-simulator.md";
+            UnityEngine.Debug.LogFormat("Open Meta XR Simulator URL: {0}", moreInfoUrl);
+            Application.OpenURL(moreInfoUrl);
+        }
+    }
+#endif
+
+#if UNITY_EDITOR_WIN
 #if !USING_META_XR_SIMULATOR
-    const string kDownloadSimulator = "Oculus/Download Meta XR Simulator";
+    const string kDownloadSimulator = "Meta/Download Meta XR Simulator";
 
     [MenuItem(kDownloadSimulator, false, 10000)]
     private static void DownloadSimulator()
@@ -49,6 +65,7 @@ public class MetaXRSimulatorEnabler : MonoBehaviour
             Application.OpenURL(downloadUrl);
         }
     }
+#endif
 #endif
 }
 #endif // #if OVR_UNITY_ASSET_STORE

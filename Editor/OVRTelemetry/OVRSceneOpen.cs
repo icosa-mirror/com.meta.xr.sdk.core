@@ -18,6 +18,8 @@
  * limitations under the License.
  */
 
+using System.Threading.Tasks;
+using Meta.XR.Editor.Features;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using UnityEditor;
@@ -39,25 +41,32 @@ public static class OVRSceneOpen
     {
         foreach (var scene in scenes)
         {
+#pragma warning disable CS4014
             SendEvent(scene, OVRTelemetryConstants.Scene.MarkerId.SceneOpen);
+#pragma warning restore CS4014
         }
     }
 
     private static void OnSceneOpened(Scene scene, OpenSceneMode mode)
     {
+#pragma warning disable CS4014
         SendEvent(scene, OVRTelemetryConstants.Scene.MarkerId.SceneOpen);
+#pragma warning restore CS4014
     }
 
     private static void OnSceneClosed(Scene scene)
     {
+#pragma warning disable CS4014
         SendEvent(scene, OVRTelemetryConstants.Scene.MarkerId.SceneClose);
+#pragma warning restore CS4014
     }
 
-    private static void SendEvent(Scene scene, int eventType)
+    private static async Task SendEvent(Scene scene, int eventType)
     {
         var guid = AssetDatabase.AssetPathToGUID(scene.path);
         if (string.IsNullOrEmpty(guid)) return;
 
+        var features = await FeatureManager.GetFeaturesInScene(scene);
         OVRTelemetry.Start(eventType)
             .AddAnnotation(OVRTelemetryConstants.Scene.AnnotationType.Guid,
                 guid)
@@ -65,6 +74,10 @@ public static class OVRSceneOpen
                 EditorUserBuildSettings.selectedBuildTargetGroup.ToString())
             .AddAnnotation(OVRTelemetryConstants.Scene.AnnotationType.RuntimePlatform,
                 Application.platform.ToString())
+            .AddAnnotation(OVRTelemetryConstants.Scene.AnnotationType.Features,
+                            features)
+            .AddAnnotation(OVRTelemetryConstants.Scene.AnnotationType.EnabledSettings,
+                            FeatureManager.GetFeatureStatusInSettings())
             .Send();
     }
 }

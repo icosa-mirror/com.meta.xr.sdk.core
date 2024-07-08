@@ -92,8 +92,12 @@ namespace Meta.XR
             "XR_FB_touch_controller_pro " +
             "XR_FB_touch_controller_proximity " +
             "XR_FB_composition_layer_depth_test " +
+            "XR_FB_haptic_amplitude_envelope " +
+            "XR_FB_haptic_pcm " +
             "XR_META_spatial_entity_persistence " +
             "XR_META_spatial_entity_discovery " +
+            "XR_META_boundary_visibility " +
+            "XR_META_headset_id " +
             ""
             ;
     }

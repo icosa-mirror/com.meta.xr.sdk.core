@@ -76,6 +76,7 @@ namespace Meta.XR.BuildingBlocks.Editor
         };
 
         private const string PrototypingTagName = "Prototyping";
+        private static string UsageFreqUniqueKey => $"BuildingBlocks_UsageFreq_{Application.dataPath}";
 
         internal static readonly TextureContent PrototypingIcon =
             TextureContent.CreateContent("ovr_icon_prototype.png", Utils.BuildingBlocksIcons,
@@ -472,6 +473,39 @@ namespace Meta.XR.BuildingBlocks.Editor
             return CustomPackageDependencyRegistry.IsPackageDepInCustomRegistry(packageId)
                 ? CustomPackageDependencyRegistry.IsPackageInstalled(packageId)
                 : OVRProjectSetupUtils.IsPackageInstalled(packageId);
+        }
+
+        internal static void UpdateBlockUsageFrequency(BlockData blockData)
+        {
+            var freqTable = GetUsageFreqTable();
+            if (freqTable == null)
+            {
+                freqTable = new();
+            }
+
+            if (freqTable.ContainsKey(blockData.Id))
+            {
+                freqTable[blockData.Id] += 1;
+            }
+            else
+            {
+                freqTable.Add(blockData.Id, 1);
+            }
+            SaveUsageFreqTable(freqTable);
+        }
+
+        internal static SerializableDictionary<string, int> GetUsageFreqTable()
+        {
+            var value = EditorPrefs.GetString(UsageFreqUniqueKey);
+            return string.IsNullOrEmpty(value)
+                ? null
+                : JsonUtility.FromJson<SerializableDictionary<string, int>>(value);
+        }
+
+        private static void SaveUsageFreqTable(SerializableDictionary<string, int> data)
+        {
+            var json = JsonUtility.ToJson(data);
+            EditorPrefs.SetString(UsageFreqUniqueKey, json);
         }
 
 

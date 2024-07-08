@@ -43,7 +43,7 @@ namespace Meta.XR.BuildingBlocks.Editor
 {
     public class BuildingBlocksWindow : EditorWindow
     {
-        private const string MenuPath = "Oculus/Tools/Building Blocks";
+        private const string MenuPath = "Meta/Tools/Building Blocks";
 
         private const int MenuPriority = 2;
         private const string WindowName = Utils.BlocksPublicName;
@@ -77,6 +77,12 @@ namespace Meta.XR.BuildingBlocks.Editor
 
         private readonly Repainter _repainter = new();
         private readonly Dimensions _dimensions = new();
+
+        private const string SortTypeAlphabetically = "Alphabetically";
+        private const string SortTypeMostUsed = "My recently used";
+        private const string SortTypeMostPopular = "Most popular";
+        private string[] _sortTypes = { SortTypeMostPopular, SortTypeAlphabetically, SortTypeMostUsed };
+        private int _selectedSortTypeIndex;
 
         private class Repainter
         {
@@ -284,9 +290,19 @@ namespace Meta.XR.BuildingBlocks.Editor
         {
             EditorGUILayout.BeginVertical(Styles.GUIStyles.Toolbar);
             GUI.SetNextControlName(FilterSearchControlName);
+            var estimatedTextContent = new GUIContent($"Sort by: {_sortTypes[_selectedSortTypeIndex]} <buffer>");
+            var spaceForSortByField = EditorStyles.label.CalcSize(estimatedTextContent).x + Padding * 2;
             _filterSearch = EditorGUILayout.TextField(_filterSearch, GUI.skin.FindStyle("SearchTextField"));
-            var availableWidth = dimensions.WindowWidth - Meta.XR.Editor.UserInterface.Styles.Constants.Margin * 2;
+            var availableWidth = dimensions.WindowWidth - Margin * 2 - spaceForSortByField;
+
+            EditorGUILayout.BeginHorizontal();
             ShowTagList("window", _tagList, TagSearch, Tag.TagListType.Filters, availableWidth);
+
+            GUILayout.FlexibleSpace();
+            ShowSortBy(spaceForSortByField);
+
+            EditorGUILayout.EndHorizontal();
+
             EditorGUILayout.EndVertical();
 
             if (_requestFilterSearchFocus)
@@ -301,6 +317,16 @@ namespace Meta.XR.BuildingBlocks.Editor
             }
 
             ShowList(_blockList, Filter, dimensions);
+        }
+
+        public void ShowSortBy(float estimatedTotalSpace)
+        {
+            EditorGUILayout.BeginHorizontal(GUILayout.Width(estimatedTotalSpace));
+            var labelContent = new GUIContent("Sort by");
+            var labelWidth = EditorStyles.label.CalcSize(labelContent).x;
+            EditorGUILayout.LabelField(labelContent, GUILayout.Width(labelWidth));
+            _selectedSortTypeIndex = EditorGUILayout.Popup(_selectedSortTypeIndex, _sortTypes);
+            EditorGUILayout.EndHorizontal();
         }
 
         private IEnumerable<BlockBaseData> Filter(IEnumerable<BlockBaseData> blocks) => blocks.Where(Match);
@@ -340,7 +366,7 @@ namespace Meta.XR.BuildingBlocks.Editor
             var lineIndex = 0;
             var showTutorial = _shouldShowTutorial;
             EditorGUILayout.BeginHorizontal(Styles.GUIStyles.NoMargin);
-            var filteredBlocks = filter(blocks);
+            var filteredBlocks = SortBlocks(filter(blocks));
             foreach (var block in filteredBlocks)
             {
                 var blockRect = new Rect(columnIndex * (blockWidth + Margin) + Margin, lineIndex * (blockHeight + Margin), blockWidth, blockHeight);
@@ -366,6 +392,39 @@ namespace Meta.XR.BuildingBlocks.Editor
             EditorGUILayout.EndHorizontal();
 
             EditorGUILayout.EndScrollView();
+        }
+
+        private IEnumerable<BlockBaseData> SortBlocks(IEnumerable<BlockBaseData> blocks)
+        {
+            return _sortTypes[_selectedSortTypeIndex] switch
+            {
+                SortTypeAlphabetically => blocks.OrderByDescending(b => b),
+                SortTypeMostUsed => GetSortedMostUsedBlocks(blocks),
+                _ => blocks
+            };
+        }
+
+        private IEnumerable<BlockBaseData> GetSortedMostUsedBlocks(IEnumerable<BlockBaseData> blocks)
+        {
+            var freqTable = Utils.GetUsageFreqTable();
+            if (freqTable == null) return blocks.OrderByDescending(b => b);
+
+            var unusedBlocks = blocks
+                .Where(b => !freqTable.ContainsKey(b.Id))
+                .OrderByDescending(b => b);
+
+            var frequentlyUsedBlocks = freqTable
+                .OrderByDescending(kvp => kvp.Value)
+                .Select(kvp => blocks.FirstOrDefault(block => block.Id == kvp.Key))
+                .ToList();
+            frequentlyUsedBlocks.AddRange(unusedBlocks);
+
+            return frequentlyUsedBlocks;
+        }
+
+        private BlockBaseData GetBlockFromId(IEnumerable<BlockBaseData> blocks, string id)
+        {
+            return blocks.FirstOrDefault(block => block.Id == id);
         }
 
         private void ShowThumbnail(BlockBaseData block, float targetHeight, int expectedThumbnailWidth, int expectedThumbnailHeight)
@@ -580,7 +639,10 @@ namespace Meta.XR.BuildingBlocks.Editor
             var style = Styles.GUIStyles.FilterByTagGroup;
             style.fixedWidth = availableWidth;
 
-            EditorGUILayout.BeginHorizontal(style);
+            var styleHorizontal = new GUIStyle(style);
+
+            EditorGUILayout.BeginVertical(style);
+            EditorGUILayout.BeginHorizontal(styleHorizontal);
             var any = false;
             var currentWidth = 0.0f;
             foreach (var tag in tagArray)
@@ -601,6 +663,7 @@ namespace Meta.XR.BuildingBlocks.Editor
                 any |= ShowTag(controlId + "list", tag, search, listType);
             }
             EditorGUILayout.EndHorizontal();
+            EditorGUILayout.EndVertical();
 
             return any;
         }
@@ -734,7 +797,9 @@ namespace Meta.XR.BuildingBlocks.Editor
 
             if (block.OverridesInstallRoutine && Selection.objects.Contains(dropUpon))
             {
+#pragma warning disable CS4014 // Because this call is not awaited, execution of the current method continues before the call is completed
                 block.AddToObjects(Selection.objects.OfType<GameObject>().ToList());
+#pragma warning restore CS4014 // Because this call is not awaited, execution of the current method continues before the call is completed
             }
             else
             {

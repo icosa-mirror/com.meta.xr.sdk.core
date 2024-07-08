@@ -20,12 +20,13 @@
 
 using System;
 using System.Collections;
+using Meta.XR.Util;
 using UnityEngine;
 using UnityEngine.Assertions;
 using UnityEngine.Serialization;
 using Quaternion = UnityEngine.Quaternion;
 using Vector3 = UnityEngine.Vector3;
-
+[Feature(Feature.TrackedKeyboard)]
 public class OVRTrackedKeyboard : MonoBehaviour
 {
     private static readonly float underlayScaleMultX_ = 1.475f;

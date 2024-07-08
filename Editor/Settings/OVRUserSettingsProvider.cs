@@ -18,16 +18,16 @@
  * limitations under the License.
  */
 
+using System;
 using System.Collections.Generic;
 using Meta.XR.Editor.StatusMenu;
-using Meta.XR.Editor.UserInterface;
 using UnityEditor;
-using UnityEngine;
-using static Meta.XR.Editor.UserInterface.Styles.Colors;
 
 internal class OVRUserSettingsProvider : SettingsProvider
 {
     public static string SettingsPath => $"Preferences/{OVREditorUtils.MetaXRPublicName}";
+
+    private static readonly SortedDictionary<string, Action> SettingsRegistry = new();
 
     private OVRUserSettingsProvider(string path, SettingsScope scopes, IEnumerable<string> keywords = null)
         : base(path, scopes, keywords)
@@ -35,10 +35,7 @@ internal class OVRUserSettingsProvider : SettingsProvider
     }
 
     [SettingsProvider]
-    public static SettingsProvider CreateProjectValidationSettingsProvider()
-    {
-        return new OVRUserSettingsProvider(SettingsPath, SettingsScope.User);
-    }
+    public static SettingsProvider CreateSettingsProvider() => new OVRUserSettingsProvider(SettingsPath, SettingsScope.User);
 
     public override void OnGUI(string searchContext)
     {
@@ -51,18 +48,12 @@ internal class OVRUserSettingsProvider : SettingsProvider
 
         EditorGUILayout.BeginVertical();
         {
-            EditorGUILayout.LabelField("Telemetry", EditorStyles.boldLabel);
-            using (var check = new EditorGUI.ChangeCheckScope())
+            foreach (var setting in SettingsRegistry)
             {
-                var telemetryEnabled =
-                    EditorGUILayout.Toggle(new GUIContent("Enable"), OVRTelemetryConsent.TelemetryEnabled);
-                if (check.changed)
-                {
-                    OVRTelemetryConsent.SetTelemetryEnabled(telemetryEnabled,
-                        OVRTelemetryConstants.OVRManager.ConsentOrigins.Settings);
-                }
+                EditorGUILayout.LabelField(setting.Key, EditorStyles.boldLabel);
+                setting.Value?.Invoke();
+                EditorGUILayout.Space();
             }
-
         }
         EditorGUILayout.EndVertical();
 
@@ -78,5 +69,10 @@ internal class OVRUserSettingsProvider : SettingsProvider
     public static void OpenSettingsWindow(Item.Origins origin)
     {
         SettingsService.OpenUserPreferences(SettingsPath);
+    }
+
+    public static void Register(string title, Action onSettingsGUIDelegate)
+    {
+        SettingsRegistry.TryAdd(title, onSettingsGUIDelegate);
     }
 }

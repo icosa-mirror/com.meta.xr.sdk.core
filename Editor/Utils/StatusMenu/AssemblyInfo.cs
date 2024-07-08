@@ -22,4 +22,5 @@ using System.Runtime.CompilerServices;
 
 [assembly: InternalsVisibleTo("Meta.XR.BuildingBlocks.Editor")]
 [assembly: InternalsVisibleTo("Meta.XR.ImmersiveDebugger.Editor")]
+[assembly: InternalsVisibleTo("MetaXrSimulator.Editor")]
 [assembly: InternalsVisibleTo("Oculus.VR.Editor")]

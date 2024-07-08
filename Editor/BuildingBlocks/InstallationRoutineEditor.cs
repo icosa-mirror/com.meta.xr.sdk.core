@@ -47,8 +47,6 @@ namespace Meta.XR.BuildingBlocks.Editor
             // Sub-header
             DrawHeader("Information");
             EditorGUILayout.PropertyField(serializedObject.FindProperty(nameof(InstallationRoutine.id)));
-            EditorGUILayout.PropertyField(serializedObject.FindProperty(nameof(InstallationRoutine.routineName)));
-            EditorGUILayout.PropertyField(serializedObject.FindProperty(nameof(InstallationRoutine.description)));
             EditorGUILayout.PropertyField(serializedObject.FindProperty(nameof(InstallationRoutine.targetBlockDataId)));
             ShowBlock(BlockData);
 

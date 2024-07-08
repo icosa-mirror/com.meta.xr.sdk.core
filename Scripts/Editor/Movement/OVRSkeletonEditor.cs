@@ -50,7 +50,7 @@ public class OVRSkeletonEditor : Editor
     internal static bool IsSkeletonProperlyConfigured(OVRSkeleton skeleton)
     {
         return !OVRSkeleton.IsBodySkeleton(skeleton.GetSkeletonType()) ||
-               skeleton.SearchSkeletonDataProvider() != null;
+            skeleton.SearchSkeletonDataProvider() != null;
     }
 
     internal static void FixOVRBodyConfiguration(OVRSkeleton skeleton, OVRPlugin.BodyJointSet jointSet)

@@ -261,7 +261,35 @@ public class OVRProjectConfigEditor : Editor
                 OVREditorUtil.SetupEnumField(projectConfig, new GUIContent("Passthrough Support",
                         "Allows the application to use passthrough functionality. This option must be enabled at build time, otherwise initializing passthrough and creating passthrough layers in application scenes will fail."),
                     ref projectConfig._insightPassthroughSupport, ref hasModified);
+                if (hasModified)
+                {
+                    var newSystemLoadingScreenBackground =
+                        projectConfig._insightPassthroughSupport == OVRProjectConfig.FeatureSupport.None
+                            ? OVRProjectConfig.SystemLoadingScreenBackground.Black
+                            : OVRProjectConfig.SystemLoadingScreenBackground.ContextualPassthrough;
+                    if (projectConfig._systemLoadingScreenBackground != newSystemLoadingScreenBackground)
+                    {
+                        projectConfig._systemLoadingScreenBackground = newSystemLoadingScreenBackground;
+                        Debug.LogFormat(LogType.Log, LogOption.NoStacktrace, context: null,
+                            $"System Splash Screen Background automatically changed to {newSystemLoadingScreenBackground} " +
+                            $"due to Passthrough Support change in OVRManager Quest Features");
+                    }
+                }
 
+                // Boundary Visibility Support
+                var boundaryVisibilityTooltip =
+                    "Enable support for modifying the Guardian boundary visibility. Requires Passthrough Support.";
+                OVREditorUtil.SetupEnumField(projectConfig,
+                    new GUIContent("Boundary Visibility Support", boundaryVisibilityTooltip),
+                    ref projectConfig.boundaryVisibilitySupport, ref hasModified);
+
+                // enable passthrough support if boundary visibility support is enabled
+                if (projectConfig.boundaryVisibilitySupport != OVRProjectConfig.FeatureSupport.None &&
+                    projectConfig._insightPassthroughSupport == OVRProjectConfig.FeatureSupport.None)
+                {
+                    projectConfig._insightPassthroughSupport = OVRProjectConfig.FeatureSupport.Supported;
+                    hasModified = true;
+                }
 
                 // Body Tracking Support
                 OVREditorUtil.SetupEnumField(projectConfig, "Body Tracking Support",
@@ -345,16 +373,30 @@ public class OVRProjectConfigEditor : Editor
                 }
 
                 // System Splash Screen Background: Black vs ContextualPassthrough
-                OVREditorUtil.SetupEnumField(
-                    projectConfig,
-                    new GUIContent(
-                        text: "System Splash Screen Background",
-                        tooltip: "Background shown by the Operating System during system splash screens:\n" +
-                                 "  \"Black\" - always black.\n" +
-                                 "  \"Passthrough (Contextual)\" - Passthrough, if the user has passthrough active in home. Black otherwise."),
-                    ref projectConfig._systemLoadingScreenBackground,
-                    ref hasModified
-                );
+                bool systemSplashScreenBackgroundCustomizable =
+                    projectConfig.insightPassthroughSupport != OVRProjectConfig.FeatureSupport.None;
+                using (new EditorGUI.DisabledGroupScope(!systemSplashScreenBackgroundCustomizable))
+                {
+                    OVREditorUtil.SetupEnumField(
+                        projectConfig,
+                        new GUIContent(
+                            text: "System Splash Screen Background",
+                            tooltip: "Background shown by the Operating System during system splash screens:\n" +
+                                     "  \"Black\" - always black.\n" +
+                                     "  \"Passthrough (Contextual)\" - Passthrough, if the user has passthrough active in home. Black otherwise." +
+                                     (!systemSplashScreenBackgroundCustomizable ? "\n\nReadonly for current Passthrough Support value." : "")),
+                        ref projectConfig._systemLoadingScreenBackground,
+                        ref hasModified
+                    );
+                }
+
+                if (projectConfig.insightPassthroughSupport != OVRProjectConfig.FeatureSupport.None &&
+                    projectConfig._systemLoadingScreenBackground == OVRProjectConfig.SystemLoadingScreenBackground.Black)
+                {
+                    EditorGUILayout.HelpBox(
+                        "Soon Black background will be prohibited for MR apps. Consider using Passthrough (Contextual).",
+                        MessageType.Warning);
+                }
 
                 if (projectConfig.systemLoadingScreenBackground == OVRProjectConfig.SystemLoadingScreenBackground.ContextualPassthrough)
                 {

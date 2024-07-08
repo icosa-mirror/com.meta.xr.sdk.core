@@ -20,8 +20,10 @@
 
 using System;
 using System.Collections.Generic;
+using Meta.XR.Util;
 using UnityEngine;
 
+[Feature(Feature.Anchors)]
 public class SharedSpatialAnchorErrorHandler : MonoBehaviour
 {
     [Tooltip("Disables the GUI alerts in headset.")]

@@ -20,6 +20,7 @@
 
 using System;
 using System.IO;
+using System.Threading.Tasks;
 using NUnit.Framework;
 using UnityEditor;
 using UnityEngine;
@@ -71,10 +72,11 @@ namespace Meta.XR.BuildingBlocks.Editor
             UpdateInstalledState();
         }
 
-        internal override void AddToProject(GameObject selectedGameObject = null, Action onInstall = null)
+        internal override Task AddToProject(GameObject selectedGameObject = null, Action onInstall = null)
         {
             _onInstall = onInstall;
             Install();
+            return Task.CompletedTask;
         }
 
         [ContextMenu("Install")]

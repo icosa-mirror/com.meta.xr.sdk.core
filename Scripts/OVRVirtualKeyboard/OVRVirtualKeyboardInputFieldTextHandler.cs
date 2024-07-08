@@ -22,11 +22,12 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
+using Meta.XR.Util;
 using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.UI;
 
-
+[Feature(Feature.VirtualKeyboard)]
 public class OVRVirtualKeyboardInputFieldTextHandler : OVRVirtualKeyboard.AbstractTextHandler
 {
     /// <summary>

@@ -29,6 +29,7 @@ using UnityEngine.UI;
 using Quaternion = UnityEngine.Quaternion;
 using Vector3 = UnityEngine.Vector3;
 using System.Linq;
+using Meta.XR.Util;
 using UnityEngine.Events;
 using UnityEngine.EventSystems;
 using UnityEngine.Serialization;
@@ -38,6 +39,8 @@ using UnityEngine.Serialization;
 /// </summary>
 [DisallowMultipleComponent]
 [HelpURL("https://developer.oculus.com/documentation/unity/VK-unity-IntegratePrefab/")]
+
+[Feature(Feature.VirtualKeyboard)]
 public class OVRVirtualKeyboard : MonoBehaviour
 {
     /// <summary>

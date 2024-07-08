@@ -21,6 +21,7 @@
 using System;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
+using Meta.XR.Util;
 using UnityEngine;
 using ColorMapType = OVRPlugin.InsightPassthroughColorMapType;
 
@@ -28,6 +29,7 @@ using ColorMapType = OVRPlugin.InsightPassthroughColorMapType;
 /// A layer used for passthrough.
 /// </summary>
 [HelpURL("https://developer.oculus.com/documentation/unity/unity-passthrough-gs/")]
+[Feature(Feature.Passthrough)]
 public class OVRPassthroughLayer : MonoBehaviour
 {
     #region Public Interface

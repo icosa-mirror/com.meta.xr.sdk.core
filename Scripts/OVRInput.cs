@@ -381,7 +381,7 @@ public static class OVRInput
             new OVRControllerHands(),
             new OVRControllerLHand(),
             new OVRControllerRHand(),
-#elif UNITY_STANDALONE_WIN || UNITY_EDITOR_WIN
+#elif UNITY_STANDALONE_WIN || UNITY_EDITOR_WIN || UNITY_STANDALONE_OSX || UNITY_EDITOR_OSX
             new OVRControllerGamepadPC(),
             new OVRControllerTouch(),
             new OVRControllerLTouch(),
@@ -451,6 +451,12 @@ public static class OVRInput
         if ((connectedControllerTypes & activeControllerType) == 0)
         {
             activeControllerType = Controller.None;
+        }
+
+        if (activeControllerType == Controller.None && ((connectedControllerTypes & Controller.Hands) != 0))
+        {
+            // If active controller is Controller.None and any hands are connected, promote any connected hands to active controller.
+            activeControllerType = connectedControllerTypes & Controller.Hands;
         }
 
         bool UsePluginActiveAndConnectedControllers = (OVRManager.loadedXRDevice == OVRManager.XRDevice.Oculus && pluginSupportsActiveController);

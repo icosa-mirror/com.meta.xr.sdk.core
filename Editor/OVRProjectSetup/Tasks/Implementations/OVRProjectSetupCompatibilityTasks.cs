@@ -164,7 +164,7 @@ internal static class OVRProjectSetupCompatibilityTasks
             {
                 if (TryGetXRSimPackageVersion(out var xrSimVersion))
                 {
-                    return xrSimVersion == SDKVersion;
+                    return xrSimVersion == SDKVersion || xrSimVersion == SDKVersion - 1;
                 }
 
                 return true;

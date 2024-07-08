@@ -36,12 +36,6 @@ namespace Meta.XR.BuildingBlocks.Editor
         [SerializeField, OVRReadOnly] internal string id = Guid.NewGuid().ToString();
         public string Id => id;
 
-        [SerializeField] internal string routineName;
-        public string RoutineName => routineName;
-
-        [SerializeField] internal string description;
-        public string Description => description;
-
         [SerializeField] internal string targetBlockDataId;
         public string TargetBlockDataId => targetBlockDataId;
 

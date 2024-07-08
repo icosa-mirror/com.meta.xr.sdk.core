@@ -21,6 +21,7 @@
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
+using Meta.XR.Util;
 using UnityEngine;
 using UnityEngine.Assertions;
 
@@ -35,6 +36,7 @@ using UnityEngine.Assertions;
 /// </remarks>
 [RequireComponent(typeof(SkinnedMeshRenderer))]
 [HelpURL("https://developer.oculus.com/documentation/unity/move-face-tracking/")]
+[Feature(Feature.FaceTracking)]
 public class OVRCustomFace : OVRFace
 {
     public OVRFaceExpressions.FaceExpression[] Mappings

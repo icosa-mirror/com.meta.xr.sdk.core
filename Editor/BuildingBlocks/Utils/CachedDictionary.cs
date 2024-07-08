@@ -86,6 +86,18 @@ namespace Meta.XR.BuildingBlocks.Editor
             }
         }
 
+        public bool TryGetValue(string key, out T value)
+        {
+            if (key == null)
+            {
+                value = null;
+                return false;
+            }
+
+            Refresh();
+            return _dictionary.TryGetValue(key, out value);
+        }
+
         public IEnumerable<T> Values
         {
             get

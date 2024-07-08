@@ -96,6 +96,10 @@ namespace UnityEngine.EventSystems
         private Vector2 m_LastMousePosition;
         private Vector2 m_MousePosition;
 
+        // track which objects we already clicked this frame
+        // to avoid reclicking the same object over and over.
+        private HashSet<GameObject> _objectsHitThisFrame = new HashSet<GameObject>();
+
         protected OVRInputModule()
         {
         }
@@ -394,34 +398,40 @@ namespace UnityEngine.EventSystems
 
                 // Debug.Log("Pressed: " + newPressed);
 
-                float time = Time.unscaledTime;
-
-                if (newPressed == pointerEvent.lastPress)
+                // Prevent triggering multiple clicks on the same object on the same frame.
+                if (!_objectsHitThisFrame.Contains(newPressed))
                 {
-                    var diffTime = time - pointerEvent.clickTime;
-                    if (diffTime < 0.3f)
-                        ++pointerEvent.clickCount;
+                    _objectsHitThisFrame.Add(newPressed);
+
+                    float time = Time.unscaledTime;
+
+                    if (newPressed == pointerEvent.lastPress)
+                    {
+                        var diffTime = time - pointerEvent.clickTime;
+                        if (diffTime < 0.3f)
+                            ++pointerEvent.clickCount;
+                        else
+                            pointerEvent.clickCount = 1;
+
+                        pointerEvent.clickTime = time;
+                    }
                     else
+                    {
                         pointerEvent.clickCount = 1;
+                    }
+
+                    pointerEvent.pointerPress = newPressed;
+                    pointerEvent.rawPointerPress = currentOverGo;
 
                     pointerEvent.clickTime = time;
+
+                    // Save the drag handler as well
+                    pointerEvent.pointerDrag = ExecuteEvents.GetEventHandler<IDragHandler>(currentOverGo);
+
+                    if (pointerEvent.pointerDrag != null)
+                        ExecuteEvents.Execute(pointerEvent.pointerDrag, pointerEvent,
+                            ExecuteEvents.initializePotentialDrag);
                 }
-                else
-                {
-                    pointerEvent.clickCount = 1;
-                }
-
-                pointerEvent.pointerPress = newPressed;
-                pointerEvent.rawPointerPress = currentOverGo;
-
-                pointerEvent.clickTime = time;
-
-                // Save the drag handler as well
-                pointerEvent.pointerDrag = ExecuteEvents.GetEventHandler<IDragHandler>(currentOverGo);
-
-                if (pointerEvent.pointerDrag != null)
-                    ExecuteEvents.Execute(pointerEvent.pointerDrag, pointerEvent,
-                        ExecuteEvents.initializePotentialDrag);
             }
 
             // PointerUp notification
@@ -524,7 +534,7 @@ namespace UnityEngine.EventSystems
 
             // Handle controllers / hands if we have them. If not, fallback to tracking the gaze cursor.
             bool hadActiveInputSource = false;
-            for (int i = _trackedInputSources.Count - 1; i >= 0; i-- )
+            for (int i = _trackedInputSources.Count - 1; i >= 0; i--)
             {
                 if (_trackedInputSources[i].IsActive())
                 {
@@ -539,6 +549,8 @@ namespace UnityEngine.EventSystems
                 // Process gaze event.
                 ProcessMouseEvent(GetMouseStateFromRaycast(rayTransform));
             }
+
+            _objectsHitThisFrame.Clear();
 #if !UNITY_ANDROID
             ProcessMouseEvent(GetCanvasPointerData());
 #endif
@@ -1104,7 +1116,10 @@ namespace UnityEngine.EventSystems
         {
             if (instance)
             {
-                instance._trackedInputSources.Add(hand);
+                if (!instance._trackedInputSources.Contains(hand))
+                {
+                    instance._trackedInputSources.Add(hand);
+                }
             }
             else
             {

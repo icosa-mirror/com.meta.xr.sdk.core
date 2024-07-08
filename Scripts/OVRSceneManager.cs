@@ -21,6 +21,7 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using Meta.XR.Util;
 using Unity.Collections;
 using UnityEngine;
 using UnityEngine.Events;
@@ -36,6 +37,7 @@ using System.Linq;
 /// </summary>
 [HelpURL("https://developer.oculus.com/documentation/unity/unity-scene-use-scene-anchors/")]
 [Obsolete(DeprecationMessage)]
+[Feature(Feature.Scene)]
 public class OVRSceneManager : MonoBehaviour
 {
     internal const string DeprecationMessage =

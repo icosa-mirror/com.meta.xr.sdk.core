@@ -48,7 +48,7 @@ public class OVRManifestPreprocessor
     private static readonly string BuildManifestFilePathRelative =
         Path.Combine(BuildManifestFolderPathRelative, ManifestFileName);
 
-    [MenuItem("Oculus/Tools/Create store-compatible AndroidManifest.xml", false, 100000)]
+    [MenuItem("Meta/Tools/Create store-compatible AndroidManifest.xml", false, 100000)]
     public static void GenerateManifestForSubmission()
     {
         var so = ScriptableObject.CreateInstance(typeof(OVRPluginInfo));
@@ -79,8 +79,8 @@ public class OVRManifestPreprocessor
             Directory.CreateDirectory(ManifestFolderPathAbsolute);
 
         PatchAndroidManifest(srcFile, BuildManifestFilePathAbsolute, false);
-
         AssetDatabase.Refresh();
+        ShowAndroidManifestInProject();
     }
 
     public static bool DoesAndroidManifestExist()
@@ -89,7 +89,7 @@ public class OVRManifestPreprocessor
         return File.Exists(BuildManifestFilePathAbsolute);
     }
 
-    [MenuItem("Oculus/Tools/Update AndroidManifest.xml")]
+    [MenuItem("Meta/Tools/Update AndroidManifest.xml", false, 100000)]
     public static void UpdateAndroidManifest()
     {
         if (!DoesAndroidManifestExist())
@@ -107,14 +107,24 @@ public class OVRManifestPreprocessor
 
         PatchAndroidManifest(BuildManifestFilePathAbsolute, skipExistingAttributes: false);
         AssetDatabase.Refresh();
+        ShowAndroidManifestInProject();
     }
 
-    [MenuItem("Oculus/Tools/Remove AndroidManifest.xml")]
+    [MenuItem("Meta/Tools/Remove AndroidManifest.xml", false, 100000)]
     public static void RemoveAndroidManifest()
     {
         // AssetDatabase functions uses relative paths
         AssetDatabase.DeleteAsset(BuildManifestFilePathRelative);
         AssetDatabase.Refresh();
+    }
+
+    private static void ShowAndroidManifestInProject()
+    {
+        if (!DoesAndroidManifestExist())
+            return;
+
+        Selection.activeObject = AssetDatabase.LoadAssetAtPath<TextAsset>(BuildManifestFilePathRelative);
+        EditorGUIUtility.PingObject(Selection.activeObject);
     }
 
     private static void AddOrRemoveTag(XmlDocument doc, string @namespace, string path, string elementName, string name,
@@ -206,8 +216,8 @@ public class OVRManifestPreprocessor
 
         try
         {
-            // Load android manfiest file
-            XmlDocument doc = new XmlDocument();
+            // Load android manifest file
+            var doc = new XmlDocument();
             doc.Load(sourceFile);
 
             string androidNamespaceURI;
@@ -234,10 +244,17 @@ public class OVRManifestPreprocessor
             {
                 activityNode.SetAttribute("name", androidNamespaceURI, "com.unity3d.player.UnityPlayerGameActivity");
             }
+
+            // use a Theme.AppCompat theme for the compatbility with UnityPlayerGameActivity
+            string activityTheme = activityNode.GetAttribute("theme", androidNamespaceURI);
+            if (activityTheme == "@android:style/Theme.Black.NoTitleBar.Fullscreen")
+            {
+                activityNode.SetAttribute("theme", androidNamespaceURI, "@style/Theme.AppCompat.DayNight.NoActionBar");
+            }
 #endif
 
-            ApplyRequiredManfiestTags(doc, androidNamespaceURI, modifyIfFound, enableSecurity);
-            ApplyFeatureManfiestTags(doc, androidNamespaceURI, modifyIfFound);
+            ApplyRequiredManifestTags(doc, androidNamespaceURI, modifyIfFound, enableSecurity);
+            ApplyFeatureManifestTags(doc, androidNamespaceURI, modifyIfFound);
 
             // The following manifest entries are all handled through Oculus XR SDK Plugin
 #if !PRIORITIZE_OCULUS_XR_SETTINGS
@@ -246,16 +263,41 @@ public class OVRManifestPreprocessor
 #endif
 
 
-
-            doc.Save(destinationFile);
+            var settings = new XmlWriterSettings
+            {
+                NewLineChars = GetSuggestedLineEnding(sourceFile),
+                Indent = true,
+            };
+            using var writer = XmlWriter.Create(destinationFile, settings);
+            doc.Save(writer);
         }
         catch (System.Exception e)
         {
             UnityEngine.Debug.LogException(e);
         }
+
+        // see if the current file uses \r\n or \n by scanning the first line
+        // the first line in the xml file is ~50 chars
+        string GetSuggestedLineEnding(string filepath)
+        {
+            using var reader = File.OpenRead(filepath);
+            var prevChar = 'a';
+            for (var i = 0; i < 256; i++)
+            {
+                var cur = reader.ReadByte();
+                if (cur == -1) break;
+                var curChar = (char)cur;
+                if (curChar == '\n')
+                    return prevChar == '\r' ? "\r\n" : "\n";
+                prevChar = curChar;
+            }
+            return System.Environment.NewLine;
+        }
     }
 
-    private static void ApplyRequiredManfiestTags(XmlDocument doc, string androidNamespaceURI, bool modifyIfFound,
+
+
+    private static void ApplyRequiredManifestTags(XmlDocument doc, string androidNamespaceURI, bool modifyIfFound,
         bool enableSecurity)
     {
         OVRProjectConfig projectConfig = OVRProjectConfig.GetProjectConfig();
@@ -295,7 +337,7 @@ public class OVRManifestPreprocessor
         );
     }
 
-    private static void ApplyFeatureManfiestTags(XmlDocument doc, string androidNamespaceURI, bool modifyIfFound)
+    private static void ApplyFeatureManifestTags(XmlDocument doc, string androidNamespaceURI, bool modifyIfFound)
     {
         OVRProjectConfig projectConfig = OVRProjectConfig.GetProjectConfig();
         OVRRuntimeSettings runtimeSettings = OVRRuntimeSettings.GetRuntimeSettings();
@@ -380,8 +422,10 @@ public class OVRManifestPreprocessor
         //============================================================================
         // Anchor
         OVRProjectConfig.AnchorSupport targetAnchorSupport = OVRProjectConfig.GetProjectConfig().anchorSupport;
+        var sceneSupport = OVRProjectConfig.GetProjectConfig().sceneSupport;
         bool anchorEntryNeeded = OVRDeviceSelector.isTargetDeviceQuestFamily &&
-                                 (targetAnchorSupport == OVRProjectConfig.AnchorSupport.Enabled);
+                                 (targetAnchorSupport == OVRProjectConfig.AnchorSupport.Enabled ||
+                                  sceneSupport != OVRProjectConfig.FeatureSupport.None);
 
         AddOrRemoveTag(doc,
             androidNamespaceURI,
@@ -625,7 +669,6 @@ public class OVRManifestPreprocessor
 
         //============================================================================
         // Scene
-        var sceneSupport = OVRProjectConfig.GetProjectConfig().sceneSupport;
         bool sceneEntryNeeded = OVRDeviceSelector.isTargetDeviceQuestFamily &&
                                 (sceneSupport != OVRProjectConfig.FeatureSupport.None);
 
@@ -637,6 +680,19 @@ public class OVRManifestPreprocessor
             sceneEntryNeeded,
             modifyIfFound);
 
+        //============================================================================
+        // Boundary Visibility
+        var boundaryVisibilitySupport = OVRProjectConfig.GetProjectConfig().boundaryVisibilitySupport;
+        bool boundaryVisibilityEntryNeeded = OVRDeviceSelector.isTargetDeviceQuestFamily &&
+                                (boundaryVisibilitySupport != OVRProjectConfig.FeatureSupport.None);
+
+        AddOrRemoveTag(doc,
+            androidNamespaceURI,
+            "/manifest",
+            "uses-permission",
+            "com.oculus.permission.BOUNDARY_VISIBILITY",
+            boundaryVisibilityEntryNeeded,
+            modifyIfFound);
 
         //============================================================================
         // Processor Favor
@@ -651,6 +707,18 @@ public class OVRManifestPreprocessor
             required: tradeCpuForGpuAmountNeeded,
             modifyIfFound: true,
             "value", ((int)processorFavor).ToString());
+
+        //============================================================================
+        // Telemetry Project GUID
+        AddOrRemoveTag(doc,
+            androidNamespaceURI,
+            "/manifest/application",
+            "meta-data",
+            "com.oculus.telemetry.project_guid",
+            required: true,
+            modifyIfFound: true,
+            "value",
+            runtimeSettings.TelemetryProjectGuid);
     }
 
 

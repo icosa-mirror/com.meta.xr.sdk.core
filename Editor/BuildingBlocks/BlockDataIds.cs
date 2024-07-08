@@ -50,6 +50,8 @@ namespace Meta.XR.BuildingBlocks.Editor
         public const string SyntheticHands = "6b67162c-2460-4766-a931-980388647573";
         public const string ThrowableItem = "803f3803-bb5e-464a-ac45-dad44c840fb6";
 
+        public const string MyNewBlock = "c26697aa-66c2-4ac9-97ee-00ca2e13ad10";
+
 
         // Multiplayer Blocks
         public const string IAutoMatchmaking = "d45b4309-f823-42e4-b871-0f58e8e647d8";

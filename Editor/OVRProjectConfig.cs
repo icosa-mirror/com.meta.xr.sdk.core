@@ -114,7 +114,7 @@ public class OVRProjectConfig : ScriptableObject, ISerializationCallbackReceiver
     public FeatureSupport eyeTrackingSupport = FeatureSupport.None;
     public FeatureSupport virtualKeyboardSupport = FeatureSupport.None;
     public FeatureSupport sceneSupport = FeatureSupport.None;
-
+    public FeatureSupport boundaryVisibilitySupport = FeatureSupport.None;
 
     public bool disableBackups = true;
     public bool enableNSCConfig = true;
@@ -290,6 +290,7 @@ public class OVRProjectConfig : ScriptableObject, ISerializationCallbackReceiver
             projectConfig.eyeTrackingSupport = FeatureSupport.None;
             projectConfig.virtualKeyboardSupport = FeatureSupport.None;
             projectConfig.sceneSupport = FeatureSupport.None;
+            projectConfig.boundaryVisibilitySupport = FeatureSupport.None;
             projectConfig.disableBackups = true;
             projectConfig.enableNSCConfig = true;
             projectConfig.skipUnneededShaders = false;

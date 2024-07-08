@@ -18,9 +18,11 @@
  * limitations under the License.
  */
 
+using Meta.XR.Util;
 using UnityEngine;
 using UnityEngine.Assertions;
 
+[Feature(Feature.TrackedKeyboard)]
 public class OVRTrackedKeyboardHands : MonoBehaviour
 {
     public GameObject LeftHandPresence;

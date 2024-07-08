@@ -21,6 +21,7 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using Meta.XR.Util;
 using UnityEngine;
 
 /// <summary>
@@ -30,6 +31,7 @@ using UnityEngine;
 /// Refers to the <see cref="OVRFaceExpressions.FaceExpression"/> enum for the list of face expressions.
 /// </remarks>
 [HelpURL("https://developer.oculus.com/documentation/unity/move-face-tracking/")]
+[Feature(Feature.FaceTracking)]
 public class OVRFaceExpressions : MonoBehaviour, IReadOnlyCollection<float>, OVRFaceExpressions.WeightProvider
 {
     /// <summary>

@@ -19,6 +19,7 @@
  */
 
 using System;
+using Meta.XR.Util;
 using UnityEngine;
 
 /// <summary>
@@ -29,6 +30,7 @@ using UnityEngine;
 /// <see cref="OVRSkeletonRenderer"/>.
 /// </remarks>
 [HelpURL("https://developer.oculus.com/documentation/unity/move-body-tracking/")]
+[Feature(Feature.BodyTracking)]
 public class OVRBody : MonoBehaviour,
     OVRSkeleton.IOVRSkeletonDataProvider,
     OVRSkeletonRenderer.IOVRSkeletonRendererDataProvider
@@ -174,7 +176,13 @@ public class OVRBody : MonoBehaviour,
         OVRPlugin.SuggestBodyTrackingCalibrationOverride(new OVRPlugin.BodyTrackingCalibrationInfo { BodyHeight = height });
     public static bool ResetBodyTrackingCalibration() => OVRPlugin.ResetBodyTrackingCalibration();
 
-    public OVRPlugin.BodyTrackingCalibrationState GetBodyTrackingCalibrationStatus() => _bodyState.CalibrationStatus;
+    public OVRPlugin.BodyTrackingCalibrationState GetBodyTrackingCalibrationStatus()
+    {
+        if (!_hasData)
+            return OVRPlugin.BodyTrackingCalibrationState.Invalid;
+
+        return _bodyState.CalibrationStatus;
+    }
 
     public OVRPlugin.BodyTrackingFidelity2 GetBodyTrackingFidelityStatus()
     {

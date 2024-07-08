@@ -109,5 +109,55 @@ internal static class OVRProjectSetupPassthrough
             },
             fixMessage: "Clear background of OVRCameraRig"
         );
+
+        OVRProjectSetup.AddTask(
+            level: OVRProjectSetup.TaskLevel.Required,
+            group: Group,
+            isDone: _ => !OVRPassthroughHelper.IsAnyPassthroughLayerUnderlay() ||
+                         OVRProjectConfig.CachedProjectConfig.systemLoadingScreenBackground ==
+                         OVRProjectConfig.SystemLoadingScreenBackground.ContextualPassthrough ||
+                         // Consider this rule only when there are no building blocks present in the scene
+                         OVRProjectSetupUtils.FindComponentInScene<BuildingBlock>(),
+            message: "When using Passthrough as an underlay it's required to set System Splash Screen Background " +
+                     "to \"Passthrough (Contextual)\"",
+            fix: _ =>
+            {
+                var projectConfig = OVRProjectConfig.CachedProjectConfig;
+                projectConfig.systemLoadingScreenBackground =
+                    OVRProjectConfig.SystemLoadingScreenBackground.ContextualPassthrough;
+                OVRProjectConfig.CommitProjectConfig(projectConfig);
+            },
+            fixMessage: "Set System Splash Screen Background to \"Passthrough (Contextual)\""
+        );
+
+        OVRProjectSetup.AddTask(
+            level: OVRProjectSetup.TaskLevel.Recommended,
+            group: Group,
+            isDone: _ => OVRProjectConfig.CachedProjectConfig.systemLoadingScreenBackground !=
+                         OVRProjectConfig.SystemLoadingScreenBackground.ContextualPassthrough ||
+                         PlayerSettings.virtualRealitySplashScreen == null,
+            message: "When using contextual passthrough it's recommended to disable Virtual Reality Splash Screen " +
+                     "(in Player Settings). Otherwise it will result in an inconsistent experience",
+            fix: _ =>
+            {
+                PlayerSettings.virtualRealitySplashScreen = null;
+            },
+            fixMessage: "Disable Virtual Reality Splash Screen (in Player Settings)"
+        );
+
+        OVRProjectSetup.AddTask(
+            level: OVRProjectSetup.TaskLevel.Recommended,
+            group: Group,
+            isDone: _ => OVRProjectConfig.CachedProjectConfig.systemLoadingScreenBackground !=
+                         OVRProjectConfig.SystemLoadingScreenBackground.ContextualPassthrough ||
+                         !PlayerSettings.SplashScreen.show,
+            message: "When using contextual passthrough it's recommended to disable Show Splash Screen " +
+                     "(in Player Settings). Otherwise it will result in an inconsistent experience",
+            fix: _ =>
+            {
+                PlayerSettings.SplashScreen.show = false;
+            },
+            fixMessage: "Disable Show Splash Screen (in Player Settings)"
+        );
     }
 }

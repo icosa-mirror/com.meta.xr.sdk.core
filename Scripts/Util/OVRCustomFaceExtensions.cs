@@ -22,10 +22,12 @@ using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Linq;
+using Meta.XR.Util;
 using UnityEngine;
 using UnityEngine.Assertions;
 
 [HelpURL("https://developer.oculus.com/documentation/unity/move-face-tracking/")]
+[Feature(Feature.FaceTracking)]
 public static class OVRCustomFaceExtensions
 {
     /// <summary>

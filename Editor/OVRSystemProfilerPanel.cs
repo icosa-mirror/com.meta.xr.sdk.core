@@ -28,7 +28,7 @@ using System.IO;
 
 public class OVRSystemProfilerPanel : EditorWindow
 {
-    [MenuItem("Oculus/Tools/(Deprecated) Oculus Profiler Panel", false, 200000)]
+    [MenuItem("Meta/Tools/(Deprecated) Oculus Profiler Panel", false, 200000)]
     public static void ShowWindow()
     {
         EditorWindow.GetWindow(typeof(OVRSystemProfilerPanel), false, "Oculus Profiler");

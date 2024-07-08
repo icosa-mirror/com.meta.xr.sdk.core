@@ -81,6 +81,7 @@ public partial struct OVRAnchor
         /// </remarks>
         public IEnumerable<Type> ComponentTypes;
 
+
         internal unsafe Result DiscoverSpaces(out ulong requestId)
         {
             var telemetryMarker = OVRTelemetry.Start((int)Telemetry.MarkerId.DiscoverSpaces);
@@ -178,6 +179,7 @@ public partial struct OVRAnchor
                     NumIds = uuidCount,
                 };
             }
+
 
             var discoveryInfo = new SpaceDiscoveryInfo
             {

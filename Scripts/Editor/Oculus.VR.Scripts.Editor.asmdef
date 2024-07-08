@@ -8,8 +8,7 @@
         "Unity.XR.OpenXR",
         "Unity.XR.OpenXR.Editor",
         "Unity.XR.Management",
-        "Unity.XR.Management.Editor",
-        "Meta.XR.ImmersiveDebugger.Editor"
+        "Unity.XR.Management.Editor"
     ],
     "includePlatforms": [
         "Editor"

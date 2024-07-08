@@ -63,16 +63,19 @@ namespace Meta.XR.BuildingBlocks.Editor
         public bool IsSingleton => isSingleton;
 
 
-        internal override async void AddToProject(GameObject selectedGameObject = null, Action onInstall = null)
+        internal override async Task AddToProject(GameObject selectedGameObject = null, Action onInstall = null)
         {
             using (new OVREditorUtils.UndoScope($"Install {Utils.BlockPublicTag} {BlockName}"))
             {
                 await InstallWithDependenciesAndCommit(selectedGameObject);
                 onInstall?.Invoke();
+
+                // Update local block usage data
+                Utils.UpdateBlockUsageFrequency(this);
             }
         }
 
-        internal override async void AddToObjects(List<GameObject> selectedGameObjects)
+        internal override async Task AddToObjects(List<GameObject> selectedGameObjects)
         {
             using (new OVREditorUtils.UndoScope($"Install {Utils.BlockPublicTag} {BlockName}"))
             {
@@ -81,9 +84,9 @@ namespace Meta.XR.BuildingBlocks.Editor
         }
 
         [ContextMenu("Install")]
-        private void ContextMenuInstall()
+        private async void ContextMenuInstall()
         {
-            AddToProject(null, null);
+            await AddToProject(null, null);
         }
 
         private async Task InstallWithDependenciesAndCommit(List<GameObject> selectedGameObjects)
@@ -104,7 +107,9 @@ namespace Meta.XR.BuildingBlocks.Editor
                 SaveScene();
                 FixSetupRules();
 
-                EditorApplication.delayCall += () => { Utils.SelectBlocksInScene(installedObjects); };
+                // Wait for 1 frame.
+                await Task.Yield();
+                Utils.SelectBlocksInScene(installedObjects);
             }
             catch (Exception e)
             {

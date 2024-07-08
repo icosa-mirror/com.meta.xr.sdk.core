@@ -85,6 +85,16 @@ namespace Meta.XR.Editor.UserInterface
             return new Color32(r, g, b, a);
         }
 
+        public static string ColorToHex(Color color)
+        {
+            int r = Mathf.RoundToInt(color.r * 255);
+            int g = Mathf.RoundToInt(color.g * 255);
+            int b = Mathf.RoundToInt(color.b * 255);
+            int a = Mathf.RoundToInt(color.a * 255);
+            string hex = string.Format("#{0:X2}{1:X2}{2:X2}{3:X2}", r, g, b, a);
+            return hex;
+        }
+
         public readonly struct IndentScope : System.IDisposable
         {
             private readonly int _previousIndentLevel;

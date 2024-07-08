@@ -78,7 +78,7 @@ public class OVRGradleGeneration
 
 #if UNITY_ANDROID
     public const string prefName = "OVRAutoIncrementVersionCode_Enabled";
-    private const string menuItemAutoIncVersion = "Oculus/Tools/Auto Increment Version Code";
+    private const string menuItemAutoIncVersion = "Meta/Tools/Auto Increment Version Code";
     static bool autoIncrementVersion = false;
 #endif
 

@@ -22,8 +22,10 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Text;
+using Meta.XR.Util;
 using UnityEngine;
 
+[Feature(Feature.TrackedKeyboard)]
 public static class OVRKeyboard
 {
     public struct TrackedKeyboardState

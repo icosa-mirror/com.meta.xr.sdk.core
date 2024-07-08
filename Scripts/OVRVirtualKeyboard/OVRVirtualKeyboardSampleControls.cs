@@ -19,12 +19,14 @@
  */
 
 using System.Collections;
+using Meta.XR.Util;
 using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.UI;
 
 [RequireComponent(typeof(OVRVirtualKeyboardSampleInputHandler))]
 [HelpURL("https://developer.oculus.com/documentation/unity/VK-unity-sample/")]
+[Feature(Feature.VirtualKeyboard)]
 public class OVRVirtualKeyboardSampleControls : MonoBehaviour
 {
     private struct OVRVirtualKeyboardBackup

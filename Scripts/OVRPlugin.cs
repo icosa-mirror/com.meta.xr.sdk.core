@@ -26,11 +26,11 @@
 #define REQUIRES_XR_SDK
 #endif
 
-#if !(UNITY_EDITOR_WIN || UNITY_STANDALONE_WIN || (UNITY_ANDROID && !UNITY_EDITOR))
+#if !(UNITY_EDITOR_WIN || UNITY_STANDALONE_WIN || UNITY_EDITOR_OSX || UNITY_STANDALONE_OSX || (UNITY_ANDROID && !UNITY_EDITOR))
 #define OVRPLUGIN_UNSUPPORTED_PLATFORM
 #endif
 
-#if !(UNITY_EDITOR_WIN || UNITY_EDITOR_OSX || UNITY_STANDALONE_WIN || (UNITY_ANDROID && !UNITY_EDITOR))
+#if !(UNITY_EDITOR_WIN || UNITY_STANDALONE_WIN || UNITY_EDITOR_OSX || UNITY_STANDALONE_OSX || (UNITY_ANDROID && !UNITY_EDITOR))
 #define OVRPLUGIN_QPL_UNSUPPORTED_PLATFORM
 #endif
 
@@ -59,7 +59,7 @@ public static partial class OVRPlugin
 #if OVRPLUGIN_UNSUPPORTED_PLATFORM && OVRPLUGIN_QPL_UNSUPPORTED_PLATFORM
     public static readonly System.Version wrapperVersion = _versionZero;
 #else
-    public static readonly System.Version wrapperVersion = OVRP_1_97_0.version;
+    public static readonly System.Version wrapperVersion = OVRP_1_98_0.version;
 #endif
 
 #if !(OVRPLUGIN_UNSUPPORTED_PLATFORM && OVRPLUGIN_QPL_UNSUPPORTED_PLATFORM)
@@ -223,6 +223,8 @@ public static partial class OVRPlugin
         Failure_SpaceTooDark = -9005,
         Failure_SpaceTooBright = -9006,
 
+        // XR_META_boundary_visibility
+        Warning_BoundaryVisibilitySuppressionNotAllowed = 9030,
     }
 
     public static bool IsSuccess(this Result result) => result >= 0;
@@ -2936,6 +2938,8 @@ public static partial class OVRPlugin
 
         PassthroughLayerResumed = 500,
 
+        // XR_META_boundary_visibility
+        BoundaryVisibilityChanged = 510,
 
 
 
@@ -4319,6 +4323,28 @@ public static partial class OVRPlugin
             return OVRP_1_8_0.ovrp_Update2((int)Step.Render, -1 /*OVRP_CURRENT_FRAMEINDEX*/, 0.0) == Bool.True;
 
         return false;
+#endif
+    }
+
+    public static bool GetTrackingPoseEnabledForInvisibleSession()
+    {
+#if OVRPLUGIN_UNSUPPORTED_PLATFORM
+        return true;
+#else
+        Bool enabled = Bool.True;
+        if (version >= OVRP_1_98_0.version)
+            OVRP_1_98_0.ovrp_GetTrackingPoseEnabledForInvisibleSession(out enabled);
+        return enabled == Bool.True;
+#endif
+    }
+
+    public static void SetTrackingPoseEnabledForInvisibleSession(bool enabled)
+    {
+#if OVRPLUGIN_UNSUPPORTED_PLATFORM
+        return;
+#else
+        if (version >= OVRP_1_98_0.version)
+            OVRP_1_98_0.ovrp_SetTrackingPoseEnabledForInvisibleSession(enabled ? Bool.True : Bool.False);
 #endif
     }
 #endif
@@ -10437,7 +10463,19 @@ public static partial class OVRPlugin
 
     public static bool GetSpaceSemanticLabels(UInt64 space, out string labels)
     {
-        labels = "";
+        char[] buffer = null;
+        if (GetSpaceSemanticLabelsNonAlloc(space, ref buffer, out int length))
+        {
+            labels = new string(buffer, 0, length);
+            return true;
+        }
+        labels = null;
+        return false;
+    }
+
+    internal static unsafe bool GetSpaceSemanticLabelsNonAlloc(UInt64 space, ref char[] buffer, out int length)
+    {
+        length = -1;
 #if OVRPLUGIN_UNSUPPORTED_PLATFORM
         return false;
 #else
@@ -10452,9 +10490,19 @@ public static partial class OVRPlugin
             if (result == Result.Success)
             {
                 labelsInternal.byteCapacityInput = labelsInternal.byteCountOutput;
-                labelsInternal.labels = Marshal.AllocHGlobal(sizeof(byte) * labelsInternal.byteCountOutput);
+                length = labelsInternal.byteCountOutput;
+                labelsInternal.labels = Marshal.AllocHGlobal(length);
                 result = OVRP_1_72_0.ovrp_GetSpaceSemanticLabels(ref space, ref labelsInternal);
-                labels = Marshal.PtrToStringAnsi(labelsInternal.labels, labelsInternal.byteCountOutput);
+
+                if (buffer == null)
+                    buffer = new char[length];
+                else if (buffer.Length < length)
+                    buffer = new char[Math.Max(buffer.Length * 2, length)];
+
+                byte* bytePtr = (byte*)labelsInternal.labels;
+                for (int i = 0; i < length; i++)
+                    buffer[i] = (char)bytePtr[i];
+
                 Marshal.FreeHGlobal(labelsInternal.labels);
             }
 
@@ -10677,6 +10725,7 @@ public static partial class OVRPlugin
         public SpaceDiscoveryFilterType Type;
         public SpaceComponentType Component;
     }
+
 
     [StructLayout(LayoutKind.Sequential)]
     public unsafe struct SpaceDiscoveryInfo
@@ -11042,6 +11091,7 @@ public static partial class OVRPlugin
 
 
 
+
     public static Result DiscoverSpaces(in SpaceDiscoveryInfo info, out ulong requestId)
     {
         requestId = 0;
@@ -11102,8 +11152,35 @@ public static partial class OVRPlugin
 
 
 
+    public enum BoundaryVisibility
+    {
+        NotSuppressed = 1,
+        Suppressed = 2
+    }
 
+    public static Result RequestBoundaryVisibility(BoundaryVisibility boundaryVisibility)
+    {
+#if OVRPLUGIN_UNSUPPORTED_PLATFORM
+        return Result.Failure_Unsupported;
+#else
+        return version < OVRP_1_98_0.version
+            ? Result.Failure_NotYetImplemented
+            : OVRP_1_98_0.ovrp_RequestBoundaryVisibility(boundaryVisibility);
+#endif
+    }
 
+    public static Result GetBoundaryVisibility(out BoundaryVisibility boundaryVisibility)
+    {
+        // default = 0, which is undefined
+        boundaryVisibility = default;
+#if OVRPLUGIN_UNSUPPORTED_PLATFORM
+        return Result.Failure_Unsupported;
+#else
+        return version < OVRP_1_98_0.version
+            ? Result.Failure_NotYetImplemented
+            : OVRP_1_98_0.ovrp_GetBoundaryVisibility(out boundaryVisibility);
+#endif
+    }
 
 
     public class UnityOpenXR
@@ -12099,7 +12176,7 @@ public static partial class OVRPlugin
     {
         public static readonly System.Version version = new System.Version(1, 17, 0);
 
-#if UNITY_EDITOR_WIN || UNITY_STANDALONE_WIN || OVRPLUGIN_EDITOR_MOCK_ENABLED
+#if UNITY_EDITOR_WIN || UNITY_EDITOR_OSX || UNITY_STANDALONE_WIN || OVRPLUGIN_EDITOR_MOCK_ENABLED
         [DllImport(pluginName, CallingConvention = CallingConvention.Cdecl)]
         public static extern Result ovrp_GetExternalCameraPose(CameraDevice camera, out Posef cameraPose);
 
@@ -13402,6 +13479,23 @@ public static partial class OVRPlugin
         public static extern unsafe Result ovrp_EraseSpaces(UInt32 spaceCount, UInt64* spaces, UInt32 uuidCount,
             Guid* uuids, out UInt64 requestId);
 
+    }
+
+    private static class OVRP_1_98_0
+    {
+        public static readonly System.Version version = new System.Version(1, 98, 0);
+
+        [DllImport(pluginName, CallingConvention = CallingConvention.Cdecl)]
+        public static extern Result ovrp_RequestBoundaryVisibility(BoundaryVisibility boundaryVisibility);
+
+        [DllImport(pluginName, CallingConvention = CallingConvention.Cdecl)]
+        public static extern Result ovrp_GetBoundaryVisibility(out BoundaryVisibility boundaryVisibility);
+
+        [DllImport(pluginName, CallingConvention = CallingConvention.Cdecl)]
+        public static extern Result ovrp_GetTrackingPoseEnabledForInvisibleSession(out Bool trackingPoseEnabled);
+
+        [DllImport(pluginName, CallingConvention = CallingConvention.Cdecl)]
+        public static extern Result ovrp_SetTrackingPoseEnabledForInvisibleSession(Bool trackingPoseEnabled);
 
     }
 

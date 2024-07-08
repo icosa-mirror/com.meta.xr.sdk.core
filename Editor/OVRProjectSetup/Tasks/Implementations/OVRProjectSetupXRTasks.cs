@@ -39,39 +39,38 @@ using UnityEngine.XR.OpenXR;
 [InitializeOnLoad]
 internal static class OVRProjectSetupXRTasks
 {
-    internal const string OculusXRPackageName = "com.unity.xr.oculus";
-    internal const string XRPluginManagementPackageName = "com.unity.xr.management";
+    private const string OculusXRPackageName = "com.unity.xr.oculus";
+    private const string XRPluginManagementPackageName = "com.unity.xr.management";
     internal const string UnityXRPackage = "com.unity.xr.openxr";
+    private const string UPMTitle = "Unity Package Manager";
 
     private const OVRProjectSetup.TaskGroup XRTaskGroup = OVRProjectSetup.TaskGroup.Packages;
 
     static OVRProjectSetupXRTasks()
     {
         OVRProjectSetup.AddTask(
-            conditionalValidity: buildTargetGroup => OVRProjectSetupUtils.PackageManagerListAvailable,
+            conditionalValidity: _ => OVRProjectSetupUtils.PackageManagerListAvailable,
             level: OVRProjectSetup.TaskLevel.Required,
             group: XRTaskGroup,
-            isDone: buildTargetGroup => OVRProjectSetupUtils.IsPackageInstalled(OculusXRPackageName) || OVRProjectSetupUtils.IsPackageInstalled(UnityXRPackage),
-            message: "Either the Oculus XR or OpenXR Plugin package must be installed through the Package Manager.",
-            fixMessage: $"Install {OculusXRPackageName} package"
+            isDone: _ => OVRProjectSetupUtils.IsPackageInstalled(OculusXRPackageName) || OVRProjectSetupUtils.IsPackageInstalled(UnityXRPackage),
+            message: $"Either the Oculus XR ({OculusXRPackageName}) or OpenXR Plugin ({UnityXRPackage}) package must be installed through the {UPMTitle}."
         );
 
         OVRProjectSetup.AddTask(
-            conditionalValidity: buildTargetGroup => OVRProjectSetupUtils.PackageManagerListAvailable,
+            conditionalValidity: _ => OVRProjectSetupUtils.PackageManagerListAvailable,
             level: OVRProjectSetup.TaskLevel.Required,
             group: XRTaskGroup,
-            isDone: buildTargetGroup => OVRProjectSetupUtils.IsPackageInstalled(XRPluginManagementPackageName),
-            message: "The XR Plug-in Management package must be installed",
-            fixMessage: $"Install {XRPluginManagementPackageName} package"
+            isDone: _ => OVRProjectSetupUtils.IsPackageInstalled(XRPluginManagementPackageName),
+            message: $"The XR Plug-in Management ({XRPluginManagementPackageName}) package must be installed through the {UPMTitle}."
         );
 
         OVRProjectSetup.AddTask(
-            conditionalValidity: buildTargetGroup => OVRProjectSetupUtils.PackageManagerListAvailable,
+            conditionalValidity: _ => OVRProjectSetupUtils.PackageManagerListAvailable,
             level: OVRProjectSetup.TaskLevel.Required,
             group: XRTaskGroup,
-            isDone: buildTargetGroup => !(OVRProjectSetupUtils.IsPackageInstalled(OculusXRPackageName) && OVRProjectSetupUtils.IsPackageInstalled(UnityXRPackage)),
-            message: "It's not recommended to install Oculus XR Plugin and OpenXR Plugin at the same time, which may introduce unintentional conflicts.\nClick 'Fix' to uninstall the OpenXR Plugin. If you want to uninstall Oculus XR Plugin, please use the Package Manager.",
-            fix: buildTargetGroup => OVRProjectSetupUtils.UninstallPackage(UnityXRPackage),
+            isDone: _ => !(OVRProjectSetupUtils.IsPackageInstalled(OculusXRPackageName) && OVRProjectSetupUtils.IsPackageInstalled(UnityXRPackage)),
+            message: $"It's not recommended to install Oculus XR Plugin and OpenXR Plugin at the same time, which may introduce unintentional conflicts.\nClick 'Fix' to uninstall the OpenXR Plugin. If you want to uninstall Oculus XR Plugin, please use the {UPMTitle}.",
+            fix: _ => OVRProjectSetupUtils.UninstallPackage(UnityXRPackage),
             fixMessage: $"Remove the {UnityXRPackage} package"
         );
 
@@ -82,27 +81,14 @@ internal static class OVRProjectSetupXRTasks
     {
 #if USING_XR_MANAGEMENT && USING_XR_SDK_OCULUS
         OVRProjectSetup.AddTask(
-            conditionalValidity: buildTargetGroup =>
+            conditionalValidity: _ =>
                 OVRProjectSetupUtils.IsPackageInstalled(XRPluginManagementPackageName),
             level: OVRProjectSetup.TaskLevel.Required,
             group: XRTaskGroup,
             isDone: buildTargetGroup =>
             {
                 var settings = GetXRGeneralSettingsForBuildTarget(buildTargetGroup, false);
-                if (settings == null)
-                {
-                    return false;
-                }
-
-                foreach (var loader in settings.Manager.activeLoaders)
-                {
-                    if (loader as OculusLoader != null)
-                    {
-                        return true;
-                    }
-                }
-
-                return false;
+                return settings != null && settings.Manager.activeLoaders.Any(loader => loader is OculusLoader);
             },
             message: "Oculus must be added to the XR Plugin active loaders",
             fix: buildTargetGroup =>

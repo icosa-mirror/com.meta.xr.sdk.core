@@ -30,7 +30,7 @@ public class OVRManagerEditor : Editor
     private SerializedProperty _requestScenePermissionOnStartup;
     private SerializedProperty _requestRecordAudioPermissionOnStartup;
     private bool _expandPermissionsRequest;
-#if UNITY_EDITOR_WIN || UNITY_STANDALONE_WIN || UNITY_ANDROID
+#if UNITY_EDITOR_WIN || UNITY_STANDALONE_WIN || UNITY_EDITOR_OSX || UNITY_STANDALONE_OSX || UNITY_ANDROID
     private bool _showFaceTrackingDataSources = false;
 #endif
 
@@ -63,7 +63,7 @@ public class OVRManagerEditor : Editor
 
         bool modified = false;
 
-#if UNITY_EDITOR_WIN || UNITY_STANDALONE_WIN || UNITY_ANDROID
+#if UNITY_EDITOR_WIN || UNITY_STANDALONE_WIN || UNITY_EDITOR_OSX || UNITY_STANDALONE_OSX || UNITY_ANDROID
         OVRManager manager = (OVRManager)target;
 
         EditorGUILayout.Space();
@@ -145,7 +145,7 @@ public class OVRManagerEditor : Editor
         EditorGUILayout.EndFoldoutHeaderGroup();
 #endif
 
-#if UNITY_EDITOR_WIN || UNITY_STANDALONE_WIN || UNITY_ANDROID
+#if UNITY_EDITOR_WIN || UNITY_STANDALONE_WIN || UNITY_EDITOR_OSX || UNITY_STANDALONE_OSX || UNITY_ANDROID
         // Multimodal hands and controllers section
 #if UNITY_ANDROID
         bool launchSimultaneousHandsControllersOnStartup = manager.SimultaneousHandsAndControllersEnabled;
@@ -174,7 +174,7 @@ public class OVRManagerEditor : Editor
 #endif
 #endif
 
-#if UNITY_EDITOR_WIN || UNITY_STANDALONE_WIN || UNITY_ANDROID
+#if UNITY_EDITOR_WIN || UNITY_STANDALONE_WIN || UNITY_EDITOR_OSX || UNITY_STANDALONE_OSX || UNITY_ANDROID
         // Insight Passthrough section
 #if UNITY_ANDROID
         bool passthroughCapabilityEnabled =
@@ -187,7 +187,7 @@ public class OVRManagerEditor : Editor
             "Enables passthrough functionality for the scene. Can be toggled at runtime.");
 #endif
         EditorGUILayout.Space();
-        EditorGUILayout.LabelField("Insight Passthrough", EditorStyles.boldLabel);
+        EditorGUILayout.LabelField("Insight Passthrough & Guardian Boundary", EditorStyles.boldLabel);
         EditorGUI.indentLevel++; // PT section
 #if UNITY_ANDROID
         if (!passthroughCapabilityEnabled)
@@ -203,6 +203,33 @@ public class OVRManagerEditor : Editor
         EditorGUI.EndDisabledGroup();
 #endif
 
+        var boundaryCapabilityEnabled =
+            projectConfig.boundaryVisibilitySupport != OVRProjectConfig.FeatureSupport.None;
+
+        var canModifyBoundary = boundaryCapabilityEnabled && manager.isInsightPassthroughEnabled;
+        if (!canModifyBoundary)
+            manager.shouldBoundaryVisibilityBeSuppressed = false;
+
+        using (new EditorGUI.DisabledScope(!canModifyBoundary))
+        {
+            var content = new GUIContent("Should Boundary Visibility Be Suppressed",
+                "Request that the Guardian Boundary Visibility be suppressed. " +
+                "Can only be suppressed when Passthrough is enabled, and can " +
+                "therefore differ from the system boundary state. There can " +
+                "be a delay when setting this due to the delay in Passthrough startup. " +
+                "Boundary Visibility Capability must be enabled in the project settings.");
+            OVREditorUtil.SetupBoolField(target, content, ref manager.shouldBoundaryVisibilityBeSuppressed, ref modified);
+        }
+
+        // actual boundary state (readonly)
+        using (new EditorGUI.DisabledScope(true))
+        {
+            var isBoundaryVisibilitySuppressed = manager.isBoundaryVisibilitySuppressed;
+            OVREditorUtil.SetupBoolField(target, new GUIContent("Is Boundary Visibility Suppressed",
+                "The system state of the Guardian Boundary Visibility which may differ " +
+                "from the requested state."),
+                ref isBoundaryVisibilitySuppressed, ref modified);
+        }
         EditorGUI.indentLevel--; // PT section
 
 
@@ -345,7 +372,7 @@ public class OVRManagerEditor : Editor
 
         serializedObject.ApplyModifiedProperties();
 
-#if UNITY_EDITOR_WIN || UNITY_STANDALONE_WIN || UNITY_ANDROID
+#if UNITY_EDITOR_WIN || UNITY_STANDALONE_WIN || UNITY_EDITOR_OSX || UNITY_STANDALONE_OSX || UNITY_ANDROID
 #if !OCULUS_XR_3_3_0_OR_NEWER || UNITY_2020
         if (manager.enableDynamicResolution && !PlayerSettings.GetUseDefaultGraphicsAPIs(BuildTarget.Android))
         {

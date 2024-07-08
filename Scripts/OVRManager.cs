@@ -381,6 +381,13 @@ public partial class OVRManager : MonoBehaviour, OVRMixedRealityCaptureConfigura
     /// </remarks>
     public static event Action<int> PassthroughLayerResumed;
 
+    /// <summary>
+    /// Occurs when the system's boundary visibility has been changed
+    /// </summary>
+    /// <remarks>
+    /// @params (OVRPlugin.BoundaryVisibility newBoundaryVisibility)
+    /// </remarks>
+    public static event Action<OVRPlugin.BoundaryVisibility> BoundaryVisibilityChanged;
 
 
 
@@ -681,6 +688,17 @@ public partial class OVRManager : MonoBehaviour, OVRMixedRealityCaptureConfigura
     /// </summary>
     public int profilerTcpPort = OVRSystemPerfMetrics.TcpListeningPort;
 
+    /// <summary>
+    /// If premultipled alpha blending is used for the eye fov layer.
+    /// Useful for changing how the eye fov layer blends with underlays.
+    /// </summary>
+    [HideInInspector]
+    public static bool eyeFovPremultipliedAlphaModeEnabled
+    {
+        get { return OVRPlugin.eyeFovPremultipliedAlphaModeEnabled; }
+        set { OVRPlugin.eyeFovPremultipliedAlphaModeEnabled = value; }
+    }
+
 #if UNITY_EDITOR_WIN || UNITY_STANDALONE_WIN || UNITY_ANDROID
     /// <summary>
     /// If true, the MixedRealityCapture properties will be displayed
@@ -720,17 +738,6 @@ public partial class OVRManager : MonoBehaviour, OVRMixedRealityCaptureConfigura
     /// </summary>
     [HideInInspector, Tooltip("Extra visible layers")]
     public LayerMask extraVisibleLayers;
-
-    /// <summary>
-    /// If premultipled alpha blending is used for the eye fov layer.
-    /// Useful for changing how the eye fov layer blends with underlays.
-    /// </summary>
-    [HideInInspector]
-    public static bool eyeFovPremultipliedAlphaModeEnabled
-    {
-        get { return OVRPlugin.eyeFovPremultipliedAlphaModeEnabled; }
-        set { OVRPlugin.eyeFovPremultipliedAlphaModeEnabled = value; }
-    }
 
     /// <summary>
     /// Whether MRC should dynamically update the culling mask using the Main Camera's culling mask, extraHiddenLayers, and extraVisibleLayers
@@ -1177,6 +1184,27 @@ public partial class OVRManager : MonoBehaviour, OVRMixedRealityCaptureConfigura
                               "Passthrough layers can only be used if passthrough is enabled.")]
     public bool isInsightPassthroughEnabled = false;
 
+    /// <summary>
+    /// The desired state for the Guardian boundary visibility. The system may
+    /// ignore a request to suppress the boundary visibility if deemed necessary.
+    /// </summary>
+    /// <remarks>
+    /// If Passthrough has been initialized, then an attempt will be made
+    /// every frame to update the boundary state if different from the
+    /// system state. It is important to therefore keep this variable aligned
+    /// with the state of your Passthrough layers (e.g. set boundary suppression
+    /// to false when disabling the <see cref="OVRPassthroughLayer"/>, and set boundary
+    /// suppression to true only when the layer is active).
+    /// </remarks>
+    [HideInInspector] public bool shouldBoundaryVisibilityBeSuppressed = false;
+
+    /// <summary>
+    /// The system state of the Guardian boundary visibility.
+    /// </summary>
+    public bool isBoundaryVisibilitySuppressed { get; private set; } = false;
+
+    // boundary logging helper to avoid spamming
+    private bool _updateBoundaryLogOnce = false;
 
 
 
@@ -2247,6 +2275,8 @@ public partial class OVRManager : MonoBehaviour, OVRMixedRealityCaptureConfigura
         }
 #endif
 
+        InitializeBoundary();
+
         OVRManagerinitialized = true;
     }
 
@@ -2742,6 +2772,9 @@ public partial class OVRManager : MonoBehaviour, OVRMixedRealityCaptureConfigura
         {
             OVRPlugin.UpdateInBatchMode();
         }
+
+        // disable head pose update when xrSession is invisible
+        OVRPlugin.SetTrackingPoseEnabledForInvisibleSession(false);
 #endif
 
         if (_readOnlyControllerDrivenHandPosesType != controllerDrivenHandPosesType)
@@ -2781,6 +2814,7 @@ public partial class OVRManager : MonoBehaviour, OVRMixedRealityCaptureConfigura
 #endif
 
         UpdateInsightPassthrough(isInsightPassthroughEnabled);
+        UpdateBoundary();
 
     }
 
@@ -2937,6 +2971,14 @@ public partial class OVRManager : MonoBehaviour, OVRMixedRealityCaptureConfigura
                     }
                     break;
                 }
+                case OVRPlugin.EventType.BoundaryVisibilityChanged:
+                {
+                    var data = OVRDeserialize.ByteArrayToStructure<OVRDeserialize.BoundaryVisibilityChangedData>(
+                        eventDataBuffer.EventData);
+                    BoundaryVisibilityChanged?.Invoke(data.BoundaryVisibility);
+                    isBoundaryVisibilitySuppressed = data.BoundaryVisibility == OVRPlugin.BoundaryVisibility.Suppressed;
+                    break;
+                }
                 default:
                     foreach (var listener in eventListeners)
                     {
@@ -3040,10 +3082,12 @@ public partial class OVRManager : MonoBehaviour, OVRMixedRealityCaptureConfigura
         {
             if (m_AppSpaceTransform != null)
             {
-                SetAppSpacePosition(m_AppSpaceTransform.position.x, m_AppSpaceTransform.position.y,
-                    m_AppSpaceTransform.position.z);
-                SetAppSpaceRotation(m_AppSpaceTransform.rotation.x, m_AppSpaceTransform.rotation.y,
-                    m_AppSpaceTransform.rotation.z, m_AppSpaceTransform.rotation.w);
+                var pos = m_AppSpaceTransform.position;
+                var rot = m_AppSpaceTransform.rotation;
+                // Strange behavior may occur with non-uniform scale
+                var scale = m_AppSpaceTransform.lossyScale;
+                SetAppSpacePosition(pos.x / scale.x, pos.y / scale.y, pos.z / scale.z);
+                SetAppSpaceRotation(rot.x, rot.y, rot.z, rot.w);
             }
             else
             {
@@ -3366,6 +3410,51 @@ public partial class OVRManager : MonoBehaviour, OVRMixedRealityCaptureConfigura
 
     private static PassthroughCapabilities _passthroughCapabilities;
 
+    private void InitializeBoundary()
+    {
+        if (OVRPlugin.GetBoundaryVisibility(out var boundaryVisibility) == OVRPlugin.Result.Success)
+        {
+            isBoundaryVisibilitySuppressed = boundaryVisibility == OVRPlugin.BoundaryVisibility.Suppressed;
+        }
+        else
+        {
+            Debug.LogWarning("Could not retrieve initial boundary visibility state. " +
+                             "Defaulting to not suppressed.");
+            isBoundaryVisibilitySuppressed = false;
+        }
+    }
+
+    private void UpdateBoundary()
+    {
+        // will repeat the request as long as Passthrough is setup and
+        // the desired state != actual state of the boundary
+        if (shouldBoundaryVisibilityBeSuppressed == isBoundaryVisibilitySuppressed)
+            return;
+
+        var ptSupported = PassthroughInitializedOrPending(
+            _passthroughInitializationState.Value) && isInsightPassthroughEnabled;
+        if (!ptSupported)
+            return;
+
+        var desiredVisibility = shouldBoundaryVisibilityBeSuppressed
+            ? OVRPlugin.BoundaryVisibility.Suppressed
+            : OVRPlugin.BoundaryVisibility.NotSuppressed;
+
+        var result = OVRPlugin.RequestBoundaryVisibility(desiredVisibility);
+        if (result == OVRPlugin.Result.Warning_BoundaryVisibilitySuppressionNotAllowed)
+        {
+            if (!_updateBoundaryLogOnce)
+            {
+                _updateBoundaryLogOnce = true;
+                Debug.LogWarning("Cannot suppress boundary visibility as it's required to be on.");
+            }
+        }
+        else if (result == OVRPlugin.Result.Success)
+        {
+            _updateBoundaryLogOnce = false;
+            isBoundaryVisibilitySuppressed = shouldBoundaryVisibilityBeSuppressed;
+        }
+    }
 
     /// <summary>
     /// Checks whether simultaneous hands and controllers is currently supported by the system.

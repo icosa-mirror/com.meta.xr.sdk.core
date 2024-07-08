@@ -23,7 +23,7 @@ using Meta.XR.Editor.Tags;
 using Meta.XR.Editor.UserInterface;
 using UnityEditor;
 using UnityEngine;
-using Meta.XR.GuidedSetups.Editor;
+using Meta.XR.Guides.Editor;
 
 #if USING_META_XR_PLATFORM_SDK
 using Oculus.Platform;
@@ -70,12 +70,12 @@ namespace Meta.XR.BuildingBlocks.Editor
             EditorGUILayout.BeginVertical();
             if (GUILayout.Button("Open Meta Account Setup Guide"))
             {
-                GuidedSetupAccount.ShowWindow(GuidedSetups.Editor.Utils.TriggerSource.Inspector);
+                MetaAccountSetupGuide.ShowWindow(Guides.Editor.Utils.TriggerSource.Inspector, true);
             }
 
             if (GUILayout.Button("Open Platform Settings"))
             {
-                EditorApplication.ExecuteMenuItem("Oculus/Platform/Edit Settings");
+                EditorApplication.ExecuteMenuItem("Meta/Platform/Edit Settings");
             }
             EditorGUILayout.EndVertical();
         }

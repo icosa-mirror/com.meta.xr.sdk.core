@@ -61,6 +61,7 @@ internal static class OVRTelemetryConstants
         {
             public const int Start = 163067235;
             public const int ComponentAdd = 163060094;
+            public const int FeaturesInScene = 163069415;
         }
 
         public static class AnnotationType
@@ -68,6 +69,7 @@ internal static class OVRTelemetryConstants
             public const string ComponentName = "ComponentName";
             public const string AssemblyName = "AssemblyName";
             public const string UsesProSkin = "UsesProSkin";
+            public const string Origin = "Origin";
         }
     }
 
@@ -157,10 +159,11 @@ internal static class OVRTelemetryConstants
             public const string UsingBasicPrefabs = "basic_prefabs";
             public const string UsingPrefabOverrides = "prefab_overrides";
             public const string ActiveRoomsOnly = "active_rooms_only";
-            public const string ReturnToRooms = "return_to_rooms";
             public const string Guid = "Guid";
             public const string BuildTarget = "BuildTarget";
             public const string RuntimePlatform = "RuntimePlatform";
+            public const string Features = "Features";
+            public const string EnabledSettings = "FeaturesSupportInSettings";
         }
     }
 

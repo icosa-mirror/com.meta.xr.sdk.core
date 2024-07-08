@@ -36,7 +36,7 @@ using System.IO;
 class OVREngineConfigurationUpdater
 {
     private const string prefName = "OVREngineConfigurationUpdater_Enabled";
-    private const string menuItemName = "Oculus/Tools/Use Required Project Settings";
+    private const string menuItemName = "Meta/Tools/Use Required Project Settings";
     private const string androidAssetsPath = "Assets/Plugins/Android/assets";
     private const string androidManifestPath = "Assets/Plugins/Android/AndroidManifest.xml";
     static bool setPrefsForUtilities;

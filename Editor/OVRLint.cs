@@ -115,7 +115,7 @@ public class OVRLint : EditorWindow
     GUIStyle mFixIncompleteStyle;
     GUIStyle mFixCompleteStyle;
 
-    [MenuItem("Oculus/Tools/OVR Performance Lint Tool")]
+    [MenuItem("Meta/Tools/OVR Performance Lint Tool")]
     static void Init()
     {
         // Get existing open window or if none, make a new one:

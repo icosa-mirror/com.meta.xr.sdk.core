@@ -150,6 +150,10 @@ internal static class OVRDeserialize
     }
 
 
+    public struct BoundaryVisibilityChangedData
+    {
+        public BoundaryVisibility BoundaryVisibility;
+    }
 
 
 }

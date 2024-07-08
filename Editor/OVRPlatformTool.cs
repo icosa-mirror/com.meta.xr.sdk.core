@@ -81,7 +81,7 @@ namespace Assets.Oculus.VR.Editor
         private static GUIStyle boldFoldoutStyle;
         private static GUIStyle odhCalloutStyle;
 
-        [MenuItem("Oculus/Tools/Oculus Platform Tool")]
+        [MenuItem("Meta/Tools/Oculus Platform Tool")]
         static void Init()
         {
             OVRPlatformTool.log = string.Empty;
@@ -127,8 +127,8 @@ namespace Assets.Oculus.VR.Editor
 
             EditorGUIUtility.labelWidth = DEFAULT_LABEL_WIDTH;
 
-            GUILayout.Label("OVR Platform Tool", EditorStyles.boldLabel);
-            this.titleContent.text = "OVR Platform Tool";
+            GUILayout.Label("OVR Platform Upload Tool", EditorStyles.boldLabel);
+            this.titleContent.text = "OVR Platform Upload Tool";
 
             GUIContent TargetPlatformLabel = new GUIContent("Target Oculus Platform");
             OVRPlatformToolSettings.TargetPlatform =

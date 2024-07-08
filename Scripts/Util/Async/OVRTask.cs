@@ -213,14 +213,20 @@ public static partial class OVRTask
         return task;
     }
 
+    private const ulong HashModifier1 = 0x319642b2d24d8ec3;
+    private const ulong HashModifier2 = 0x96de1b173f119089;
+
     internal static unsafe Guid GetId(ulong value)
     {
-        const ulong hashModifier1 = 0x319642b2d24d8ec3;
-        const ulong hashModifier2 = 0x96de1b173f119089;
         var guid = default(Guid);
-        *(ulong*)&guid = unchecked(value + hashModifier1);
-        *((ulong*)&guid + 1) = hashModifier2;
+        *(ulong*)&guid = unchecked(value + HashModifier1);
+        *((ulong*)&guid + 1) = HashModifier2;
         return guid;
+    }
+
+    internal static unsafe ulong GetId(Guid value)
+    {
+        return unchecked(*(ulong*)&value - HashModifier1);
     }
 
     internal static void RegisterType<TResult>()

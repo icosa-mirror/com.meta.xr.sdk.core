@@ -47,6 +47,9 @@ namespace Meta.XR.Editor.UserInterface
             public static readonly Color SuccessColor = HexToColor("4ee99e");
             public static readonly Color DebugColor = HexToColor("#66aaff");
             public static readonly Color Meta = HexToColor("#1977f3");
+            public static readonly Color Yellow = HexToColor("#ffd74e");
+            public static readonly Color SelectedWhite = HexToColor("#f0f0f0");
+            public static readonly Color UnselectedWhite = HexToColor("#c4c4c4");
 
         }
 
@@ -228,6 +231,15 @@ namespace Meta.XR.Editor.UserInterface
                 alignment = TextAnchor.MiddleCenter
             };
 
+            public readonly GUIStyle IconStyle = new GUIStyle(EditorStyles.label)
+            {
+                margin = new RectOffset(0, 0, 0, 0),
+                padding = new RectOffset(0, 0, 0, 0),
+                fixedHeight = Constants.SmallIconSize,
+                fixedWidth = Constants.SmallIconSize,
+                stretchWidth = false
+            };
+
 
             public readonly GUIStyle HeaderIcons = new GUIStyle()
             {
@@ -249,6 +261,9 @@ namespace Meta.XR.Editor.UserInterface
 
             public static readonly TextureContent InstructionsIcon =
                 TextureContent.CreateContent("ovr_icon_instructions.png", TextureContent.Categories.Generic, null);
+
+            public static readonly TextureContent CheckIcon =
+                TextureContent.CreateContent("ovr_icon_check.png", TextureContent.Categories.Generic, null);
 
         }
 

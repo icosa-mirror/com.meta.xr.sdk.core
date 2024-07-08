@@ -20,6 +20,7 @@
 
 using System;
 using System.Collections;
+using Meta.XR.Util;
 using Unity.Collections;
 using Unity.Jobs;
 using UnityEngine;
@@ -40,6 +41,7 @@ using UnityEngine.Rendering;
 [HelpURL("https://developer.oculus.com/documentation/unity/unity-scene-use-scene-anchors/#further-scene-model-unity-components")]
 [RequireComponent(typeof(MeshFilter))]
 [Obsolete(OVRSceneManager.DeprecationMessage)]
+[Feature(Feature.Scene)]
 public class OVRSceneVolumeMeshFilter : MonoBehaviour
 {
     /// <summary>

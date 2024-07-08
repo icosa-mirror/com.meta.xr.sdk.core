@@ -19,6 +19,7 @@
  */
 
 using System;
+using Meta.XR.Util;
 using UnityEngine;
 
 /// <summary>
@@ -28,6 +29,7 @@ using UnityEngine;
 [RequireComponent(typeof(OVRSceneAnchor))]
 [HelpURL("https://developer.oculus.com/documentation/unity/unity-scene-use-scene-anchors/#further-scene-model-unity-components")]
 [Obsolete(OVRSceneManager.DeprecationMessage)]
+[Feature(Feature.Scene)]
 public class OVRSceneVolume : MonoBehaviour, IOVRSceneComponent
 {
     /// <summary>

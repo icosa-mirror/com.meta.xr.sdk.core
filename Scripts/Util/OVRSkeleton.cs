@@ -356,7 +356,7 @@ public class OVRSkeleton : MonoBehaviour
     internal IOVRSkeletonDataProvider SearchSkeletonDataProvider()
     {
 
-        var oldProviders = gameObject.GetComponentsInParent<IOVRSkeletonDataProvider>();
+        var oldProviders = gameObject.GetComponentsInParent<IOVRSkeletonDataProvider>(true);
         foreach (var dataProvider in oldProviders)
         {
             if (dataProvider.GetSkeletonType() == _skeletonType)
@@ -744,7 +744,7 @@ public class OVRSkeleton : MonoBehaviour
         }
     }
 
-    private void FixedUpdate()
+    protected void FixedUpdate()
     {
         if (!IsInitialized || _dataProvider == null)
         {

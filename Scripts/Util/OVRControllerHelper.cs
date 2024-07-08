@@ -20,6 +20,7 @@
 
 using UnityEngine;
 using UnityEngine.EventSystems;
+using UnityEngine.SceneManagement;
 
 /// <summary>
 /// Simple helper script that conditionally enables rendering of a controller if it is connected.
@@ -138,11 +139,18 @@ public class OVRControllerHelper : MonoBehaviour,
     void OnEnable()
     {
         OVRInputModule.TrackInputSource(this);
+        SceneManager.activeSceneChanged += OnSceneChanged;
     }
 
     void OnDisable()
     {
         OVRInputModule.UntrackInputSource(this);
+        SceneManager.activeSceneChanged -= OnSceneChanged;
+    }
+
+    void OnSceneChanged(Scene unloading, Scene loading)
+    {
+        OVRInputModule.TrackInputSource(this);
     }
 
     void InitializeControllerModels()

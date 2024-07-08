@@ -19,9 +19,11 @@
  */
 
 using System.Collections;
+using Meta.XR.Util;
 using UnityEngine;
 using UnityEngine.UI;
 
+[Feature(Feature.TrackedKeyboard)]
 public class OVRTrackedKeyboardSampleControls : MonoBehaviour
 {
     public OVRTrackedKeyboard trackedKeyboard;

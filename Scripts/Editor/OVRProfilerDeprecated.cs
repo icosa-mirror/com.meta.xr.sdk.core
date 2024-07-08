@@ -27,7 +27,7 @@ using Assets.OVR.Scripts;
 
 public class OVRProfilerDeprecated : EditorWindow
 {
-    [MenuItem("Oculus/Tools/(Deprecated) OVR Profiler", false, 200000)]
+    [MenuItem("Meta/Tools/(Deprecated) OVR Profiler", false, 200000)]
     static void Init()
     {
         Debug.LogWarning("OVR Profiler has been replaced by OVR Performance Lint Tool");

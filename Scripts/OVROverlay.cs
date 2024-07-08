@@ -1102,7 +1102,7 @@ public class OVROverlay : MonoBehaviour
             }
             else
             {
-#if UNITY_STANDALONE_WIN || UNITY_EDITOR
+#if UNITY_STANDALONE_WIN || UNITY_STANDALONE_OSX || UNITY_EDITOR
                 pose.orientation = pose.orientation * Quaternion.AngleAxis(180, Vector3.up);
 #endif
             }

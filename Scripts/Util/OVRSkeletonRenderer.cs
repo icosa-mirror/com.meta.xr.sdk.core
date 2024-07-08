@@ -20,8 +20,10 @@
 
 using System.Collections;
 using System.Collections.Generic;
+using Meta.XR.Util;
 using UnityEngine;
 
+[Feature(Feature.BodyTracking)]
 public class OVRSkeletonRenderer : MonoBehaviour
 {
     public interface IOVRSkeletonRendererDataProvider

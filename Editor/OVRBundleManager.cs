@@ -24,6 +24,7 @@ using System.Collections.Generic;
 using System.IO;
 using System;
 using System.Linq;
+using Oculus.VR.Editor;
 using UnityEngine;
 using UnityEditor;
 using UnityEditor.Build.Reporting;
@@ -137,20 +138,39 @@ public class OVRBundleManager
         if (String.IsNullOrEmpty(transitionScenePath))
         {
             // Get current editor script's directory as base path
-            string[] res =
-                System.IO.Directory.GetFiles(Application.dataPath, "OVRBundleManager.cs", SearchOption.AllDirectories);
-            if (res.Length > 1)
+            string rootPath = null;
+            if (OVRPluginInfo.IsInsidePackageDistribution())
             {
-                OVRBundleTool.PrintError(
-                    "More than one OVRBundleManager editor script has been found, please double check your Oculus SDK import.");
-                return null;
+                rootPath = $"Packages/{OVRPluginInfo.PackageName}/Editor/";
             }
             else
             {
-                // Append Transition Scene's relative path to base path
-                var OVREditorScript = Path.GetDirectoryName(res[0]);
-                transitionScenePath = Path.Combine(OVREditorScript, TRANSITION_SCENE_RELATIVE_PATH);
+                string[] res =
+                    System.IO.Directory.GetFiles(Application.dataPath, "OVRBundleManager.cs", SearchOption.AllDirectories);
+                if (res.Length == 0)
+                {
+                    OVRBundleTool.PrintError(
+                        "OVRBundleManager editor script was not found, please double check your Oculus SDK import.");
+                    return null;
+                }
+
+                if (res.Length > 1)
+                {
+                    OVRBundleTool.PrintError(
+                        "More than one OVRBundleManager editor script has been found, please double check your Oculus SDK import.");
+                    return null;
+                }
+                rootPath = res[0];
             }
+
+            if (rootPath == null)
+            {
+                OVRBundleTool.PrintError(
+                    "transitionScenePath was not found, please double check your Meta Core SDK import.");
+                return null;
+            }
+            // Append Transition Scene's relative path to base path
+            transitionScenePath = $"{rootPath}/{TRANSITION_SCENE_RELATIVE_PATH}";
         }
 
         string[] buildScenes = new string[1] { transitionScenePath };

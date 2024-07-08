@@ -20,6 +20,7 @@
 
 using System;
 using System.Collections.Generic;
+using Meta.XR.Util;
 using static OVRPlugin;
 
 /// <summary>
@@ -28,6 +29,7 @@ using static OVRPlugin;
 /// <remarks>
 /// See https://developer.oculus.com/documentation/unity/unity-scene-overview for more details on Scene.
 /// </remarks>
+[Feature(Feature.Scene)]
 public static class OVRScene
 {
     /// <summary>

@@ -19,9 +19,11 @@
  */
 
 using System;
+using Meta.XR.Util;
 using UnityEngine;
 using UnityEngine.EventSystems;
 
+[Feature(Feature.VirtualKeyboard)]
 public class OVRVirtualKeyboardSampleInputHandler : MonoBehaviour
 {
     private const float RAY_MAX_DISTANCE = 100.0f;

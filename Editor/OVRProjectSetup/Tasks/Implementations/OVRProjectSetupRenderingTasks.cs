@@ -170,6 +170,7 @@ internal static class OVRProjectSetupRenderingTasks
             },
             fixMessage: "Set Graphics APIs for this build target to Vulkan"
         );
+#if !UNITY_EDITOR_OSX && !UNITY_EDITOR_LINUX
         //[Required] Set the Graphics API order for Windows
         OVRProjectSetup.AddTask(
             level: OVRProjectSetup.TaskLevel.Required,
@@ -187,6 +188,7 @@ internal static class OVRProjectSetupRenderingTasks
             },
             fixMessage: "Set Graphics APIs for this build target to Direct3D11"
         );
+#endif
 
         //[Recommended] Enable Multithreaded Rendering
         OVRProjectSetup.AddTask(

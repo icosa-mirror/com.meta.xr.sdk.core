@@ -32,7 +32,7 @@ internal static class OVRProjectSetupPhysicsTasks
             level: OVRProjectSetup.TaskLevel.Recommended,
             group: OVRProjectSetup.TaskGroup.Physics,
             isDone: group => Physics.defaultContactOffset >= 0.01f,
-            message: $"Use Default Context Offset above or equal to 0.01",
+            message: $"Use Default Contact Offset above or equal to 0.01",
             fix: group => Physics.defaultContactOffset = 0.01f,
             fixMessage: "Physics.defaultContactOffset = 0.01f"
         );

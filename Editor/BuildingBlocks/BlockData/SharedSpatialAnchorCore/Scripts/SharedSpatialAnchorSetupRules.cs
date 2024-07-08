@@ -18,7 +18,7 @@
  * limitations under the License.
  */
 
-using Meta.XR.GuidedSetups.Editor;
+using Meta.XR.Guides.Editor;
 using UnityEditor;
 
 namespace Meta.XR.BuildingBlocks.Editor
@@ -54,7 +54,7 @@ namespace Meta.XR.BuildingBlocks.Editor
                              (OVRProjectSetupUtils.FindComponentInScene<SharedSpatialAnchorCore>() != null &&
                               SharedSpatialAnchorBuildingBlockEditor.HasAppId()),
                 message: "When using Shared Spatial Anchor in your project it's required to set an AppID in Platform Settings.",
-                fix: _ => GuidedSetupAccount.ShowWindow(GuidedSetups.Editor.Utils.TriggerSource.UPST),
+                fix: _ => MetaAccountSetupGuide.ShowWindow(Guides.Editor.Utils.TriggerSource.UPST),
                 fixMessage: "Set Meta Quest AppID."
             );
 #endif // USING_META_XR_PLATFORM_SDK

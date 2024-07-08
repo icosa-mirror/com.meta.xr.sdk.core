@@ -20,6 +20,7 @@
 
 using System;
 using System.Collections.Generic;
+using UnityEngine;
 
 /// <summary>
 /// Descriptive labels of the <see cref="OVRAnchor"/>, as a list of enum values.
@@ -31,6 +32,8 @@ using System.Collections.Generic;
 /// <seealso cref="Labels"/>
 public readonly partial struct OVRSemanticLabels : IOVRAnchorComponent<OVRSemanticLabels>, IEquatable<OVRSemanticLabels>
 {
+    private static char[] _semanticLabelsBuffer;
+
     /// <summary>
     /// An enum that contains all possible classification values.
     /// </summary>
@@ -73,9 +76,7 @@ public readonly partial struct OVRSemanticLabels : IOVRAnchorComponent<OVRSemant
                 throw new Exception("Could not Get Semantic Labels");
             }
 
-#pragma warning disable CS0618 // Type or member is obsolete
             return OVRSemanticClassification.ValidateAndUpgradeLabels(labels);
-#pragma warning restore CS0618 // Type or member is obsolete
         }
     }
 
@@ -84,53 +85,80 @@ public readonly partial struct OVRSemanticLabels : IOVRAnchorComponent<OVRSemant
     /// </summary>
     public void GetClassifications(ICollection<Classification> classifications)
     {
+        if (!OVRPlugin.GetSpaceSemanticLabelsNonAlloc(Handle, ref _semanticLabelsBuffer, out int length))
+            throw new Exception("Could not Get Semantic Labels");
+
         classifications.Clear();
-#pragma warning disable CS0618 // Type or member is obsolete
-        FromApiString(Labels, classifications);
-#pragma warning restore CS0618 // Type or member is obsolete
+        FromApiString(new ReadOnlySpan<char>(_semanticLabelsBuffer, 0, length), classifications);
+
+        // upgrade any labels
+        //  - desk -> table is no longer performed
+        //  - if invisible_wall_face, must contain wall_face
+        var hasInvisibleWallFace = classifications.Contains(Classification.InvisibleWallFace);
+        var hasWallFace = classifications.Contains(Classification.WallFace);
+        if (hasInvisibleWallFace && !hasWallFace)
+            classifications.Add(Classification.WallFace);
     }
 
     /// <summary>
-    /// Convert a single string label into a Classification.
+    /// Convert a single label into a Classification.
     /// Be aware: unsupported labels are always OTHER (including deprecated DESK).
     /// </summary>
-    internal static Classification FromApiLabel(string singleLabel)
+    internal static Classification FromApiLabel(ReadOnlySpan<char> singleLabel)
     {
-        return singleLabel switch
-        {
-            "FLOOR" => Classification.Floor,
-            "CEILING" => Classification.Ceiling,
-            "WALL_FACE" => Classification.WallFace,
-            "COUCH" => Classification.Couch,
-            "DOOR_FRAME" => Classification.DoorFrame,
-            "WINDOW_FRAME" => Classification.WindowFrame,
-            "OTHER" => Classification.Other,
-            "STORAGE" => Classification.Storage,
-            "BED" => Classification.Bed,
-            "SCREEN" => Classification.Screen,
-            "LAMP" => Classification.Lamp,
-            "PLANT" => Classification.Plant,
-            "TABLE" => Classification.Table,
-            "WALL_ART" => Classification.WallArt,
-            "INVISIBLE_WALL_FACE" => Classification.InvisibleWallFace,
-            "GLOBAL_MESH" => Classification.SceneMesh,
-            _ => Classification.Other,
-        };
+        if (singleLabel.SequenceEqual("FLOOR")) return Classification.Floor;
+        if (singleLabel.SequenceEqual("CEILING")) return Classification.Ceiling;
+        if (singleLabel.SequenceEqual("WALL_FACE")) return Classification.WallFace;
+        if (singleLabel.SequenceEqual("COUCH")) return Classification.Couch;
+        if (singleLabel.SequenceEqual("DOOR_FRAME")) return Classification.DoorFrame;
+        if (singleLabel.SequenceEqual("WINDOW_FRAME")) return Classification.WindowFrame;
+        if (singleLabel.SequenceEqual("OTHER")) return Classification.Other;
+        if (singleLabel.SequenceEqual("STORAGE")) return Classification.Storage;
+        if (singleLabel.SequenceEqual("BED")) return Classification.Bed;
+        if (singleLabel.SequenceEqual("SCREEN")) return Classification.Screen;
+        if (singleLabel.SequenceEqual("LAMP")) return Classification.Lamp;
+        if (singleLabel.SequenceEqual("PLANT")) return Classification.Plant;
+        if (singleLabel.SequenceEqual("TABLE")) return Classification.Table;
+        if (singleLabel.SequenceEqual("WALL_ART")) return Classification.WallArt;
+        if (singleLabel.SequenceEqual("INVISIBLE_WALL_FACE")) return Classification.InvisibleWallFace;
+        if (singleLabel.SequenceEqual("GLOBAL_MESH")) return Classification.SceneMesh;
+
+        Debug.LogWarning($"Unknown classification: {singleLabel.ToString()}");
+        return Classification.Other;
     }
 
     /// <summary>
     /// Converts a comma separated list of labels into a list of Classifications.
     /// </summary>
-    internal static void FromApiString(string apiLabels, ICollection<Classification> classifications)
+    internal static void FromApiString(ReadOnlySpan<char> apiLabels, ICollection<Classification> classifications)
     {
-        var labels = apiLabels.Split(',');
-        foreach (var label in labels)
+        // we avoid string.Split(',') because of allocations
+        // and because the input is restricted by OpenXR
+        var from = 0;
+        int to;
+        while ((to = IndexOf(apiLabels, ',', from)) != -1)
         {
+            AddLabel(apiLabels.Slice(from, to - from), classifications);
+            from = to + 1;
+        }
+        if (from < apiLabels.Length)
+            AddLabel(apiLabels.Slice(from), classifications);
+
+        void AddLabel(ReadOnlySpan<char> label, ICollection<Classification> labels)
+        {
+            // skip any labels we no longer support
 #pragma warning disable CS0618 // Type or member is obsolete
-            // skip previously deprecated labels
-            if (label == OVRSceneManager.Classification.Desk) continue;
+            if (!label.SequenceEqual(OVRSceneManager.Classification.Desk))
+                labels.Add(FromApiLabel(label));
 #pragma warning restore CS0618 // Type or member is obsolete
-            classifications.Add(FromApiLabel(label));
+        }
+
+        int IndexOf(ReadOnlySpan<char> s, char c, int start)
+        {
+            for (var i = start; i < s.Length; i++)
+                if (s[i] == c)
+                    return i;
+            return -1;
         }
     }
 

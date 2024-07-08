@@ -26,7 +26,7 @@ using UnityEditor;
 
 public class BuildAssetBundles : MonoBehaviour
 {
-    [MenuItem("Oculus/Tools/Build Mobile-Quest Expansion File", false, 100000)]
+    [MenuItem("Meta/Tools/Build Mobile-Quest Expansion File", false, 100000)]
     public static void BuildBundles()
     {
         // Create expansion file directory and call build asset bundles

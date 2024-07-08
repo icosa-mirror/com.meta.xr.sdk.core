@@ -34,7 +34,7 @@ internal class OVRProjectSetupSettingsProvider : SettingsProvider
         Ignored
     }
 
-    [MenuItem("Oculus/Tools/Project Setup Tool", false, 1)]
+    [MenuItem("Meta/Tools/Project Setup Tool", false, 1)]
     static void OpenProjectSetupTool()
     {
         OpenSettingsWindow(Item.Origins.Menu);

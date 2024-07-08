@@ -20,11 +20,12 @@
 
 using System;
 using System.Collections.Generic;
+using Meta.XR.Util;
 using UnityEngine;
 using UnityEngine.Assertions;
 using SkeletonType = OVRPlugin.SkeletonType;
 using BoneId = OVRPlugin.BoneId;
-
+[Feature(Feature.BodyTracking)]
 public partial class OVRUnityHumanoidSkeletonRetargeter : OVRSkeleton
 {
     private OVRSkeletonMetadata _sourceSkeletonData;

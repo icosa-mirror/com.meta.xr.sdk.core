@@ -20,6 +20,7 @@
 
 using System;
 using System.Collections.Generic;
+using Meta.XR.Util;
 using Unity.Collections;
 using Unity.Jobs;
 using UnityEngine;
@@ -31,6 +32,7 @@ using UnityEngine;
 [RequireComponent(typeof(OVRSceneAnchor))]
 [HelpURL("https://developer.oculus.com/documentation/unity/unity-scene-use-scene-anchors/#further-scene-model-unity-components")]
 [Obsolete(OVRSceneManager.DeprecationMessage)]
+[Feature(Feature.Scene)]
 public class OVRScenePlane : MonoBehaviour, IOVRSceneComponent
 {
     /// <summary>

@@ -18,6 +18,7 @@
  * limitations under the License.
  */
 
+using Meta.XR.Util;
 using UnityEngine;
 using UnityEngine.Assertions;
 
@@ -31,6 +32,7 @@ using UnityEngine.Assertions;
 /// </remarks>
 [RequireComponent(typeof(SkinnedMeshRenderer))]
 [HelpURL("https://developer.oculus.com/documentation/unity/move-face-tracking/")]
+[Feature(Feature.FaceTracking)]
 public class OVRFace : MonoBehaviour
 {
     /// <summary>

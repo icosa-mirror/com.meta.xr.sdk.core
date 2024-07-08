@@ -20,6 +20,7 @@
 
 using System;
 using System.Collections.Generic;
+using Meta.XR.Util;
 using UnityEngine;
 
 /// <summary>
@@ -33,6 +34,7 @@ using UnityEngine;
 [DisallowMultipleComponent]
 [RequireComponent(typeof(OVRSceneAnchor))]
 [Obsolete(OVRSceneManager.DeprecationMessage)]
+[Feature(Feature.Scene)]
 public class OVRSemanticClassification : MonoBehaviour, IOVRSceneComponent
 {
     public const char LabelSeparator = ',';

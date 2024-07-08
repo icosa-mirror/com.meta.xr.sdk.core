@@ -53,6 +53,25 @@ namespace Meta.XR.BuildingBlocks.Editor
                 },
                 fixMessage: "Clear background of OVRCameraRig"
             );
+
+            OVRProjectSetup.AddTask(
+                level: OVRProjectSetup.TaskLevel.Required,
+                group: OVRProjectSetup.TaskGroup.Features,
+                isDone: _ => !PassthroughBuildingBlockExists() ||
+                             !OVRPassthroughHelper.IsAnyPassthroughLayerUnderlay() ||
+                             OVRProjectConfig.CachedProjectConfig.systemLoadingScreenBackground ==
+                             OVRProjectConfig.SystemLoadingScreenBackground.ContextualPassthrough,
+                message: "When using Passthrough Building Block as an underlay it's required to set " +
+                         "System Splash Screen Background to \"Passthrough (Contextual)\"",
+                fix: _ =>
+                {
+                    var projectConfig = OVRProjectConfig.CachedProjectConfig;
+                    projectConfig.systemLoadingScreenBackground =
+                        OVRProjectConfig.SystemLoadingScreenBackground.ContextualPassthrough;
+                    OVRProjectConfig.CommitProjectConfig(projectConfig);
+                },
+                fixMessage: "Set System Splash Screen Background to \"Passthrough (Contextual)\""
+            );
         }
 
         private static bool PassthroughBuildingBlockExists()

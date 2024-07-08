@@ -21,6 +21,7 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using Meta.XR.Util;
 using UnityEngine;
 using Debug = UnityEngine.Debug;
 
@@ -31,6 +32,7 @@ using Debug = UnityEngine.Debug;
 [RequireComponent(typeof(OVRSceneAnchor))]
 [HelpURL("https://developer.oculus.com/documentation/unity/unity-scene-use-scene-anchors/#further-scene-model-unity-components")]
 [Obsolete(OVRSceneManager.DeprecationMessage)]
+[Feature(Feature.Scene)]
 public class OVRSceneRoom : MonoBehaviour, IOVRSceneComponent
 {
 

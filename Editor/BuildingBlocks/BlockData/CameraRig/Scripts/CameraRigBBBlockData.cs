@@ -38,7 +38,10 @@ namespace Meta.XR.BuildingBlocks.Editor
 #if UNITY_2021
             if (PrefabUtility.GetPrefabInstanceStatus(existingCameraRig.gameObject) != PrefabInstanceStatus.NotAPrefab)
             {
-                PrefabUtility.UnpackPrefabInstance(existingCameraRig.gameObject, PrefabUnpackMode.Completely, InteractionMode.AutomatedAction);
+                PrefabUtility.UnpackPrefabInstance(
+                    PrefabUtility.GetOutermostPrefabInstanceRoot(existingCameraRig.gameObject),
+                    PrefabUnpackMode.Completely,
+                    InteractionMode.AutomatedAction);
             }
 #endif
 

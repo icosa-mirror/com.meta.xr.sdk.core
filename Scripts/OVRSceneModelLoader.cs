@@ -20,6 +20,7 @@
 
 using System;
 using System.Collections;
+using Meta.XR.Util;
 using UnityEngine;
 using UnityEngine.Android;
 
@@ -30,6 +31,7 @@ using UnityEngine.Android;
 [HelpURL("https://developer.oculus.com/documentation/unity/unity-scene-use-scene-anchors/#what-does-ovrscenemanager-do")]
 [RequireComponent(typeof(OVRSceneManager))]
 [Obsolete(OVRSceneManager.DeprecationMessage)]
+[Feature(Feature.Scene)]
 public class OVRSceneModelLoader : MonoBehaviour
 {
     private const float RetryingReminderDelay = 10;
@@ -157,7 +159,7 @@ public class OVRSceneModelLoader : MonoBehaviour
 
         if (!SceneManager.LoadSceneModel())
         {
-#if UNITY_EDITOR_WIN || UNITY_STANDALONE_WIN || (UNITY_ANDROID && !UNITY_EDITOR)
+#if UNITY_EDITOR_WIN || UNITY_STANDALONE_WIN || UNITY_EDITOR_OSX || UNITY_STANDALONE_OSX || (UNITY_ANDROID && !UNITY_EDITOR)
             if (!OVRManager.isHmdPresent)
             {
                 OVRSceneManager.Development.LogWarning(nameof(OVRSceneModelLoader),
@@ -187,7 +189,7 @@ public class OVRSceneModelLoader : MonoBehaviour
     /// </summary>
     protected virtual void OnNoSceneModelToLoad()
     {
-#if UNITY_EDITOR_WIN
+#if UNITY_EDITOR_WIN || UNITY_EDITOR_OSX
         UnityEditor.EditorUtility.DisplayDialog("Scene Capture does not work over Link",
             "There is no scene model available, and scene capture cannot be invoked over Link. " +
             "Please capture a scene with the HMD in standalone mode, then access the scene model over Link. " +

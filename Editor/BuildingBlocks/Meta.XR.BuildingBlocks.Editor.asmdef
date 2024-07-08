@@ -11,7 +11,7 @@
         "Meta.XR.Editor.UserInterface",
         "Meta.XR.Editor.StatusMenu",
         "Meta.XR.Editor.Callbacks",
-        "Meta.XR.GuidedSetups.Editor"
+        "Meta.XR.Guides.Editor"
     ],
     "includePlatforms": [
         "Editor"

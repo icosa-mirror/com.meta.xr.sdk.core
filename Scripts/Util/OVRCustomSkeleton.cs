@@ -19,9 +19,11 @@
  */
 
 using System.Collections.Generic;
+using Meta.XR.Util;
 using UnityEngine;
 
 [HelpURL("https://developer.oculus.com/documentation/unity/move-samples/")]
+[Feature(Feature.BodyTracking)]
 public class OVRCustomSkeleton : OVRSkeleton, ISerializationCallbackReceiver
 {
     [HideInInspector][SerializeField] private List<Transform> _customBones_V2;
