@@ -29,24 +29,52 @@ namespace Meta.XR.BuildingBlocks.Editor
     public class ControllerTrackingBlockData : BlockData
     {
         protected override List<GameObject> InstallRoutine(GameObject selectedGameObject)
+            => new List<GameObject>
+            {
+                InstantiateController(OVRInput.Hand.HandLeft),
+                InstantiateController(OVRInput.Hand.HandRight)
+            };
+
+        private GameObject InstantiateController(OVRInput.Hand handedness)
         {
+            var controllerType = handedness == OVRInput.Hand.HandLeft
+                ? OVRInput.Controller.LTouch
+                : OVRInput.Controller.RTouch;
+
             var cameraRigBB = Utils.GetBlocksWithType<OVRCameraRig>().First();
 
-            var leftController = Instantiate(Prefab, Vector3.zero, Quaternion.identity);
-            leftController.SetActive(true);
-            leftController.name = $"{Utils.BlockPublicTag} {BlockName} left";
-            Undo.RegisterCreatedObjectUndo(leftController, "Create left controller.");
-            Undo.SetTransformParent(leftController.transform, cameraRigBB.leftControllerAnchor, true, "Parent to camera rig.");
-            leftController.GetComponent<OVRControllerHelper>().m_controller = OVRInput.Controller.LTouch;
+            var idealParent = handedness == OVRInput.Hand.HandLeft
+                ? cameraRigBB.leftControllerAnchor
+                : cameraRigBB.rightControllerAnchor;
 
-            var rightController = Instantiate(Prefab, Vector3.zero, Quaternion.identity);
-            rightController.SetActive(true);
-            rightController.name = $"{Utils.BlockPublicTag}  {BlockName} right";
-            Undo.RegisterCreatedObjectUndo(rightController, "Create right controller.");
-            Undo.SetTransformParent(rightController.transform, cameraRigBB.rightControllerAnchor, true, "Parent to camera rig.");
-            rightController.GetComponent<OVRControllerHelper>().m_controller = OVRInput.Controller.RTouch;
+            // Early out if we can find a pre-existing non block version. It will get blockified
+            if (TryGetPreexistingNonBlock(cameraRigBB.transform, controllerType, idealParent, out var nonBlockObject)) return nonBlockObject;
 
-            return new List<GameObject> { leftController, rightController };
+            var controller = Instantiate(Prefab, Vector3.zero, Quaternion.identity);
+            controller.SetActive(true);
+
+            var handednessName = handedness == OVRInput.Hand.HandLeft ? "Left" : "Right";
+            controller.name = $"{Utils.BlockPublicTag} {BlockName} {handednessName}";
+            Undo.RegisterCreatedObjectUndo(controller, $"Create {BlockName} {handednessName}");
+            Undo.SetTransformParent(controller.transform, idealParent, true, "Parent to camera rig");
+            controller.GetComponent<OVRControllerHelper>().m_controller = controllerType;
+
+            return controller;
         }
+
+        private bool TryGetPreexistingNonBlock(Transform root, OVRInput.Controller controllerType, Transform idealParent, out GameObject nonBlockObject)
+        {
+            nonBlockObject = root.GetComponentsInChildren<OVRControllerHelper>()
+                .FirstOrDefault(controller => IsCorrectHandedness(controller, controllerType)
+                && HasCorrectParent(controller, idealParent))?.gameObject;
+            return nonBlockObject != null;
+        }
+
+        private bool IsCorrectHandedness(OVRControllerHelper controller, OVRInput.Controller controllerType)
+            => controller.m_controller == controllerType;
+
+        private bool HasCorrectParent(OVRControllerHelper controller, Transform idealParent)
+            => controller.transform.parent == idealParent;
+
     }
 }

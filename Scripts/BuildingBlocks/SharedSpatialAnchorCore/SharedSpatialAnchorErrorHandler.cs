@@ -53,7 +53,7 @@ public class SharedSpatialAnchorErrorHandler : MonoBehaviour
         }
     }
 
-    public void OnAnchorShare(List<Guid> _, OVRSpatialAnchor.OperationResult result)
+    public void OnAnchorShare(List<OVRSpatialAnchor> _, OVRSpatialAnchor.OperationResult result)
     {
         if (result == OVRSpatialAnchor.OperationResult.Failure_SpaceCloudStorageDisabled)
         {
@@ -67,9 +67,9 @@ public class SharedSpatialAnchorErrorHandler : MonoBehaviour
         }
     }
 
-    public void OnAnchorLoad(List<Guid> loadedAnchorsUuids)
+    public void OnAnchorLoad(List<OVRSpatialAnchor> loadedAnchors)
     {
-        if (loadedAnchorsUuids.Count == 0) LogWarning($"Failed to load the spatial anchor(s).");
+        if (loadedAnchors.Count == 0) LogWarning($"Failed to load the spatial anchor(s).");
     }
 
     public void OnAnchorEraseAll(OVRSpatialAnchor.OperationResult result)
@@ -78,10 +78,10 @@ public class SharedSpatialAnchorErrorHandler : MonoBehaviour
             LogWarning($"Failed to erase the spatial anchor(s).");
     }
 
-    public void OnAnchorErase(Guid uuid, OVRSpatialAnchor.OperationResult result)
+    public void OnAnchorErase(OVRSpatialAnchor anchor, OVRSpatialAnchor.OperationResult result)
     {
         if (result == OVRSpatialAnchor.OperationResult.Failure)
-            LogWarning($"Failed to erase the spatial anchor with uuid: {uuid}");
+            LogWarning($"Failed to erase the spatial anchor with uuid: {anchor}");
     }
 
     private void LogWarning(string msg)

@@ -19,6 +19,7 @@
  */
 
 using System;
+using System.Linq;
 using Meta.XR.Editor.Tags;
 using Meta.XR.Editor.UserInterface;
 using UnityEditor;
@@ -103,7 +104,10 @@ namespace Meta.XR.BuildingBlocks.Editor
             EditorGUILayout.LabelField("Assets", EditorStyles.boldLabel);
 
             // Prefab
-            EditorGUILayout.PropertyField(serializedObject.FindProperty(nameof(BlockData.prefab)));
+            using (new EditorGUI.DisabledScope(!blockData.GetUsesPrefab))
+            {
+                EditorGUILayout.PropertyField(serializedObject.FindProperty(nameof(BlockData.prefab)));
+            }
 
             // Dependencies
             EditorGUILayout.Space();

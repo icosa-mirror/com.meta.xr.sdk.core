@@ -328,7 +328,7 @@ namespace Meta.XR.BuildingBlocks.Editor
                 Active = CharcoalGraySemiTransparent
             };
 
-            public readonly GUIStyle FilterByLine = new GUIStyle()
+            public readonly GUIStyle Toolbar = new GUIStyle()
             {
                 margin = new RectOffset(0, 0, Margin, Margin),
                 padding = new RectOffset(Margin + Border, Margin + Border, Padding, Padding),
@@ -338,6 +338,14 @@ namespace Meta.XR.BuildingBlocks.Editor
                 {
                     background = DarkGray.ToTexture()
                 }
+            };
+
+            public readonly GUIStyle FilterByTagGroup = new GUIStyle()
+            {
+                margin = new RectOffset(0, 0, 0, 0),
+                padding = new RectOffset(0, 0, 0 ,0),
+                stretchWidth = false,
+                stretchHeight = false
             };
         }
 

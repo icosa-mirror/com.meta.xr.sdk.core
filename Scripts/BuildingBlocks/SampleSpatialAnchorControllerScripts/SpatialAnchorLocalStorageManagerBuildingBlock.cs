@@ -58,8 +58,9 @@ namespace Meta.XR.BuildingBlocks
             PlayerPrefs.SetInt(NumUuidsPlayerPref, ++playerNumUuids);
         }
 
-        internal void RemoveAnchorFromLocalStorage(Guid uuid, OVRSpatialAnchor.OperationResult result)
+        internal void RemoveAnchorFromLocalStorage(OVRSpatialAnchor anchor, OVRSpatialAnchor.OperationResult result)
         {
+            var uuid = anchor.Uuid;
             if (result == OVRSpatialAnchor.OperationResult.Failure)
                 return;
 

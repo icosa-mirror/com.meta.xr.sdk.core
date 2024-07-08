@@ -59,7 +59,7 @@ public static partial class OVRPlugin
 #if OVRPLUGIN_UNSUPPORTED_PLATFORM && OVRPLUGIN_QPL_UNSUPPORTED_PLATFORM
     public static readonly System.Version wrapperVersion = _versionZero;
 #else
-    public static readonly System.Version wrapperVersion = OVRP_1_95_0.version;
+    public static readonly System.Version wrapperVersion = OVRP_1_96_0.version;
 #endif
 
 #if !(OVRPLUGIN_UNSUPPORTED_PLATFORM && OVRPLUGIN_QPL_UNSUPPORTED_PLATFORM)
@@ -2921,6 +2921,7 @@ public static partial class OVRPlugin
         PassthroughLayerResumed = 500,
 
 
+
     }
 
     private const int EventDataBufferSize = 4000;
@@ -4101,13 +4102,13 @@ public static partial class OVRPlugin
             if (expensiveSharpen)
                 flags |= (uint)OverlayFlag.ExpensiveSharpen;
             if (efficientSharpen)
-                    flags |= (uint)OverlayFlag.EfficientSharpen;
+                flags |= (uint)OverlayFlag.EfficientSharpen;
             if (bicubic)
                 flags |= (uint)OverlayFlag.BicubicFiltering;
             if (secureContent)
                 flags |= (uint)OverlayFlag.SecureContent;
             if (automaticFiltering)
-                flags |= (uint) OverlayFlag.AutoFiltering;
+                flags |= (uint)OverlayFlag.AutoFiltering;
             if (shape == OverlayShape.Cylinder || shape == OverlayShape.Cubemap)
             {
 #if UNITY_ANDROID && !UNITY_EDITOR
@@ -4560,7 +4561,8 @@ public static partial class OVRPlugin
         {
             Bool generatedByController = Bool.False;
             Result result = OVRP_1_86_0.ovrp_AreHandPosesGeneratedByControllerData(stepId, nodeId, ref generatedByController);
-            if(result == Result.Success && generatedByController == Bool.True) {
+            if (result == Result.Success && generatedByController == Bool.True)
+            {
                 return true;
             }
             return false;
@@ -4580,7 +4582,8 @@ public static partial class OVRPlugin
         if (version >= OVRP_1_88_0.version)
         {
             Result result = OVRP_1_88_0.ovrp_SetSimultaneousHandsAndControllersEnabled(enabled ? Bool.True : Bool.False);
-            if(result == Result.Success) {
+            if (result == Result.Success)
+            {
                 return true;
             }
         }
@@ -4598,7 +4601,8 @@ public static partial class OVRPlugin
         {
             Bool isInHand = Bool.True;
             Result result = OVRP_1_86_0.ovrp_GetControllerIsInHand(stepId, nodeId, ref isInHand);
-            if(result == Result.Success && isInHand == Bool.False) {
+            if (result == Result.Success && isInHand == Bool.False)
+            {
                 return false;
             }
             return true;
@@ -7327,20 +7331,6 @@ public static partial class OVRPlugin
 #if OVRPLUGIN_UNSUPPORTED_PLATFORM
         return false;
 #else
-#if USING_XR_SDK_OCULUS
-        OculusXRPlugin.SetColorScale(colorScale.x, colorScale.y, colorScale.z, colorScale.w);
-        OculusXRPlugin.SetColorOffset(colorOffset.x, colorOffset.y, colorOffset.z, colorOffset.w);
-        if (applyToAllLayers)
-        {
-            if (version >= OVRP_1_31_0.version)
-                return OVRP_1_31_0.ovrp_SetColorScaleAndOffset(colorScale, colorOffset, Bool.True) == Result.Success;
-            else
-                return false;
-        }
-        return true;
-#elif REQUIRES_XR_SDK
-        return false;
-#else
         if (version >= OVRP_1_31_0.version)
         {
             Bool ovrpApplyToAllLayers = applyToAllLayers ? Bool.True : Bool.False;
@@ -7350,7 +7340,6 @@ public static partial class OVRPlugin
         {
             return false;
         }
-#endif
 #endif
     }
 
@@ -8180,7 +8169,7 @@ public static partial class OVRPlugin
             return false;
         }
 #endif
-            }
+    }
 
 
     public static bool IsValidBone(BoneId bone, SkeletonType skeletonType)
@@ -9150,7 +9139,7 @@ public static partial class OVRPlugin
             IntPtr buffer = IntPtr.Zero;
             try
             {
-                var result =  GetVirtualKeyboardModelAnimationStates((bufferSize, stateCount) =>
+                var result = GetVirtualKeyboardModelAnimationStates((bufferSize, stateCount) =>
                 {
                     buffer = Marshal.AllocHGlobal(bufferSize);
                     states =
@@ -10014,16 +10003,18 @@ public static partial class OVRPlugin
     }
 
     public static bool EraseSpace(UInt64 space, SpaceStorageLocation location, out UInt64 requestId)
+        => EraseSpaceWithResult(space, location, out requestId).IsSuccess();
+
+    public static Result EraseSpaceWithResult(UInt64 space, SpaceStorageLocation location, out UInt64 requestId)
     {
         requestId = 0;
 #if OVRPLUGIN_UNSUPPORTED_PLATFORM
-        return false;
+        return Result.Failure_Unsupported;
 #else
 
-        var erased = version >= OVRP_1_72_0.version
-                     && OVRP_1_72_0.ovrp_EraseSpace(ref space, location, out requestId) == Result.Success;
-
-        return erased;
+        return version >= OVRP_1_72_0.version
+            ? OVRP_1_72_0.ovrp_EraseSpace(ref space, location, out requestId)
+            : Result.Failure_Unsupported;
 #endif
     }
 
@@ -10039,10 +10030,13 @@ public static partial class OVRPlugin
     }
 
     public static bool QuerySpaces(SpaceQueryInfo queryInfo, out UInt64 requestId)
+        => QuerySpacesWithResult(queryInfo, out requestId).IsSuccess();
+
+    public static Result QuerySpacesWithResult(SpaceQueryInfo queryInfo, out UInt64 requestId)
     {
         requestId = 0;
 #if OVRPLUGIN_UNSUPPORTED_PLATFORM
-        return false;
+        return Result.Failure_Unsupported;
 #else
         if (version >= OVRP_1_72_0.version)
         {
@@ -10052,7 +10046,7 @@ public static partial class OVRPlugin
                 {
                     Debug.LogError("QuerySpaces attempted to query more uuids than the maximum number supported: " +
                                    SpaceFilterInfoIdsMaxSize);
-                    return false;
+                    return Result.Failure_InvalidParameter;
                 }
             }
             else if (queryInfo.FilterType == SpaceQueryFilterType.Components)
@@ -10061,7 +10055,7 @@ public static partial class OVRPlugin
                 {
                     Debug.LogError("QuerySpaces attempted to query more components than the maximum " +
                                    "number supported: " + SpaceFilterInfoComponentsMaxSize);
-                    return false;
+                    return Result.Failure_InvalidParameter;
                 }
             }
 
@@ -10077,12 +10071,11 @@ public static partial class OVRPlugin
                 Array.Resize(ref queryInfo.ComponentsInfo.Components, SpaceFilterInfoComponentsMaxSize);
             }
 
-            Result result = OVRP_1_72_0.ovrp_QuerySpaces(ref queryInfo, out requestId);
-            return (result == Result.Success);
+            return OVRP_1_72_0.ovrp_QuerySpaces(ref queryInfo, out requestId);
         }
         else
         {
-            return false;
+            return Result.Failure_NotYetImplemented;
         }
 #endif
     }
@@ -10982,6 +10975,7 @@ public static partial class OVRPlugin
 
 
 
+
     public class UnityOpenXR
     {
         public static bool Enabled = false; // OculusXRFeature will set it to true when being used
@@ -11189,6 +11183,184 @@ public static partial class OVRPlugin
             Cancel = 4
         }
 
+        public enum VariantType
+        {
+            None = 0,
+            String = 1,
+            Int = 2,
+            Double = 3,
+            Bool = 4,
+            StringArray = 5,
+            IntArray = 6,
+            DoubleArray = 7,
+            BoolArray = 8,
+        }
+
+        [StructLayout(LayoutKind.Explicit)]
+        public unsafe struct Variant
+        {
+            [FieldOffset(0)] public VariantType Type;
+            [FieldOffset(4)] public int Count;
+            [FieldOffset(8)] public byte* StringValue;
+            [FieldOffset(8)] public long LongValue;
+            [FieldOffset(8)] public double DoubleValue;
+            [FieldOffset(8)] public Bool BoolValue;
+            [FieldOffset(8)] public byte** StringValues;
+            [FieldOffset(8)] public long* LongValues;
+            [FieldOffset(8)] public double* DoubleValues;
+            [FieldOffset(8)] public Bool* BoolValues;
+
+            public static Variant From(byte* value) => new()
+            {
+                Type = VariantType.String,
+                StringValue = value,
+            };
+
+            public static Variant From(long value) => new()
+            {
+                Type = VariantType.Int,
+                LongValue = value,
+            };
+
+            public static Variant From(double value) => new()
+            {
+                Type = VariantType.Double,
+                DoubleValue = value,
+            };
+
+            public static Variant From(bool value) => new()
+            {
+                Type = VariantType.Bool,
+                BoolValue = value ? Bool.True : Bool.False,
+            };
+
+            public static Variant From(byte** values, int count) => new()
+            {
+                Type = VariantType.StringArray,
+                Count = count,
+                StringValues = values,
+            };
+
+            public static Variant From(long* values, int count) => new()
+            {
+                Type = VariantType.IntArray,
+                Count = count,
+                LongValues = values,
+            };
+
+            public static Variant From(double* values, int count) => new()
+            {
+                Type = VariantType.DoubleArray,
+                Count = count,
+                DoubleValues = values,
+            };
+
+            public static Variant From(Bool* values, int count) => new()
+            {
+                Type = VariantType.BoolArray,
+                Count = count,
+                BoolValues = values,
+            };
+        }
+
+        public readonly unsafe struct Annotation
+        {
+            public readonly byte* Key;
+            public readonly Variant Value;
+
+            public string KeyStr => Marshal.PtrToStringUTF8(new IntPtr(Key));
+
+            public Annotation(byte* key, Variant value)
+            {
+                Key = key;
+                Value = value;
+            }
+
+            public struct Builder : IDisposable
+            {
+                struct Entry
+                {
+                    public IntPtr Key;
+                    public Variant Value;
+                }
+
+                List<Entry> _entries;
+
+                List<IntPtr> _ownedStrings;
+
+                IntPtr Copy(string str)
+                {
+                    var ptr = Marshal.StringToCoTaskMemUTF8(str);
+                    _ownedStrings.Add(ptr);
+                    return ptr;
+                }
+
+                public int Count => _entries?.Count ?? 0;
+
+                public static Builder Create() => new()
+                {
+                    _entries = OVRObjectPool.List<Entry>(),
+                    _ownedStrings = OVRObjectPool.List<IntPtr>(),
+                };
+
+                public Builder Add(string key, Variant value)
+                {
+                    _entries.Add(new Entry
+                    {
+                        Key = Copy(key),
+                        Value = value,
+                    });
+
+                    return this;
+                }
+
+                public Builder Add(string key, string value) => Add(key, Variant.From((byte*)Copy(value)));
+                public Builder Add(string key, byte* value) => Add(key, Variant.From(value));
+                public Builder Add(string key, long value) => Add(key, Variant.From(value));
+                public Builder Add(string key, double value) => Add(key, Variant.From(value));
+                public Builder Add(string key, bool value) => Add(key, Variant.From(value));
+                public Builder Add(string key, byte** value, int count) => Add(key, Variant.From(value, count));
+                public Builder Add(string key, long* value, int count) => Add(key, Variant.From(value, count));
+                public Builder Add(string key, double* value, int count) => Add(key, Variant.From(value, count));
+                public Builder Add(string key, Bool* value, int count) => Add(key, Variant.From(value, count));
+
+                public NativeArray<Annotation> ToNativeArray(Allocator allocator = Allocator.Temp)
+                {
+                    var array = new NativeArray<Annotation>(Count, allocator);
+                    if (_entries != null)
+                    {
+                        var index = 0;
+                        foreach (var entry in _entries)
+                        {
+                            array[index++] = new((byte*)entry.Key, entry.Value);
+                        }
+                    }
+
+                    return array;
+                }
+
+                public void Dispose()
+                {
+                    if (_ownedStrings != null)
+                    {
+                        foreach (var str in _ownedStrings)
+                        {
+                            Marshal.FreeCoTaskMem(str);
+                        }
+
+                        OVRObjectPool.Return(_ownedStrings);
+                        _ownedStrings = null;
+                    }
+
+                    if (_entries != null)
+                    {
+                        OVRObjectPool.Return(_entries);
+                        _entries = null;
+                    }
+                }
+            }
+        }
+
         public static void SetConsent(Bool consent)
         {
 #if OVRPLUGIN_QPL_UNSUPPORTED_PLATFORM
@@ -11205,8 +11377,8 @@ public static partial class OVRPlugin
 #if OVRPLUGIN_QPL_UNSUPPORTED_PLATFORM
             return;
 #else
-            if (version < OVRP_1_79_0.version) return;
-            OVRP_1_79_0.ovrp_QplMarkerStart(markerId, instanceKey, timestampMs);
+            if (version < OVRP_1_84_0.version) return;
+            OVRP_1_84_0.ovrp_QplMarkerStart(markerId, instanceKey, timestampMs);
 #endif
         }
 
@@ -11216,8 +11388,31 @@ public static partial class OVRPlugin
 #if OVRPLUGIN_QPL_UNSUPPORTED_PLATFORM
             return;
 #else
-            if (version < OVRP_1_79_0.version) return;
-            OVRPlugin.OVRP_1_79_0.ovrp_QplMarkerEnd(markerId, resultTypeId, instanceKey, timestampMs);
+            if (version < OVRP_1_84_0.version) return;
+            OVRP_1_84_0.ovrp_QplMarkerEnd(markerId, resultTypeId, instanceKey, timestampMs);
+#endif
+        }
+
+        public static Result MarkerPoint(int markerId, string name, int instanceKey, long timestampMs)
+        {
+#if OVRPLUGIN_QPL_UNSUPPORTED_PLATFORM
+            return Result.Failure_Unsupported;
+#else
+            return version < OVRP_1_84_0.version
+                ? Result.Failure_NotYetImplemented
+                : OVRP_1_84_0.ovrp_QplMarkerPoint(markerId, name, instanceKey, timestampMs);
+#endif
+        }
+
+        public static unsafe Result MarkerPoint(int markerId, string name, Annotation* annotations, int annotationCount,
+            int instanceKey, long timestampMs)
+        {
+#if OVRPLUGIN_QPL_UNSUPPORTED_PLATFORM
+            return Result.Failure_Unsupported;
+#else
+            return version < OVRP_1_96_0.version
+                ? Result.Failure_NotYetImplemented
+                : OVRP_1_96_0.ovrp_QplMarkerPointData(markerId, name, annotations, annotationCount, instanceKey, timestampMs);
 #endif
         }
 
@@ -11227,8 +11422,8 @@ public static partial class OVRPlugin
 #if OVRPLUGIN_QPL_UNSUPPORTED_PLATFORM
             return;
 #else
-            if (version < OVRP_1_79_0.version) return;
-            OVRPlugin.OVRP_1_79_0.ovrp_QplMarkerPointCached(markerId, nameHandle, instanceKey, timestampMs);
+            if (version < OVRP_1_84_0.version) return;
+            OVRP_1_84_0.ovrp_QplMarkerPointCached(markerId, nameHandle, instanceKey, timestampMs);
 #endif
         }
 
@@ -11238,9 +11433,21 @@ public static partial class OVRPlugin
 #if OVRPLUGIN_QPL_UNSUPPORTED_PLATFORM
             return;
 #else
-            if (version < OVRP_1_79_0.version) return;
-            OVRPlugin.OVRP_1_79_0.ovrp_QplMarkerAnnotation(markerId, annotationKey, annotationValue,
+            if (version < OVRP_1_84_0.version) return;
+            OVRP_1_84_0.ovrp_QplMarkerAnnotation(markerId, annotationKey, annotationValue,
                 instanceKey);
+#endif
+        }
+
+        public static Result MarkerAnnotation(int markerId, string annotationKey, Variant annotationValue,
+            int instanceKey)
+        {
+#if OVRPLUGIN_QPL_UNSUPPORTED_PLATFORM
+            return Result.Failure_Unsupported;
+#else
+            return version < OVRP_1_96_0.version
+                ? Result.Failure_NotYetImplemented
+                : OVRP_1_96_0.ovrp_QplMarkerAnnotationVariant(markerId, annotationKey, in annotationValue, instanceKey);
 #endif
         }
 
@@ -11250,13 +11457,13 @@ public static partial class OVRPlugin
             nameHandle = 0;
             return false;
 #else
-            if (version < OVRPlugin.OVRP_1_79_0.version)
+            if (version < OVRP_1_84_0.version)
             {
                 nameHandle = 0;
                 return false;
             }
 
-            return OVRPlugin.OVRP_1_79_0.ovrp_QplCreateMarkerHandle(name, out nameHandle) == Result.Success;
+            return OVRP_1_84_0.ovrp_QplCreateMarkerHandle(name, out nameHandle) == Result.Success;
 #endif
         }
 
@@ -11265,8 +11472,8 @@ public static partial class OVRPlugin
 #if OVRPLUGIN_QPL_UNSUPPORTED_PLATFORM
             return false;
 #else
-            if (version < OVRPlugin.OVRP_1_79_0.version) return false;
-            return OVRPlugin.OVRP_1_79_0.ovrp_QplDestroyMarkerHandle(nameHandle) == Result.Success;
+            if (version < OVRP_1_84_0.version) return false;
+            return OVRP_1_84_0.ovrp_QplDestroyMarkerHandle(nameHandle) == Result.Success;
 #endif
         }
     }
@@ -12782,29 +12989,6 @@ public static partial class OVRPlugin
         [DllImport(pluginName, CallingConvention = CallingConvention.Cdecl)]
         public static extern Result ovrp_DeclareUser(in UInt64 userId, out UInt64 userHandle);
 
-        [DllImport(pluginName, CallingConvention = CallingConvention.Cdecl)]
-        public static extern Result ovrp_QplMarkerStart(int markerId, int instanceKey, long timestampMs);
-
-        [DllImport(pluginName, CallingConvention = CallingConvention.Cdecl)]
-        public static extern Result ovrp_QplMarkerEnd(int markerId, Qpl.ResultType resultTypeId,
-            int instanceKey, long timestampMs);
-
-        [DllImport(pluginName, CallingConvention = CallingConvention.Cdecl)]
-        public static extern Result ovrp_QplMarkerPointCached(int markerId, int nameHandle, int instanceKey,
-            long timestampMs);
-
-        [DllImport(pluginName, CallingConvention = CallingConvention.Cdecl)]
-        public static extern Result ovrp_QplMarkerAnnotation(int markerId,
-            [MarshalAs(UnmanagedType.LPStr)] string annotationKey,
-            [MarshalAs(UnmanagedType.LPStr)] string annotationValue, int instanceKey);
-
-        [DllImport(pluginName, CallingConvention = CallingConvention.Cdecl)]
-        public static extern Result ovrp_QplCreateMarkerHandle([MarshalAs(UnmanagedType.LPStr)] string name,
-            out int nameHandle);
-
-        [DllImport(pluginName, CallingConvention = CallingConvention.Cdecl)]
-        public static extern Result ovrp_QplDestroyMarkerHandle(int nameHandle);
-
     }
 
     private static class OVRP_1_81_0
@@ -12873,6 +13057,33 @@ public static partial class OVRPlugin
 
 
 
+
+        [DllImport(pluginName, CallingConvention = CallingConvention.Cdecl)]
+        public static extern Result ovrp_QplMarkerStart(int markerId, int instanceKey, long timestampMs);
+
+        [DllImport(pluginName, CallingConvention = CallingConvention.Cdecl)]
+        public static extern Result ovrp_QplMarkerEnd(int markerId, Qpl.ResultType resultTypeId,
+            int instanceKey, long timestampMs);
+
+        [DllImport(pluginName, CallingConvention = CallingConvention.Cdecl)]
+        public static extern Result ovrp_QplMarkerPoint(int markerId, [MarshalAs(UnmanagedType.LPStr)] string name,
+            int instanceKey, long timestampMs);
+
+        [DllImport(pluginName, CallingConvention = CallingConvention.Cdecl)]
+        public static extern Result ovrp_QplMarkerPointCached(int markerId, int nameHandle, int instanceKey,
+            long timestampMs);
+
+        [DllImport(pluginName, CallingConvention = CallingConvention.Cdecl)]
+        public static extern Result ovrp_QplMarkerAnnotation(int markerId,
+            [MarshalAs(UnmanagedType.LPStr)] string annotationKey,
+            [MarshalAs(UnmanagedType.LPStr)] string annotationValue, int instanceKey);
+
+        [DllImport(pluginName, CallingConvention = CallingConvention.Cdecl)]
+        public static extern Result ovrp_QplCreateMarkerHandle([MarshalAs(UnmanagedType.LPStr)] string name,
+            out int nameHandle);
+
+        [DllImport(pluginName, CallingConvention = CallingConvention.Cdecl)]
+        public static extern Result ovrp_QplDestroyMarkerHandle(int nameHandle);
     }
 
     private static class OVRP_1_85_0
@@ -13027,6 +13238,21 @@ public static partial class OVRPlugin
 
         [DllImport(pluginName, CallingConvention = CallingConvention.Cdecl)]
         public static extern Result ovrp_SetDeveloperTelemetryConsent(Bool consent);
+
+    }
+
+    private static class OVRP_1_96_0
+    {
+        public static readonly System.Version version = new System.Version(1, 96, 0);
+
+        [DllImport(pluginName, CallingConvention = CallingConvention.Cdecl)]
+        public static extern unsafe Result ovrp_QplMarkerAnnotationVariant(int markerId,
+            [MarshalAs(UnmanagedType.LPStr)] string annotationKey, in Qpl.Variant annotationValue, int instanceKey);
+
+        [DllImport(pluginName, CallingConvention = CallingConvention.Cdecl)]
+        public static extern unsafe Result ovrp_QplMarkerPointData(int markerId,
+            [MarshalAs(UnmanagedType.LPStr)] string name, Qpl.Annotation* annotations, int annotationCount,
+            int instanceKey, long timestampMs);
     }
 
 }

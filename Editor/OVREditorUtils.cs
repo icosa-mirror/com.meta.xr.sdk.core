@@ -114,7 +114,7 @@ internal static class OVREditorUtils
 
     public static class HoverHelper
     {
-        private static readonly Dictionary<string, bool> Hovers = new Dictionary<string, bool>();
+        private static readonly Dictionary<string, bool> Hovers = new();
 
         public static void Reset()
         {
@@ -123,12 +123,15 @@ internal static class OVREditorUtils
 
         public static bool IsHover(string id, Event ev = null, Rect? area = null)
         {
+            var hover = false;
             if (area.HasValue && ev?.type == EventType.Repaint)
             {
-                Hovers[id] = area?.Contains(ev.mousePosition) ?? false;
+                hover = area.Value.Contains(ev.mousePosition);
+                Hovers[id] = hover;
+                return hover;
             }
 
-            Hovers.TryGetValue(id, out var hover);
+            Hovers.TryGetValue(id, out hover);
             return hover;
         }
 
@@ -142,14 +145,14 @@ internal static class OVREditorUtils
         public static bool Button(string id, Rect rect, GUIContent content, GUIStyle style, out bool hover)
         {
             var isClicked = GUI.Button(rect, content, style);
-            hover = IsHover(id, Event.current, GUILayoutUtility.GetLastRect());
+            hover = IsHover(id, Event.current, rect);
             return isClicked;
         }
     }
 
     public static class TweenHelper
     {
-        private static readonly Dictionary<string, float> Tweens = new Dictionary<string, float>();
+        private static readonly Dictionary<string, float> Tweens = new();
 
         public static void Reset()
         {

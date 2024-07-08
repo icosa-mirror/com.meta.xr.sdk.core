@@ -37,7 +37,8 @@ namespace Meta.XR.GuidedSetups.Editor
         private const string AddTestUserDocURL = "https://developer.oculus.com/resources/test-users/";
         private const string AddPlatformFeaturesDocURL = "https://developer.oculus.com/documentation/unity/unity-shared-spatial-anchors/#prerequisites";
 
-        private string _appId = "Paste you App Id here";
+        private static string _defaultAppIdFieldText = "Paste you App Id here";
+        private string AppId { get; set; } = _defaultAppIdFieldText;
         private bool _appIdSet;
 
         [MenuItem("Oculus/Tools/Meta Account Setup Guide")]
@@ -160,13 +161,13 @@ namespace Meta.XR.GuidedSetups.Editor
             // App id field
             EditorGUILayout.BeginHorizontal(GuidedSetupStyles.GUIStyles.TopMargin);
             GUILayout.Space(20);
-            _appId = EditorGUILayout.TextField(_appId);
-            var invalid = !_appId.All(char.IsDigit) || String.IsNullOrEmpty(_appId);
+            AppId = EditorGUILayout.TextField(AppId);
+            var invalid = !AppId.All(char.IsDigit) || String.IsNullOrEmpty(AppId);
 
             if (GUILayout.Button("Set") && !invalid)
             {
-                PlatformSettings.MobileAppID = _appId;
-                PlatformSettings.AppID = _appId;
+                PlatformSettings.MobileAppID = AppId;
+                PlatformSettings.AppID = AppId;
                 EditorApplication.ExecuteMenuItem("Oculus/Platform/Edit Settings");
                 _appIdSet = true;
 
@@ -176,7 +177,7 @@ namespace Meta.XR.GuidedSetups.Editor
             EditorGUILayout.EndHorizontal();
 
             // Validation
-            if (invalid)
+            if (invalid && !AppId.Equals(_defaultAppIdFieldText))
             {
                 EditorGUILayout.BeginHorizontal();
                 GUILayout.Space(22);
@@ -245,8 +246,8 @@ namespace Meta.XR.GuidedSetups.Editor
                 EditorGUILayout.LabelField(GuidedSetupStyles.Contents.DefaultIcon, GuidedSetupStyles.GUIStyles.IconStyleTopPadding, GUILayout.Width(Constants.SmallIconSize),
                     GUILayout.Height(Constants.SmallIconSize + Constants.Padding));
             }
-            EditorGUILayout.LabelField("To use the Shared Spatial Anchor, the <color=lightblue><b>UserID</b></color> " +
-                                       "and <color=lightblue><b>UserProfile</b></color> Platform\n" +
+            EditorGUILayout.LabelField("To use the Shared Spatial Anchor, the <b>UserID</b> " +
+                                       "and <b>UserProfile</b> Platform\n" +
                                        "features must be enabled in <b>Data Use Checkup</b>.", GuidedSetupStyles.GUIStyles.LabelTopPadding);
             EditorGUILayout.EndHorizontal();
 

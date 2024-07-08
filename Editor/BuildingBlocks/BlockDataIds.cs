@@ -36,6 +36,7 @@ namespace Meta.XR.BuildingBlocks.Editor
         public const string SpatialAnchorCore = "a383f5ea-3856-4c23-a11c-7fdbb9408035";
         public const string SharedSpatialAnchorCore = "975428dc-db04-4e43-be4a-232f192cd3eb";
         public const string ControllerButtonsMapper = "80aa2eb2-af2f-40a9-ad9e-18044ce65bee";
+        public const string RoomMesh = "6b8a377d-05de-449b-a9c4-8ed22606f71c";
 
         // Utilities
         public const string Cube = "7358e191-33b7-43ca-b066-b2f00531ac66";
@@ -48,14 +49,6 @@ namespace Meta.XR.BuildingBlocks.Editor
         public const string RealHands = "f547fe18-d477-46ec-bdf5-7208df19cb98";
         public const string SyntheticHands = "6b67162c-2460-4766-a931-980388647573";
         public const string ThrowableItem = "803f3803-bb5e-464a-ac45-dad44c840fb6";
-
-        // MRUK
-        public const string AnchorColliderSpawner = "3bd6c700-1fcb-41ff-b30b-0bc001d43048";
-        public const string EffectMesh = "65c6e778-10b3-4490-89da-008a18aa116a";
-        public const string RoomGuardian = "715d6e5e-2d15-475d-9b2b-43ce3eca2f3d";
-        public const string SceneDebugger = "8ac24146-90e9-4802-8a61-9d72ceaa2450";
-        public const string AnchorPrefabSpawner = "b9d9309f-2bf0-40ca-9cee-803aa6a91dae";
-        public const string FindSpawnPositions = "93762ef0-9738-45f4-bb87-bdb9a0acb994";
 
     }
 }

@@ -122,6 +122,8 @@ public class OVRProjectConfig : ScriptableObject, ISerializationCallbackReceiver
 
     public bool skipUnneededShaders = false;
 
+    public bool enableIL2CPPLTO = false;
+
     [System.Obsolete("Focus awareness is now required. The option will be deprecated.", false)]
     public bool focusAware = true;
 

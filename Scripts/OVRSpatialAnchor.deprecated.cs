@@ -21,6 +21,7 @@
 using System;
 using System.Collections.Generic;
 using Unity.Collections;
+using Unity.Collections.LowLevel.Unsafe;
 
 partial class OVRSpatialAnchor
 {
@@ -482,8 +483,13 @@ partial class OVRSpatialAnchor
             throw new ArgumentNullException(nameof(anchors));
 
         using var spaces = ToNativeArray(anchors);
-        var saveResult =
-            OVRPlugin.SaveSpaceList(spaces, saveOptions.Storage.ToSpaceStorageLocation(), out var requestId);
+        OVRPlugin.Result saveResult;
+        ulong requestId;
+        unsafe
+        {
+            saveResult = OVRAnchor.SaveSpaceList((ulong*)spaces.GetUnsafeReadOnlyPtr(), (uint)spaces.Length,
+                saveOptions.Storage.ToSpaceStorageLocation(), out requestId);
+        }
 
         if (saveResult.IsSuccess())
         {

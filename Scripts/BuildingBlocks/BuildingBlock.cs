@@ -39,6 +39,7 @@ namespace Meta.XR.BuildingBlocks
         [SerializeField, OVRReadOnly] internal int version = 1;
         public int Version => version;
 
+
         private void Awake()
         {
             if (Application.isPlaying)

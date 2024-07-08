@@ -183,7 +183,7 @@ public partial class OVRSpatialAnchor : MonoBehaviour
                 spaces[spaceCount++] = anchor._anchor.Handle;
             }
 
-            var result = OVRPlugin.SaveSpaceList(spaces, spaceCount, saveOptions.Storage.ToSpaceStorageLocation(),
+            var result = OVRAnchor.SaveSpaceList(spaces, spaceCount, saveOptions.Storage.ToSpaceStorageLocation(),
                 out var requestId);
 
             Development.LogRequestOrError(requestId, result,
@@ -436,7 +436,7 @@ public partial class OVRSpatialAnchor : MonoBehaviour
     /// An <see cref="OVRTask{TResult}"/> with a boolean type parameter indicating the success of the erase operation.
     /// </returns>
     public OVRTask<bool> EraseAsync(EraseOptions eraseOptions) =>
-        OVRPlugin.EraseSpace(_anchor.Handle, eraseOptions.Storage.ToSpaceStorageLocation(), out var requestId)
+        OVRAnchor.EraseSpace(_anchor.Handle, eraseOptions.Storage.ToSpaceStorageLocation(), out var requestId).IsSuccess()
             ? OVRTask.FromRequest<bool>(requestId)
             : OVRTask.FromResult(false);
 

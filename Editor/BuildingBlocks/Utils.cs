@@ -168,10 +168,6 @@ namespace Meta.XR.BuildingBlocks.Editor
             }
         };
 
-        private static readonly Dictionary<string, BlockBaseData> IDToBlockDataDictionary = new();
-
-        private static bool _dirty = true;
-
 
 
         private const string DocumentationUrl = "https://developer.oculus.com/documentation/unity/unity-buildingblocks-overview";
@@ -207,18 +203,11 @@ namespace Meta.XR.BuildingBlocks.Editor
         {
             StatusMenu.RegisterItem(Item);
 
-            EditorApplication.projectChanged -= OnProjectChanged;
-            EditorApplication.projectChanged += OnProjectChanged;
-
         }
 
-        public static void OnProjectChanged()
-        {
-            _dirty = true;
-        }
 
         private static int ComputeNumberOfNewBlocks() =>
-            GetAllBlockData().Count(data => !data.Hidden && data.Tags.Contains(NewTag));
+            BlockBaseData.Registry.Values.Count(data => !data.Hidden && data.Tags.Contains(NewTag));
 
         private static (string, Color?) ComputeInfoText()
         {
@@ -251,51 +240,16 @@ namespace Meta.XR.BuildingBlocks.Editor
             BuildingBlocksWindow.ShowWindow(origin);
         }
 
-        public static void RefreshList(bool force = false)
-        {
-            if (!_dirty && !force)
-            {
-                return;
-            }
+        public static BlockData GetBlockData(this BuildingBlock block) => GetBlockData(block.blockId);
 
-            var blockDataList =
-                AllBlockData
-                    .Where(t => t != null)
-                    .ToList();
-
-            IDToBlockDataDictionary.Clear();
-            foreach (var blockData in blockDataList)
-            {
-                IDToBlockDataDictionary[blockData.Id] = blockData;
-            }
-
-
-            _dirty = false;
-        }
-
-        public static BlockData GetBlockData(this BuildingBlock block)
-        {
-            return GetBlockData(block.BlockId);
-        }
-
-        public static BlockData GetBlockData(string blockId)
-        {
-            RefreshList();
-            IDToBlockDataDictionary.TryGetValue(blockId, out var blockData);
-            return blockData as BlockData;
-        }
-
-        private static IEnumerable<BlockBaseData> GetAllBlockData()
-        {
-            RefreshList();
-            return IDToBlockDataDictionary.Values.ToArray();
-        }
+        public static BlockData GetBlockData(string blockId) => BlockBaseData.Registry[blockId] as BlockData;
 
         public static BuildingBlock GetBlock(this BlockData data)
         {
             return Object.FindObjectsByType<BuildingBlock>(FindObjectsSortMode.None)
                 .FirstOrDefault(x => x.BlockId == data.Id);
         }
+
 
         public static BuildingBlock GetBlock(string blockId)
         {
@@ -354,17 +308,16 @@ namespace Meta.XR.BuildingBlocks.Editor
 
         public static List<BlockData> GetUsingBlockDatasInScene(this BlockData requiredData)
         {
-            return requiredData.GetUsingBlocksInScene().Select(x => x.GetBlockData()).ToList();
+            return requiredData.GetUsingBlocksInScene().Select(x => x.GetBlockData()).Distinct().ToList();
         }
 
-        public static List<BlockData> GetAllDependencyDatas(this BlockData data)
-        {
-            return data.Dependencies
-                .Where(dependency => dependency != null)
-                .SelectMany(dependency => GetAllDependencyDatas(dependency).Concat(new[] { dependency }))
-                .Distinct()
-                .ToList();
-        }
+        public static IEnumerable<BlockData> GetAllDependencies(this BlockData data) =>
+            data.Dependencies
+            .Where(dependency => dependency != null)
+            .SelectMany(
+                dependency => GetAllDependencies(dependency)
+                .Concat(new[] { dependency })
+            ).Distinct();
 
         public static void SelectBlockInScene(this BuildingBlock block)
         {
@@ -408,14 +361,61 @@ namespace Meta.XR.BuildingBlocks.Editor
             return rootGameObjects.FirstOrDefault(go => go.GetComponentInChildren<T>())?.GetComponentInChildren<T>();
         }
 
-        public static IEnumerable<BlockBaseData> AllBlockData =>
-            AssetDatabase.FindAssets($"t:{nameof(BlockBaseData)}")
-                .Select(id =>
-                    AssetDatabase.LoadAssetAtPath<BlockBaseData>(AssetDatabase.GUIDToAssetPath(id))
-                );
+
 
 
         public static TResult Let<TSource, TResult>(this TSource source, Func<TSource, TResult> func) => func(source);
 
+        internal static bool HasDuplicates<T>(this IEnumerable<T> dependencies) =>
+            dependencies
+                .GroupBy(x => x)
+                .Any(g => g.Count() > 1);
+
+        /// <summary>
+        /// Compare current Unity Editor version with target Unity Editor version.
+        /// </summary>
+        /// <remarks>
+        /// Version format: Major.Minor.Build. Examples: 2022.3.2, 2023.3, 2021.3.2
+        /// </remarks>
+        /// <param name="target">Target version</param>
+        /// <returns>
+        /// returns -1 if current version is older than target
+        /// returns 1 if current version is newer than target
+        /// returns 0 if versions are same
+        /// </returns>
+        public static int CompareCurrentUnityEditorVersions(string target)
+        {
+            if (target == null)
+                throw new ArgumentNullException();
+
+            var pattern = @"[\.-]|(?<=\d)(?=[a-zA-Z])";
+            var currentVersionParts = Regex.Split(Application.unityVersion, pattern)
+                .Where(s => !String.IsNullOrEmpty(s))
+                .Select(s =>
+                {
+                    int.TryParse(s, out var o);
+                    return o;
+                }).ToArray();
+
+            var targetVersionParts = Regex.Split(target, pattern)
+                .Where(s => !String.IsNullOrEmpty(s))
+                .Select(s =>
+                {
+                    int.TryParse(s, out var o);
+                    return o;
+                }).ToArray();
+
+            if (targetVersionParts.Length == 0)
+            {
+                throw new ArgumentException("Empty target version string.");
+            }
+
+            Version currentVersion = new Version(currentVersionParts[0], currentVersionParts[1], currentVersionParts[2]);
+            Version targetVersion = new Version(targetVersionParts[0],
+                targetVersionParts.Length > 1 ? targetVersionParts[1] : 0,
+                targetVersionParts.Length > 2 ? targetVersionParts[2] : 0);
+
+            return currentVersion.CompareTo(targetVersion);
+        }
     }
 }

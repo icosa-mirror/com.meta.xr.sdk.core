@@ -46,13 +46,16 @@ namespace Meta.XR.Editor.Tags
 
         public void OnValidate()
         {
-            _behavior = null;
+            if (!Valid) return;
+            _behavior = TagBehavior.GetBehavior(this);
             Registry.Add(this);
         }
 
         public string Name => name;
         internal bool Valid => Name != null;
+
         internal TagBehavior Behavior => _behavior ??= TagBehavior.GetBehavior(this);
+
 
         public bool Equals(Tag other) => Name == other.Name;
         public override bool Equals(object obj) => obj is Tag other && Equals(other);
@@ -65,6 +68,5 @@ namespace Meta.XR.Editor.Tags
             var orderComparison = lhs.Behavior.Order.CompareTo(rhs.Behavior.Order);
             return orderComparison != 0 ? orderComparison : string.Compare(lhs.Name, rhs.Name, StringComparison.Ordinal);
         };
-
     }
 }

@@ -1317,11 +1317,11 @@ public readonly struct OVRTask<TResult> : IEquatable<OVRTask<TResult>>, IDisposa
 /// The AsyncMethodBuilder for <see cref="OVRTask{TResult}"/>.
 /// </summary>
 /// <remarks>
-/// Do not use this struct directly. It is used by the compiler to allow <see cref="OVRTask{TResult}"/> to be used as
+/// Do not use this type directly. It is used by the compiler to allow <see cref="OVRTask{TResult}"/> to be used as
 /// a task-like object, that is, you can await on it from an awaitable function.
 /// </remarks>
 /// <typeparam name="T">The type of the result of an asynchronous operation.</typeparam>
-public struct OVRTaskBuilder<T>
+public class OVRTaskBuilder<T>
 {
     OVRTask<T>? _task;
 

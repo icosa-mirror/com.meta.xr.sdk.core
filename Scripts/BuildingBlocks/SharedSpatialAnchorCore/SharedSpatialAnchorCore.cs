@@ -28,13 +28,13 @@ namespace Meta.XR.BuildingBlocks
 {
     public class SharedSpatialAnchorCore : SpatialAnchorCoreBuildingBlock
     {
-        public UnityEvent<List<Guid>, OVRSpatialAnchor.OperationResult> OnSpatialAnchorsShareCompleted
+        public UnityEvent<List<OVRSpatialAnchor>, OVRSpatialAnchor.OperationResult> OnSpatialAnchorsShareCompleted
         {
             get => _onSpatialAnchorsShareCompleted;
             set => _onSpatialAnchorsShareCompleted = value;
         }
 
-        [SerializeField] private UnityEvent<List<Guid>, OVRSpatialAnchor.OperationResult> _onSpatialAnchorsShareCompleted;
+        [SerializeField] private UnityEvent<List<OVRSpatialAnchor>, OVRSpatialAnchor.OperationResult> _onSpatialAnchorsShareCompleted;
 
         private Action<OVRSpatialAnchor.OperationResult, IEnumerable<OVRSpatialAnchor>> _onShareCompleted;
 
@@ -42,7 +42,7 @@ namespace Meta.XR.BuildingBlocks
 
         private void Start() => _onShareCompleted += OnShareCompleted;
 
-        public void InstantiateSpatialAnchor(GameObject prefab, Vector3 position, Quaternion rotation)
+        public new void InstantiateSpatialAnchor(GameObject prefab, Vector3 position, Quaternion rotation)
         {
             if (prefab == null)
             {
@@ -74,7 +74,7 @@ namespace Meta.XR.BuildingBlocks
             OnAnchorCreateCompleted?.Invoke(anchor, Result);
         }
 
-        public void LoadAndInstantiateAnchors(GameObject prefab, List<Guid> uuids)
+        public new void LoadAndInstantiateAnchors(GameObject prefab, List<Guid> uuids)
         {
             if (uuids == null)
             {
@@ -145,13 +145,10 @@ namespace Meta.XR.BuildingBlocks
                 return;
             }
 
-            using var _ = new OVRObjectPool.ListScope<Guid>(out var uuids);
-            foreach (var anchor in anchors)
-            {
-                uuids.Add(anchor.Uuid);
-            }
+            using var _ = new OVRObjectPool.ListScope<OVRSpatialAnchor>(out var sharedAnchors);
+            sharedAnchors.AddRange(anchors);
 
-            OnSpatialAnchorsShareCompleted?.Invoke(uuids, OVRSpatialAnchor.OperationResult.Success);
+            OnSpatialAnchorsShareCompleted?.Invoke(sharedAnchors, OVRSpatialAnchor.OperationResult.Success);
         }
 
         private void OnDestroy() => _onShareCompleted -= OnShareCompleted;

@@ -30,6 +30,23 @@ using UnityEngine.XR.Management;
 
 public partial class OVRManager
 {
+    public static bool GetFixedFoveatedRenderingSupported()
+    {
+#if USING_XR_SDK_OPENXR
+        if (IsOpenXRLoaderActive())
+        {
+            var foveationExtList = MetaXRFoveationFeature.extensionList.Split(' ', System.StringSplitOptions.RemoveEmptyEntries);
+            foreach (string ext in foveationExtList)
+            {
+                if (!OpenXRRuntime.IsExtensionEnabled(ext))
+                    return false;
+            }
+            return true;
+        }
+        else
+#endif
+            return OVRPlugin.fixedFoveatedRenderingSupported;
+    }
     public static FoveatedRenderingLevel GetFoveatedRenderingLevel()
     {
 #if USING_XR_SDK_OPENXR
@@ -98,6 +115,68 @@ public partial class OVRManager
         else
 #endif
         OVRPlugin.eyeTrackedFoveatedRenderingEnabled = enabled;
+    }
+
+    public static void SetSpaceWarp_Internal(bool enabled)
+    {
+#if USING_XR_SDK_OPENXR
+        if (IsOpenXRLoaderActive())
+            MetaXRSpaceWarp.SetSpaceWarp(enabled);
+        else
+#endif
+#if USING_XR_SDK_OCULUS
+            OculusXRPlugin.SetSpaceWarp(enabled ? OVRPlugin.Bool.True : OVRPlugin.Bool.False);
+#else
+            Debug.Log("Failed to set Space Warp. Current XR Loader does not support this feature.");
+#endif
+    }
+
+    public static void SetAppSpacePosition(float x, float y, float z)
+    {
+#if USING_XR_SDK_OPENXR
+        if (IsOpenXRLoaderActive())
+            MetaXRSpaceWarp.SetAppSpacePosition(x, y, z);
+        else
+#endif
+#if USING_XR_SDK_OCULUS
+            OculusXRPlugin.SetAppSpacePosition(x, y, z);
+#else
+            Debug.Log("Failed to set Space Warp App Position. Current XR Loader does not support this feature.");
+#endif
+    }
+
+    public static void SetAppSpaceRotation(float x, float y, float z, float w)
+    {
+#if USING_XR_SDK_OPENXR
+        if (IsOpenXRLoaderActive())
+            MetaXRSpaceWarp.SetAppSpaceRotation(x, y, z, w);
+        else
+#endif
+#if USING_XR_SDK_OCULUS
+            OculusXRPlugin.SetAppSpaceRotation(x, y, z, w);
+#else
+            Debug.Log("Failed to set Space Warp App Rotation. Current XR Loader does not support this feature.");
+#endif
+    }
+
+    public static bool SetColorScaleAndOffset_Internal(Vector4 colorScale, Vector4 colorOffset, bool applyToAllLayers)
+    {
+#if USING_XR_SDK_OPENXR
+        if (IsOpenXRLoaderActive())
+            return OVRPlugin.SetColorScaleAndOffset(colorScale, colorOffset, applyToAllLayers);
+        else
+#endif
+#if USING_XR_SDK_OCULUS
+        {
+            OculusXRPlugin.SetColorScale(colorScale.x, colorScale.y, colorScale.z, colorScale.w);
+            OculusXRPlugin.SetColorOffset(colorOffset.x, colorOffset.y, colorOffset.z, colorOffset.w);
+            if (applyToAllLayers)
+                return OVRPlugin.SetColorScaleAndOffset(colorScale, colorOffset, true);
+            return true;
+        }
+#else
+        return false;
+#endif
     }
 
     private static bool IsOpenXRLoaderActive()

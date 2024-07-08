@@ -34,6 +34,6 @@ MonoBehaviour:
     Quaternion rotation)\n- void LoadAndInstantiateAnchors(GameObject prefab, List<Guid>
     uuids)\n- void EraseAllAnchors()\n- void EraseAnchorByUuid(Guid uuid)\n\n\nAnd,
     the following event shall be fired on completion of the jobs.\n\n- OnAnchorCreateCompleted(OVRSpatialAnchor,
-    OVRSpatialAnchor.OperationResult)\r\n- OnAnchorsLoadCompleted(List<Guid>)\r\n-
-    OnAnchorsEraseAllCompleted(OVRSpatialAnchor.OperationResult)\r\n- OnAnchorEraseCompleted(Guid,
+    OVRSpatialAnchor.OperationResult)\r\n- OnAnchorsLoadCompleted(List<OVRSpatialAnchor>)\r\n-
+    OnAnchorsEraseAllCompleted(OVRSpatialAnchor.OperationResult)\r\n- OnAnchorEraseCompleted(OVRSpatialAnchor,
     OVRSpatialAnchor.OperationResult)\r"

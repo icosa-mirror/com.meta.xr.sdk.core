@@ -392,5 +392,36 @@ internal static class OVRProjectSetupRenderingTasks
             fix: buildTargetGroup => PlayerSettings.gpuSkinning = true,
             fixMessage: "PlayerSettings.gpuSkinning = true"
         );
+
+        //[Recommended] Dynamic Resolution
+        OVRProjectSetup.AddTask(
+            level: OVRProjectSetup.TaskLevel.Recommended,
+            conditionalValidity: buildTargetGroup =>
+            {
+                var ovrManager = OVRProjectSetupUtils.FindComponentInScene<OVRManager>();
+                return ovrManager != null;
+            },
+            platform: BuildTargetGroup.Android,
+            group: targetGroup,
+            isDone: buildTargetFroup =>
+            {
+                var ovrManager = OVRProjectSetupUtils.FindComponentInScene<OVRManager>();
+                return ovrManager == null || ovrManager.enableDynamicResolution;
+            },
+            message: "Using Dynamic Resolution can help improve quality when GPU Utilization is low, and improve framerate in GPU heavy scenes. It also unlocks GPU Level 5 on Meta Quest 2, Pro and 3. Consider disabling it when profiling and optimizing your application.",
+            fix: buildTargetGroup =>
+            {
+                var ovrManager = OVRProjectSetupUtils.FindComponentInScene<OVRManager>();
+                if (ovrManager)
+                {
+                    ovrManager.enableDynamicResolution = true;
+                    if (ovrManager.minDynamicResolutionScale == 1.0f)
+                        ovrManager.minDynamicResolutionScale = 0.7f;
+                    if (ovrManager.maxDynamicResolutionScale == 1.0f)
+                        ovrManager.maxDynamicResolutionScale = 1.3f;
+                }
+            },
+            fixMessage: "OVRManager.enableDynamicResolution = true, OVRManager.minDynamicResolutionScale = 0.7f, OVRManager.maxDynamicResolution = 1.3f"
+        );
     }
 }

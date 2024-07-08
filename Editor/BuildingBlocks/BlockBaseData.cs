@@ -19,7 +19,6 @@
  */
 
 using System;
-using System.Collections.Generic;
 using System.Linq;
 using Meta.XR.Editor.Tags;
 using UnityEngine;
@@ -29,8 +28,10 @@ using Meta.XR.Editor.UserInterface;
 
 namespace Meta.XR.BuildingBlocks.Editor
 {
-    public abstract class BlockBaseData : ScriptableObject, ITaggable
+    public abstract class BlockBaseData : ScriptableObject, ITaggable, IIdentified
     {
+        internal static readonly CachedIdDictionary<BlockBaseData> Registry = new();
+
         [SerializeField, OVRReadOnly] internal string id = Guid.NewGuid().ToString();
         public string Id => id;
 
@@ -142,28 +143,9 @@ namespace Meta.XR.BuildingBlocks.Editor
 
         public bool Experimental => Tags.Contains(Utils.ExperimentalTag);
 
-
-
         [SerializeField] internal int order;
         public int Order => order;
 
-        [ContextMenu("Assign ID")]
-        internal void AssignId()
-        {
-            id = Guid.NewGuid().ToString();
-        }
-
-        [ContextMenu("Copy ID to clipboard")]
-        internal void CopyIdToClipboard()
-        {
-            GUIUtility.systemCopyBuffer = Id;
-        }
-
-        [ContextMenu("Increment Version")]
-        internal void IncrementVersion()
-        {
-            version++;
-        }
 
 
         internal abstract bool CanBeAdded { get; }

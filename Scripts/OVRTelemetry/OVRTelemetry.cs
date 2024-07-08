@@ -23,6 +23,9 @@
 #endif
 
 using System;
+using System.Text;
+using Unity.Collections;
+using Unity.Collections.LowLevel.Unsafe;
 using UnityEngine;
 
 internal static partial class OVRTelemetry
@@ -68,8 +71,46 @@ internal static partial class OVRTelemetry
         public abstract void MarkerPointCached(int markerId, int nameHandle,
             int instanceKey = OVRPlugin.Qpl.DefaultInstanceKey, long timestampMs = OVRPlugin.Qpl.AutoSetTimestampMs);
 
-        public abstract void MarkerAnnotation(int markerId, string annotationKey,
-            string annotationValue, int instanceKey = OVRPlugin.Qpl.DefaultInstanceKey);
+        public abstract void MarkerPoint(int markerId, string name,
+            int instanceKey = OVRPlugin.Qpl.DefaultInstanceKey, long timestampMs = OVRPlugin.Qpl.AutoSetTimestampMs);
+
+        public abstract unsafe void MarkerPoint(int markerId, string name, OVRPlugin.Qpl.Annotation* annotations,
+            int annotationCount, int instanceKey = OVRPlugin.Qpl.DefaultInstanceKey,
+            long timestampMs = OVRPlugin.Qpl.AutoSetTimestampMs);
+
+        public abstract void MarkerAnnotation(int markerId, string key, OVRPlugin.Qpl.Variant value,
+            int instanceKey = OVRPlugin.Qpl.DefaultInstanceKey);
+
+        public abstract void MarkerAnnotation(int markerId, string annotationKey, string annotationValue,
+            int instanceKey = OVRPlugin.Qpl.DefaultInstanceKey);
+
+        public void MarkerAnnotation(int markerId, string annotationKey,
+            bool annotationValue, int instanceKey = OVRPlugin.Qpl.DefaultInstanceKey)
+            => MarkerAnnotation(markerId, annotationKey, OVRPlugin.Qpl.Variant.From(annotationValue), instanceKey);
+
+        public void MarkerAnnotation(int markerId, string annotationKey,
+            long annotationValue, int instanceKey = OVRPlugin.Qpl.DefaultInstanceKey)
+            => MarkerAnnotation(markerId, annotationKey, OVRPlugin.Qpl.Variant.From(annotationValue), instanceKey);
+
+        public void MarkerAnnotation(int markerId, string annotationKey,
+            double annotationValue, int instanceKey = OVRPlugin.Qpl.DefaultInstanceKey)
+            => MarkerAnnotation(markerId, annotationKey, OVRPlugin.Qpl.Variant.From(annotationValue), instanceKey);
+
+        public unsafe void MarkerAnnotation(int markerId, string annotationKey,
+            byte** annotationValues, int count, int instanceKey = OVRPlugin.Qpl.DefaultInstanceKey)
+            => MarkerAnnotation(markerId, annotationKey, OVRPlugin.Qpl.Variant.From(annotationValues, count), instanceKey);
+
+        public unsafe void MarkerAnnotation(int markerId, string annotationKey,
+            long* annotationValues, int count, int instanceKey = OVRPlugin.Qpl.DefaultInstanceKey)
+            => MarkerAnnotation(markerId, annotationKey, OVRPlugin.Qpl.Variant.From(annotationValues, count), instanceKey);
+
+        public unsafe void MarkerAnnotation(int markerId, string annotationKey,
+            double* annotationValues, int count, int instanceKey = OVRPlugin.Qpl.DefaultInstanceKey)
+            => MarkerAnnotation(markerId, annotationKey, OVRPlugin.Qpl.Variant.From(annotationValues, count), instanceKey);
+
+        public unsafe void MarkerAnnotation(int markerId, string annotationKey,
+            OVRPlugin.Bool* annotationValues, int count, int instanceKey = OVRPlugin.Qpl.DefaultInstanceKey)
+            => MarkerAnnotation(markerId, annotationKey, OVRPlugin.Qpl.Variant.From(annotationValues, count), instanceKey);
 
         public abstract void MarkerEnd(int markerId,
             OVRPlugin.Qpl.ResultType resultTypeId = OVRPlugin.Qpl.ResultType.Success,
@@ -91,8 +132,24 @@ internal static partial class OVRTelemetry
         {
         }
 
-        public override void MarkerAnnotation(int markerId, string annotationKey,
-            string annotationValue, int instanceKey = OVRPlugin.Qpl.DefaultInstanceKey)
+        public override void MarkerPoint(int markerId, string name, int instanceKey = OVRPlugin.Qpl.DefaultInstanceKey,
+            long timestampMs = OVRPlugin.Qpl.AutoSetTimestampMs)
+        {
+        }
+
+        public override unsafe void MarkerPoint(int markerId, string name, OVRPlugin.Qpl.Annotation* annotations,
+            int annotationCount, int instanceKey = OVRPlugin.Qpl.DefaultInstanceKey,
+            long timestampMs = OVRPlugin.Qpl.AutoSetTimestampMs)
+        {
+        }
+
+        public override void MarkerAnnotation(int markerId, string key, OVRPlugin.Qpl.Variant value,
+            int instanceKey = OVRPlugin.Qpl.DefaultInstanceKey)
+        {
+        }
+
+        public override void MarkerAnnotation(int markerId, string annotationKey, string annotationValue,
+            int instanceKey = OVRPlugin.Qpl.DefaultInstanceKey)
         {
         }
 
@@ -125,10 +182,29 @@ internal static partial class OVRTelemetry
             OVRPlugin.Qpl.MarkerPointCached(markerId, nameHandle, instanceKey, timestampMs);
         }
 
+        public override void MarkerPoint(int markerId, string name, int instanceKey = OVRPlugin.Qpl.DefaultInstanceKey,
+            long timestampMs = OVRPlugin.Qpl.AutoSetTimestampMs)
+        {
+            OVRPlugin.Qpl.MarkerPoint(markerId, name, instanceKey, timestampMs);
+        }
+
+        public override unsafe void MarkerPoint(int markerId, string name, OVRPlugin.Qpl.Annotation* annotations,
+            int annotationCount, int instanceKey = OVRPlugin.Qpl.DefaultInstanceKey,
+            long timestampMs = OVRPlugin.Qpl.AutoSetTimestampMs)
+        {
+            OVRPlugin.Qpl.MarkerPoint(markerId, name, annotations, annotationCount, instanceKey, timestampMs);
+        }
+
         public override void MarkerAnnotation(int markerId, string annotationKey,
             string annotationValue, int instanceKey = OVRPlugin.Qpl.DefaultInstanceKey)
         {
             OVRPlugin.Qpl.MarkerAnnotation(markerId, annotationKey, annotationValue, instanceKey);
+        }
+
+        public override void MarkerAnnotation(int markerId, string key, OVRPlugin.Qpl.Variant value,
+            int instanceKey = OVRPlugin.Qpl.DefaultInstanceKey)
+        {
+            OVRPlugin.Qpl.MarkerAnnotation(markerId, key, value, instanceKey);
         }
 
         public override void MarkerEnd(int markerId,

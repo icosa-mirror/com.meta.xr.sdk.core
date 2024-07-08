@@ -44,6 +44,7 @@ public class OVRVirtualKeyboardSampleControls : MonoBehaviour
         private readonly bool _handDirectInteraction;
         private readonly OVRPhysicsRaycaster _controllerRaycaster;
         private readonly OVRPhysicsRaycaster _handRaycaster;
+        private readonly InputField _textHandlerField;
 
         public OVRVirtualKeyboardBackup(OVRVirtualKeyboard keyboard)
         {
@@ -64,6 +65,12 @@ public class OVRVirtualKeyboardSampleControls : MonoBehaviour
             _handRayInteraction = keyboard.handRayInteraction;
             _handDirectInteraction = keyboard.handDirectInteraction;
             _handRaycaster = keyboard.handRaycaster;
+
+            _textHandlerField = null;
+            if (keyboard.TextHandler is OVRVirtualKeyboardInputFieldTextHandler handler)
+            {
+                _textHandlerField = handler.InputField;
+            }
         }
 
         public void RestoreTo(OVRVirtualKeyboard keyboard)
@@ -84,6 +91,13 @@ public class OVRVirtualKeyboardSampleControls : MonoBehaviour
             keyboard.handRayInteraction = _handRayInteraction;
             keyboard.handDirectInteraction = _handDirectInteraction;
             keyboard.handRaycaster = _handRaycaster;
+
+            if (_textHandlerField != null)
+            {
+                var handler = keyboard.gameObject.AddComponent<OVRVirtualKeyboardInputFieldTextHandler>();
+                handler.InputField = _textHandlerField;
+                keyboard.TextHandler = handler;
+            }
         }
     }
 

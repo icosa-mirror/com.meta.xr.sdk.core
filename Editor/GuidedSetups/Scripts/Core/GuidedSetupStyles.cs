@@ -117,7 +117,7 @@ namespace Meta.XR.GuidedSetups.Editor
             {
                 fontSize = 12,
                 alignment = TextAnchor.UpperLeft,
-                wordWrap = true,
+                wordWrap = false,
                 richText = true,
                 padding = new RectOffset(0, 0, 3, 0)
             };

@@ -382,6 +382,10 @@ public class OVRProjectConfigEditor : Editor
                     ref projectConfig.skipUnneededShaders, ref hasModified,
                     "https://developer.oculus.com/documentation/unity/unity-strip-shaders/");
 
+                OVREditorUtil.SetupBoolField(projectConfig, new GUIContent("IL2CPP Link Time Optimization",
+                        "If checked, IL2CPP will compile code with link time optimization in release build."),
+                    ref projectConfig.enableIL2CPPLTO, ref hasModified,
+                    "https://clang.llvm.org/docs/ThinLTO.html");
                 break;
 
             case eProjectConfigTab.Security:

@@ -90,7 +90,9 @@ public class OVRPlatformMenu : MonoBehaviour
     {
 #if UNITY_ANDROID && !UNITY_EDITOR
         Debug.Log("[PlatformUI-ConfirmQuit] Showing @ " + Time.time);
+#pragma warning disable CS0618 // Type or member is obsolete
         OVRManager.PlatformUIConfirmQuit();
+#pragma warning restore CS0618 // Type or member is obsolete
 #endif
     }
 

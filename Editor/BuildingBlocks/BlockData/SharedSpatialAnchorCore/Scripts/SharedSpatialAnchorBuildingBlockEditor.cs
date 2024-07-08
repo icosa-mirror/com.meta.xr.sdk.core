@@ -34,7 +34,7 @@ namespace Meta.XR.BuildingBlocks.Editor
     [CustomEditor(typeof(SharedSpatialAnchorCoreBuildingBlock))]
     public class SharedSpatialAnchorBuildingBlockEditor : BuildingBlockEditor
     {
-        internal override void ShowAdditionals()
+        protected override void ShowAdditionals()
         {
             EditorGUILayout.BeginVertical(Styles.GUIStyles.ErrorHelpBox);
             DrawMessageWithIcon(Styles.Contents.InfoIcon, "A Meta Quest AppID is required to use Shared Spatial Anchor.");

@@ -156,7 +156,6 @@ namespace Meta.XR.BuildingBlocks.Editor
             ClearCache();
         }
 
-
         public static IReadOnlyList<BlockBaseData> FilterBlockWindowContent(IReadOnlyList<BlockBaseData> content)
         {
             return FilterBlockWindowContent(content, _contentFilter);
@@ -180,7 +179,6 @@ namespace Meta.XR.BuildingBlocks.Editor
                 ClearOverrides(content);
                 return content;
             }
-
 
             var contentFilterDictionary = contentFilter
                 .Select((value, index) => new { value, index })

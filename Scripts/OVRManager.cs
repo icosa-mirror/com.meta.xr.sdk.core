@@ -68,6 +68,10 @@ using UnityEngine.XR.OpenXR;
 using UnityEngine.XR.Management;
 #endif
 
+#if USING_URP
+using UnityEngine.Rendering.Universal;
+#endif
+
 using Settings = UnityEngine.XR.XRSettings;
 using Node = UnityEngine.XR.XRNode;
 
@@ -378,6 +382,7 @@ public partial class OVRManager : MonoBehaviour, OVRMixedRealityCaptureConfigura
     public static event Action<int> PassthroughLayerResumed;
 
 
+
     /// <summary>
     /// Occurs when Health & Safety Warning is dismissed.
     /// </summary>
@@ -573,7 +578,7 @@ public partial class OVRManager : MonoBehaviour, OVRMixedRealityCaptureConfigura
 
     [SerializeField]
     [Tooltip("Enable Dynamic Resolution. This will allocate render buffers to maxDynamicResolutionScale size and " +
-             "will change the viewport to adapt performance.")]
+             "will change the viewport to adapt performance. Mobile only.")]
     public bool enableDynamicResolution = false;
 
     [SerializeField]
@@ -1514,7 +1519,7 @@ public partial class OVRManager : MonoBehaviour, OVRMixedRealityCaptureConfigura
 
     public static bool fixedFoveatedRenderingSupported
     {
-        get { return OVRPlugin.fixedFoveatedRenderingSupported; }
+        get { return GetFixedFoveatedRenderingSupported(); }
     }
 
     [Obsolete("Please use foveatedRenderingLevel instead", false)]
@@ -1604,7 +1609,7 @@ public partial class OVRManager : MonoBehaviour, OVRMixedRealityCaptureConfigura
     /// </summary>
     public static void SetColorScaleAndOffset(Vector4 colorScale, Vector4 colorOffset, bool applyToAllLayers)
     {
-        OVRPlugin.SetColorScaleAndOffset(colorScale, colorOffset, applyToAllLayers);
+        SetColorScaleAndOffset_Internal(colorScale, colorOffset, applyToAllLayers);
     }
 
     /// <summary>
@@ -1666,9 +1671,8 @@ public partial class OVRManager : MonoBehaviour, OVRMixedRealityCaptureConfigura
             mainCamera.depthTextureMode = m_CachedDepthTextureMode;
             m_AppSpaceTransform = null;
         }
-#if USING_XR_SDK_OCULUS
-        OculusXRPlugin.SetSpaceWarp(enabled ? OVRPlugin.Bool.True : OVRPlugin.Bool.False);
-#endif
+
+        SetSpaceWarp_Internal(enabled);
         m_SpaceWarpEnabled = enabled;
     }
 
@@ -2231,13 +2235,13 @@ public partial class OVRManager : MonoBehaviour, OVRMixedRealityCaptureConfigura
             OVRPlugin.localDimming = _localDimming;
         }
 
-#if USING_XR_SDK
+#if USING_XR_SDK && UNITY_ANDROID
         if (enableDynamicResolution)
         {
             XRSettings.eyeTextureResolutionScale = maxDynamicResolutionScale;
 #if USING_URP
-        if (GraphicsSettings.currentRenderPipeline is UnityEngine.Rendering.Universal.UniversalRenderPipelineAsset urpPipelineAsset)
-           urpPipelineAsset.renderScale = maxDynamicResolutionScale;
+            if (GraphicsSettings.currentRenderPipeline is UnityEngine.Rendering.Universal.UniversalRenderPipelineAsset urpPipelineAsset)
+                urpPipelineAsset.renderScale = maxDynamicResolutionScale;
 #endif
         }
 #endif
@@ -2434,7 +2438,7 @@ public partial class OVRManager : MonoBehaviour, OVRMixedRealityCaptureConfigura
 #endif
         }
 
-#if USING_XR_SDK
+#if USING_XR_SDK && UNITY_ANDROID
         if (enableDynamicResolution)
         {
             OVRPlugin.Sizei recommendedResolution;
@@ -2474,13 +2478,35 @@ public partial class OVRManager : MonoBehaviour, OVRMixedRealityCaptureConfigura
 
         isHmdPresent = OVRNodeStateProperties.IsHmdPresent();
 
-        if (useRecommendedMSAALevel && QualitySettings.antiAliasing != display.recommendedMSAALevel)
+        int currentMsaaLevel = 0;
+#if USING_URP
+        var renderPipeline = GraphicsSettings.currentRenderPipeline as UniversalRenderPipelineAsset;
+        if (renderPipeline != null)
+        {
+            currentMsaaLevel = renderPipeline.msaaSampleCount;
+        }
+        else
+#endif
+        {
+            currentMsaaLevel = QualitySettings.antiAliasing;
+        }
+
+        if (useRecommendedMSAALevel && currentMsaaLevel != display.recommendedMSAALevel)
         {
             Debug.Log("The current MSAA level is " + QualitySettings.antiAliasing +
                       ", but the recommended MSAA level is " + display.recommendedMSAALevel +
                       ". Switching to the recommended level.");
 
-            QualitySettings.antiAliasing = display.recommendedMSAALevel;
+#if USING_URP
+            if (renderPipeline != null)
+            {
+                renderPipeline.msaaSampleCount = display.recommendedMSAALevel;
+            }
+            else
+#endif
+            {
+                QualitySettings.antiAliasing = display.recommendedMSAALevel;
+            }
         }
 
         if (monoscopic != _monoscopic)
@@ -2811,7 +2837,7 @@ public partial class OVRManager : MonoBehaviour, OVRMixedRealityCaptureConfigura
                     var data = OVRDeserialize.ByteArrayToStructure<OVRDeserialize.SpaceQueryCompleteData>(
                         eventDataBuffer.EventData);
                     SpaceQueryComplete?.Invoke(data.RequestId, data.Result >= 0);
-                    OVRAnchor.OnSpaceQueryCompleteData(data);
+                    OVRAnchor.OnSpaceQueryComplete(data);
                     break;
                 }
                 case OVRPlugin.EventType.SpaceSaveComplete:
@@ -2824,18 +2850,17 @@ public partial class OVRManager : MonoBehaviour, OVRMixedRealityCaptureConfigura
 
                     break;
                 case OVRPlugin.EventType.SpaceEraseComplete:
-                    if (SpaceEraseComplete != null)
-                    {
-                        var data =
-                            OVRDeserialize.ByteArrayToStructure<OVRDeserialize.SpaceEraseCompleteData>(eventDataBuffer
-                                .EventData);
-                        var result = data.Result >= 0;
-                        SpaceEraseComplete(data.RequestId, result, data.Uuid, data.Location);
+                {
+                    var data =
+                        OVRDeserialize.ByteArrayToStructure<OVRDeserialize.SpaceEraseCompleteData>(eventDataBuffer
+                            .EventData);
 
-                        OVRTask.GetExisting<bool>(data.RequestId).SetResult(result);
-                    }
-
+                    var result = data.Result >= 0;
+                    OVRAnchor.OnSpaceEraseComplete(data);
+                    SpaceEraseComplete?.Invoke(data.RequestId, result, data.Uuid, data.Location);
+                    OVRTask.GetExisting<bool>(data.RequestId).SetResult(result);
                     break;
+                }
                 case OVRPlugin.EventType.SpaceShareResult:
                     if (ShareSpacesComplete != null)
                     {
@@ -2848,16 +2873,15 @@ public partial class OVRManager : MonoBehaviour, OVRMixedRealityCaptureConfigura
 
                     break;
                 case OVRPlugin.EventType.SpaceListSaveResult:
-                    if (SpaceListSaveComplete != null)
-                    {
-                        var data =
-                            OVRDeserialize.ByteArrayToStructure<OVRDeserialize.SpaceListSaveResultData>(
-                                eventDataBuffer.EventData);
+                {
+                    var data =
+                        OVRDeserialize.ByteArrayToStructure<OVRDeserialize.SpaceListSaveResultData>(
+                            eventDataBuffer.EventData);
 
-                        SpaceListSaveComplete(data.RequestId, (OVRSpatialAnchor.OperationResult)data.Result);
-                    }
-
+                    OVRAnchor.OnSpaceListSaveResult(data);
+                    SpaceListSaveComplete?.Invoke(data.RequestId, (OVRSpatialAnchor.OperationResult)data.Result);
                     break;
+                }
                 case OVRPlugin.EventType.SceneCaptureComplete:
                 {
                     var data =
@@ -2982,20 +3006,18 @@ public partial class OVRManager : MonoBehaviour, OVRMixedRealityCaptureConfigura
 
         if (m_SpaceWarpEnabled)
         {
-#if USING_XR_SDK_OCULUS
             if (m_AppSpaceTransform != null)
             {
-                OculusXRPlugin.SetAppSpacePosition(m_AppSpaceTransform.position.x, m_AppSpaceTransform.position.y,
+                SetAppSpacePosition(m_AppSpaceTransform.position.x, m_AppSpaceTransform.position.y,
                     m_AppSpaceTransform.position.z);
-                OculusXRPlugin.SetAppSpaceRotation(m_AppSpaceTransform.rotation.x, m_AppSpaceTransform.rotation.y,
+                SetAppSpaceRotation(m_AppSpaceTransform.rotation.x, m_AppSpaceTransform.rotation.y,
                     m_AppSpaceTransform.rotation.z, m_AppSpaceTransform.rotation.w);
             }
             else
             {
-                OculusXRPlugin.SetAppSpacePosition(0.0f, 0.0f, 0.0f);
-                OculusXRPlugin.SetAppSpaceRotation(0.0f, 0.0f, 0.0f, 1.0f);
+                SetAppSpacePosition(0.0f, 0.0f, 0.0f);
+                SetAppSpaceRotation(0.0f, 0.0f, 0.0f, 1.0f);
             }
-#endif
         }
     }
 
@@ -3042,7 +3064,7 @@ public partial class OVRManager : MonoBehaviour, OVRMixedRealityCaptureConfigura
         Debug.Log("[OVRManager] OnApplicationQuit");
     }
 
-    #endregion // Unity Messages
+#endregion // Unity Messages
 
     /// <summary>
     /// Leaves the application/game and returns to the launcher/dashboard
@@ -3421,7 +3443,7 @@ public partial class OVRManager : MonoBehaviour, OVRMixedRealityCaptureConfigura
             OVRPlugin.PassthroughPreferenceFlags.DefaultToActive;
     }
 
-    #region Utils
+#region Utils
 
     private class Observable<T>
     {
@@ -3459,5 +3481,5 @@ public partial class OVRManager : MonoBehaviour, OVRMixedRealityCaptureConfigura
         }
     }
 
-    #endregion
+#endregion
 }

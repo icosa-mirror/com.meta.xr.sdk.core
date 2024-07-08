@@ -76,7 +76,6 @@ namespace Meta.XR
             "XR_FB_passthrough_keyboard_hands " +
             "XR_OCULUS_audio_device_guid " +
             "XR_FB_common_events " +
-            "XR_FB_space_warp " +
             "XR_FB_hand_tracking_capsules " +
             "XR_FB_hand_tracking_mesh " +
             "XR_FB_hand_tracking_aim " +

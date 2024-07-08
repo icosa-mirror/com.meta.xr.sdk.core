@@ -65,6 +65,7 @@ internal static class OVRTelemetryConstants
         public static class AnnotationType
         {
             public const string ComponentName = "ComponentName";
+            public const string AssemblyName = "AssemblyName";
         }
     }
 

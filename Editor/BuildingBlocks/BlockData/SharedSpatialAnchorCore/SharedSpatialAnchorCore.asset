@@ -38,6 +38,6 @@ MonoBehaviour:
     uuid)\r\n- void ShareSpatialAnchors(List<OVRSpatialAnchor> anchors, List<OVRSpaceUser>
     users)\r\n\r\n\r\nAnd, the following event shall be fired on completion of the
     jobs.\r\r\n\r\n- OnAnchorCreateCompleted(OVRSpatialAnchor, OVRSpatialAnchor.OperationResult)\r\n-
-    OnAnchorsLoadCompleted(List<Guid>)\r\n- OnAnchorsEraseAllCompleted(OVRSpatialAnchor.OperationResult)\r\n-
-    OnAnchorEraseCompleted(Guid, OVRSpatialAnchor.OperationResult)\r\n- OnSpatialAnchorsShareCompleted(List<Guid>,
-    OVRSpatialAnchor.OperationResult)"
+    OnAnchorsLoadCompleted(List<OVRSpatialAnchor>)\r\n- OnAnchorsEraseAllCompleted(OVRSpatialAnchor.OperationResult)\r\n-
+    OnAnchorEraseCompleted(OVRSpatialAnchor, OVRSpatialAnchor.OperationResult)\r\n-
+    OnSpatialAnchorsShareCompleted(List<OVRSpatialAnchor>, OVRSpatialAnchor.OperationResult)"

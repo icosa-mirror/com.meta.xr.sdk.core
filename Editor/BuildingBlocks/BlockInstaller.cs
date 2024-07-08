@@ -119,7 +119,7 @@ namespace Meta.XR.BuildingBlocks.Editor
                 : null;
             var blockData = AssetDatabase.LoadAssetAtPath<BlockData>(request.Value.scriptableObjectPath);
 
-            Utils.RefreshList(true);
+            BlockBaseData.Registry.MarkAsDirty();
 
             if (blockData.HasMissingDependencies)
             {

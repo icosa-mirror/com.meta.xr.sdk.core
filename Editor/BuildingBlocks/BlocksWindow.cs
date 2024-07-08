@@ -44,6 +44,7 @@ namespace Meta.XR.BuildingBlocks.Editor
     public class BuildingBlocksWindow : EditorWindow
     {
         private const string MenuPath = "Oculus/Tools/Building Blocks";
+
         private const int MenuPriority = 2;
         private const string WindowName = Utils.BlocksPublicName;
 
@@ -71,6 +72,8 @@ namespace Meta.XR.BuildingBlocks.Editor
 
         private static readonly HashSet<Tag> TagSearch = new();
         private static string _filterSearch = "";
+        private const string FilterSearchControlName = "FilterSearchControl";
+        private static bool _requestFilterSearchFocus = true;
 
         private readonly Repainter _repainter = new();
         private readonly Dimensions _dimensions = new();
@@ -112,6 +115,7 @@ namespace Meta.XR.BuildingBlocks.Editor
         private class Dimensions
         {
             public int WindowWidth { get; private set; }
+            public int WindowHeight { get; private set; }
             public int ExpectedThumbnailWidth { get; private set; }
             public int ExpectedThumbnailHeight { get; private set; }
             public int NumberOfColumns { get; private set; }
@@ -128,6 +132,7 @@ namespace Meta.XR.BuildingBlocks.Editor
                 }
 
                 WindowWidth = windowWidth;
+                WindowHeight = (int)window.position.height;
 
                 var blockWidth = Styles.Constants.IdealThumbnailWidth;
                 windowWidth = Mathf.Max(Styles.Constants.IdealThumbnailWidth + Padding * 3, windowWidth);
@@ -248,6 +253,8 @@ namespace Meta.XR.BuildingBlocks.Editor
         internal static void RefreshBlockList()
         {
             _blockList = BlocksContentManager.FilterBlockWindowContent(GetList());
+            _tagList = Tag.Registry.SortedTags.Where(tag => _blockList.Any((data =>
+                data.Tags.Contains(tag) && data.Tags.All(otherTag => otherTag.Behavior.Visibility)))).ToList();
         }
 
         private void OnDisable()
@@ -256,25 +263,39 @@ namespace Meta.XR.BuildingBlocks.Editor
             DragAndDrop.RemoveDropHandler(SceneDropHandler);
             DragAndDrop.RemoveDropHandler(HierarchyDropHandler);
 #endif // OVR_BB_DRAGANDDROP
+            _requestFilterSearchFocus = true;
         }
 
         private static IReadOnlyList<BlockBaseData> _blockList;
+        private static IList<Tag> _tagList;
 
         private static IReadOnlyList<BlockBaseData> GetList() =>
-            Utils.AllBlockData
+            BlockBaseData.Registry.Values
                 .Where(obj => !string.IsNullOrEmpty(obj.name))
                 .OrderBy(block => block.Order)
                 .ThenBy(block => block.BlockName.Value)
                 .ToList();
 
+
         private void ShowList(Dimensions dimensions)
         {
-            GUILayout.BeginHorizontal(Styles.GUIStyles.FilterByLine);
-            EditorGUILayout.LabelField("Filter by", EditorStyles.miniBoldLabel, GUILayout.Width(44));
-            ShowTagList("window", Tag.Registry.SortedTags, TagSearch, Tag.TagListType.Filters);
-            EditorGUILayout.Space(0, true);
-            _filterSearch = EditorGUILayout.TextField(_filterSearch, GUI.skin.FindStyle("SearchTextField"), GUILayout.Width(256));
-            GUILayout.EndHorizontal();
+            EditorGUILayout.BeginVertical(Styles.GUIStyles.Toolbar);
+            GUI.SetNextControlName(FilterSearchControlName);
+            _filterSearch = EditorGUILayout.TextField(_filterSearch, GUI.skin.FindStyle("SearchTextField"));
+            var availableWidth = dimensions.WindowWidth - Meta.XR.Editor.UserInterface.Styles.Constants.Margin * 2;
+            ShowTagList("window", _tagList, TagSearch, Tag.TagListType.Filters, availableWidth);
+            EditorGUILayout.EndVertical();
+
+            if (_requestFilterSearchFocus)
+            {
+                GUI.FocusControl(FilterSearchControlName);
+                if (!String.IsNullOrEmpty(_filterSearch))
+                {
+                    TextEditor textEditor = (TextEditor)GUIUtility.GetStateObject(typeof(TextEditor), GUIUtility.keyboardControl);
+                    textEditor.SelectAll();
+                }
+                _requestFilterSearchFocus = false;
+            }
 
             ShowList(_blockList, Filter, dimensions);
         }
@@ -290,16 +311,20 @@ namespace Meta.XR.BuildingBlocks.Editor
             if (TagSearch.Any(tag => !block.Tags.Contains(tag))) return false;
 
             var containsSearch = string.IsNullOrEmpty(_filterSearch)
-                           || block.blockName.Contains(_filterSearch)
-                           || block.Description.Value.Contains(_filterSearch)
-                           || block.Tags.Any(tag => tag.Name.Contains(_filterSearch));
+                           || block.blockName.Contains(_filterSearch, StringComparison.InvariantCultureIgnoreCase)
+                           || block.Description.Value.Contains(_filterSearch, StringComparison.InvariantCultureIgnoreCase)
+                           || block.Tags.Any(tag => tag.Name.Contains(_filterSearch, StringComparison.InvariantCultureIgnoreCase));
             return containsSearch;
         }
 
-        private bool HasAnyBlock(Tag tag)
+        private bool IsVisibleInScrollView(int lineIndex, Dimensions dimensions)
         {
-            return _blockList.Any((data =>
-                data.Tags.Contains(tag) && data.Tags.All(otherTag => otherTag.Behavior.Visibility)));
+            var blockHeight = dimensions.ExpectedThumbnailHeight + +Styles.GUIStyles.DescriptionAreaStyle.fixedHeight +
+                              3 + XR.Editor.UserInterface.Styles.Constants.Margin;
+            var minLineIndex = (_scrollPosition.y / blockHeight) - 1;
+            var maximumNumberOfLinesShown = dimensions.WindowHeight / blockHeight;
+            var maxLineIndex = minLineIndex + maximumNumberOfLinesShown + 1;
+            return minLineIndex <= lineIndex && lineIndex <= maxLineIndex;
         }
 
         private void ShowList(IEnumerable<BlockBaseData> blocks, Func<IEnumerable<BlockBaseData>,
@@ -313,12 +338,13 @@ namespace Meta.XR.BuildingBlocks.Editor
             var columnIndex = 0;
             var lineIndex = 0;
             var showTutorial = _shouldShowTutorial;
-            GUILayout.BeginHorizontal(Styles.GUIStyles.NoMargin);
+            EditorGUILayout.BeginHorizontal(Styles.GUIStyles.NoMargin);
             var filteredBlocks = filter(blocks);
             foreach (var block in filteredBlocks)
             {
                 var blockRect = new Rect(columnIndex * (blockWidth + Margin) + Margin, lineIndex * (blockHeight + Margin), blockWidth, blockHeight);
-                Show(block, blockRect, dimensions.ExpectedThumbnailWidth, dimensions.ExpectedThumbnailHeight);
+                var isVisibleInScrollView = IsVisibleInScrollView(lineIndex, dimensions);
+                Show(block, blockRect, isVisibleInScrollView, dimensions.ExpectedThumbnailWidth, dimensions.ExpectedThumbnailHeight);
 
                 if (showTutorial && block.CanBeAdded)
                 {
@@ -336,12 +362,12 @@ namespace Meta.XR.BuildingBlocks.Editor
                 }
             }
 
-            GUILayout.EndHorizontal();
+            EditorGUILayout.EndHorizontal();
 
             EditorGUILayout.EndScrollView();
         }
 
-        private void ShowThumbnail(BlockBaseData block, float targetHeight, int expectedThumbnailHeight)
+        private void ShowThumbnail(BlockBaseData block, float targetHeight, int expectedThumbnailWidth, int expectedThumbnailHeight)
         {
             var thumbnailAreaStyle = new GUIStyle(Styles.GUIStyles.ThumbnailAreaStyle);
             thumbnailAreaStyle.fixedHeight = targetHeight;
@@ -350,7 +376,7 @@ namespace Meta.XR.BuildingBlocks.Editor
                 thumbnailArea.height = expectedThumbnailHeight;
                 GUI.DrawTexture(thumbnailArea, block.Thumbnail, ScaleMode.ScaleAndCrop);
 
-                var hasAttributes = ShowTagList(block.Id + "overlay", block.Tags, TagSearch, Tag.TagListType.Overlays);
+                var hasAttributes = ShowTagList(block.Id + "overlay", block.Tags, TagSearch, Tag.TagListType.Overlays, expectedThumbnailWidth);
                 if (!hasAttributes)
                 {
                     // This space fills the area, otherwise the area will have a height of null
@@ -425,9 +451,7 @@ namespace Meta.XR.BuildingBlocks.Editor
             EditorGUILayout.LabelField(block.BlockName, labelStyle);
             EditorGUILayout.EndHorizontal();
             EditorGUILayout.LabelField(block.Description, Styles.GUIStyles.InfoStyle);
-            EditorGUILayout.BeginHorizontal();
-            ShowTagList(block.Id, block.Tags, TagSearch, Tag.TagListType.Filters);
-            EditorGUILayout.EndHorizontal();
+            ShowTagList(block.Id, block.Tags, TagSearch, Tag.TagListType.Filters, style.fixedWidth);
             EditorGUILayout.EndVertical();
             GUILayout.EndArea();
             EditorGUILayout.EndHorizontal();
@@ -456,116 +480,109 @@ namespace Meta.XR.BuildingBlocks.Editor
         }
 
 #endif // OVR_BB_DRAGANDDROP
+        private void DrawEmptyGridItem(int expectedThumbnailWidth, int expectedThumbnailHeight)
+        {
+            // Early return with empty grid item
+            var emptyGridStyle = new GUIStyle(Styles.GUIStyles.GridItemStyleWithHover)
+            {
+                fixedWidth = expectedThumbnailWidth,
+                fixedHeight = expectedThumbnailHeight + Styles.GUIStyles.DescriptionAreaStyle.fixedHeight + 3
+            };
+            EditorGUILayout.BeginVertical(emptyGridStyle);
+            EditorGUILayout.Space();
+            EditorGUILayout.EndVertical();
+        }
 
-        private void Show(BlockBaseData block, Rect blockRect, int expectedThumbnailWidth, int expectedThumbnailHeight)
+        private void DrawBlockGridItem(BlockBaseData block, Rect blockRect, int expectedThumbnailWidth,
+            int expectedThumbnailHeight)
         {
             var blockData = block as BlockData;
             var canBeAdded = block.CanBeAdded;
             var numberInScene = blockData != null ? blockData.ComputeNumberOfBlocksInScene() : 0;
             var canBeSelected = numberInScene > 0;
-
-            var expectedColor = canBeAdded ? Color.white : Styles.Colors.DisabledColor;
-            using var color = new ColorScope(ColorScope.Scope.All, expectedColor);
-            var gridStyle = new GUIStyle(Styles.GUIStyles.GridItemStyleWithHover);
-            var gridDisabledStyle = new GUIStyle(Styles.GUIStyles.GridItemDisabledStyle);
-            var gridItemStyle = canBeAdded ? gridStyle : gridDisabledStyle;
-            gridItemStyle.fixedWidth = expectedThumbnailWidth;
-
             var isHover = OVREditorUtils.HoverHelper.IsHover(block.Id + "Description");
             var targetHeight = isHover ? expectedThumbnailHeight - Styles.GUIStyles.DescriptionAreaStyle.fixedHeight : expectedThumbnailHeight;
             targetHeight = (int)OVREditorUtils.TweenHelper.GUISmooth(block.Id, targetHeight, ifNotCompletedDelegate: _repainter.RequestRepaint);
+            var gridItemStyle = new GUIStyle(canBeAdded ? Styles.GUIStyles.GridItemStyleWithHover : Styles.GUIStyles.GridItemDisabledStyle)
+            {
+                fixedWidth = expectedThumbnailWidth,
+                fixedHeight = expectedThumbnailHeight + Styles.GUIStyles.DescriptionAreaStyle.fixedHeight + 3
+            };
+
+            var expectedColor = canBeAdded ? Color.white : Styles.Colors.DisabledColor;
+            using var color = new ColorScope(ColorScope.Scope.All, expectedColor);
+            EditorGUILayout.BeginVertical(gridItemStyle);
+            ShowThumbnail(block, targetHeight, expectedThumbnailWidth, expectedThumbnailHeight);
+            ShowDescription(block, blockRect, targetHeight, expectedThumbnailWidth, expectedThumbnailHeight, canBeAdded, canBeSelected);
+            ShowButtons(block, blockRect, canBeAdded, canBeSelected);
+#if OVR_BB_DRAGANDDROP
+            ShowDragAndDrop(block, blockRect, canBeAdded);
+#endif // OVR_BB_DRAGANDDROP
+            EditorGUILayout.EndVertical();
 
             if (isHover)
             {
                 block.MarkAsSeen();
             }
-
-            EditorGUILayout.BeginVertical(gridItemStyle);
-            {
-                ShowThumbnail(block, targetHeight, expectedThumbnailHeight);
-                ShowDescription(block, blockRect, targetHeight, expectedThumbnailWidth, expectedThumbnailHeight, canBeAdded, canBeSelected);
-                ShowButtons(block, blockRect, canBeAdded, canBeSelected);
-
-#if OVR_BB_DRAGANDDROP
-                ShowDragAndDrop(block, blockRect, canBeAdded);
-#endif // OVR_BB_DRAGANDDROP
-            }
-            EditorGUILayout.EndVertical();
         }
 
-        private bool ShowTagList(string controlId, IEnumerable<Tag> tagArray, HashSet<Tag> search, Tag.TagListType listType)
+        private void Show(BlockBaseData block, Rect blockRect, bool isVisibleInScrollView, int expectedThumbnailWidth, int expectedThumbnailHeight)
         {
+            if (!isVisibleInScrollView)
+            {
+                DrawEmptyGridItem(expectedThumbnailWidth, expectedThumbnailHeight);
+                return;
+            }
+
+            DrawBlockGridItem(block, blockRect, expectedThumbnailWidth, expectedThumbnailHeight);
+        }
+
+        private bool ShowTagList(string controlId, IEnumerable<Tag> tagArray, ICollection<Tag> search, Tag.TagListType listType, float availableWidth)
+        {
+            var style = Styles.GUIStyles.FilterByTagGroup;
+            style.fixedWidth = availableWidth;
+
+            EditorGUILayout.BeginHorizontal(style);
             var any = false;
+            var currentWidth = 0.0f;
             foreach (var tag in tagArray)
             {
+                var addedWidth = tag.Behavior.StyleWidth + Meta.XR.Editor.UserInterface.Styles.Constants.MiniPadding;
+                currentWidth += addedWidth;
+
+                if (currentWidth > availableWidth)
+                {
+                    // Wrap to new line
+                    EditorGUILayout.EndHorizontal();
+                    EditorGUILayout.BeginHorizontal(style);
+                    currentWidth = addedWidth;
+                }
+
                 any |= ShowTag(controlId + "list", tag, search, listType);
             }
+            EditorGUILayout.EndHorizontal();
 
             return any;
         }
 
-        private bool ShowTag(string controlId, Tag tag, HashSet<Tag> search, Tag.TagListType listType)
+        private bool ShowTag(string controlId, Tag tag, ICollection<Tag> search, Tag.TagListType listType)
         {
             var tagBehavior = tag.Behavior;
-            if (!tagBehavior.Show)
+            var drawn = tag.Behavior.Draw(controlId, listType, search.Contains(tag), out var hover, out var clicked);
+            if (clicked)
             {
-                return false;
-            }
-
-            if (!tagBehavior.Visibility)
-            {
-                return false;
-            }
-
-            if (!HasAnyBlock(tag))
-            {
-                return false;
-            }
-
-            switch (listType)
-            {
-                case Tag.TagListType.Filters when !tagBehavior.CanFilterBy:
-                case Tag.TagListType.Overlays when !tagBehavior.ShowOverlay:
-                    return false;
-            }
-
-            var style = tagBehavior.Icon != null ? Styles.GUIStyles.TagStyleWithIcon : Styles.GUIStyles.TagStyle;
-            var backgroundColors = listType == Tag.TagListType.Overlays ? Styles.GUIStyles.TagOverlayBackgroundColors : Styles.GUIStyles.TagBackgroundColors;
-
-            var tagContent = new GUIContent(tag.Name);
-            var tagWidth = style.CalcSize(tagContent).x + 1;
-            var rect = GUILayoutUtility.GetRect(tagContent, style, GUILayout.Width(tagWidth));
-            var id = controlId + tag;
-            var color = backgroundColors.GetColor(search.Contains(tag), OVREditorUtils.HoverHelper.IsHover(id));
-            using (new ColorScope(ColorScope.Scope.Background, color))
-            {
-                using (new ColorScope(ColorScope.Scope.Content, tagBehavior.Color))
-
+                if (TagSearch.Contains(tag))
                 {
-                    if (OVREditorUtils.HoverHelper.Button(id, rect, tagContent, style, out var hover))
-                    {
-                        if (TagSearch.Contains(tag))
-                        {
-                            TagSearch.Remove(tag);
-                        }
-                        else
-                        {
-                            TagSearch.Clear();
-                            TagSearch.Add(tag);
-                        }
-                    }
-
-                    if (tagBehavior.Icon != null)
-                    {
-                        GUI.Label(rect, tagBehavior.Icon, Styles.GUIStyles.TagIcon);
-                    }
-
-                    _isHoveringHotControl |= hover;
+                    TagSearch.Remove(tag);
+                }
+                else
+                {
+                    TagSearch.Clear();
+                    TagSearch.Add(tag);
                 }
             }
-            EditorGUIUtility.AddCursorRect(rect, MouseCursor.Link);
-
-            return true;
+            _isHoveringHotControl |= hover;
+            return drawn;
         }
 
         private static bool ShouldShowTutorial()

@@ -20,6 +20,8 @@
 
 using System;
 using System.Text;
+using Unity.Collections;
+using Unity.Collections.LowLevel.Unsafe;
 using UnityEngine;
 using static OVRTelemetry;
 
@@ -87,6 +89,48 @@ internal struct OVRTelemetryMarker : IDisposable
         return this;
     }
 
+    public OVRTelemetryMarker AddAnnotation(string annotationKey, bool annotationValue)
+    {
+        _client.MarkerAnnotation(MarkerId, annotationKey, annotationValue, InstanceKey);
+        return this;
+    }
+
+    public OVRTelemetryMarker AddAnnotation(string annotationKey, double annotationValue)
+    {
+        _client.MarkerAnnotation(MarkerId, annotationKey, annotationValue, InstanceKey);
+        return this;
+    }
+
+    public OVRTelemetryMarker AddAnnotation(string annotationKey, long annotationValue)
+    {
+        _client.MarkerAnnotation(MarkerId, annotationKey, annotationValue, InstanceKey);
+        return this;
+    }
+
+    public unsafe OVRTelemetryMarker AddAnnotation(string annotationKey, byte** annotationValues, int count)
+    {
+        _client.MarkerAnnotation(MarkerId, annotationKey, annotationValues, count, InstanceKey);
+        return this;
+    }
+
+    public unsafe OVRTelemetryMarker AddAnnotation(string annotationKey, long* annotationValues, int count)
+    {
+        _client.MarkerAnnotation(MarkerId, annotationKey, annotationValues, count, InstanceKey);
+        return this;
+    }
+
+    public unsafe OVRTelemetryMarker AddAnnotation(string annotationKey, double* annotationValues, int count)
+    {
+        _client.MarkerAnnotation(MarkerId, annotationKey, annotationValues, count, InstanceKey);
+        return this;
+    }
+
+    public unsafe OVRTelemetryMarker AddAnnotation(string annotationKey, OVRPlugin.Bool* annotationValues, int count)
+    {
+        _client.MarkerAnnotation(MarkerId, annotationKey, annotationValues, count, InstanceKey);
+        return this;
+    }
+
     public OVRTelemetryMarker AddAnnotationIfNotNullOrEmpty(string annotationKey, string annotationValue)
     {
         return string.IsNullOrEmpty(annotationValue) ? this : AddAnnotation(annotationKey, annotationValue);
@@ -125,6 +169,24 @@ internal struct OVRTelemetryMarker : IDisposable
     public OVRTelemetryMarker AddPoint(OVRTelemetry.MarkerPoint point)
     {
         _client.MarkerPointCached(MarkerId, point.NameHandle, InstanceKey);
+        return this;
+    }
+
+    public OVRTelemetryMarker AddPoint(string name)
+    {
+        _client.MarkerPoint(MarkerId, name, InstanceKey);
+        return this;
+    }
+
+    public unsafe OVRTelemetryMarker AddPoint(string name, OVRPlugin.Qpl.Annotation.Builder annotationBuilder)
+    {
+        using var array = annotationBuilder.ToNativeArray();
+        return AddPoint(name, (OVRPlugin.Qpl.Annotation*)array.GetUnsafeReadOnlyPtr(), array.Length);
+    }
+
+    public unsafe OVRTelemetryMarker AddPoint(string name, OVRPlugin.Qpl.Annotation* annotations, int annotationCount)
+    {
+        _client.MarkerPoint(MarkerId, name, annotations, annotationCount, InstanceKey);
         return this;
     }
 

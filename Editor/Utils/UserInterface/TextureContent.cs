@@ -46,9 +46,14 @@ namespace Meta.XR.Editor.UserInterface
                 return fullPath != null;
             }
 
-            public Category(string relativePath)
+            public Category(string path, bool isFullPath = false)
             {
-                _relativePath = relativePath;
+                if (isFullPath)
+                {
+                    _fullPath = path;
+                    return;
+                }
+                _relativePath = path;
             }
         }
 

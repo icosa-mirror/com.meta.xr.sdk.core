@@ -18,21 +18,22 @@
  * limitations under the License.
  */
 
+using System;
 using System.Collections.Generic;
+using System.Linq;
 using UnityEditor;
 using UnityEngine;
 
 [InitializeOnLoad]
 public class OVRSceneChangeListener
 {
-    private static readonly HashSet<string> TrackedAssemblies = new HashSet<string>
+    private static readonly List<string> TrackedAssemblies = new()
     {
-        "Oculus.VR",
-        "Oculus.VR.Editor",
-        "Oculus.VR.Scripts.Editor"
+        "Oculus.",
+        "Meta.",
     };
 
-    private static readonly List<Component> ComponentList = new List<Component>();
+    private static readonly List<Component> ComponentList = new();
 
     static OVRSceneChangeListener()
     {
@@ -80,13 +81,16 @@ public class OVRSceneChangeListener
         }
 
         var type = component.GetType();
-        if (!TrackedAssemblies.Contains(type.Assembly.GetName().Name))
+        var assemblyName = type.Assembly.GetName().Name;
+        if(!TrackedAssemblies.Any(trackedAssemblyName =>
+               assemblyName.Contains(trackedAssemblyName, StringComparison.InvariantCultureIgnoreCase)))
         {
             return;
         }
 
         OVRTelemetry.Start(OVRTelemetryConstants.Editor.MarkerId.ComponentAdd)
              .AddAnnotation(OVRTelemetryConstants.Editor.AnnotationType.ComponentName, type.Name)
+             .AddAnnotation(OVRTelemetryConstants.Editor.AnnotationType.AssemblyName, assemblyName)
              .Send();
     }
 

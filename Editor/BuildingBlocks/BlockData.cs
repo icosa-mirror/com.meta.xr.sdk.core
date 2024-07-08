@@ -36,27 +36,18 @@ namespace Meta.XR.BuildingBlocks.Editor
         [SerializeField] internal GameObject prefab;
         public GameObject Prefab => prefab;
         protected virtual bool UsesPrefab => true;
+        internal bool GetUsesPrefab => UsesPrefab;
 
         [SerializeField] internal List<string> externalBlockDependencies;
         [SerializeField] internal List<string> dependencies;
 
-        public IReadOnlyList<BlockData> Dependencies
-        {
-            get
-            {
-                var dependencyIds =
-                    (dependencies ?? Enumerable.Empty<string>())
-                    .Concat(externalBlockDependencies ?? Enumerable.Empty<string>());
-
-                return dependencyIds.Select(Utils.GetBlockData).ToList();
-            }
-        }
+        public IEnumerable<BlockData> Dependencies =>
+            (dependencies ?? Enumerable.Empty<string>())
+            .Concat(externalBlockDependencies ?? Enumerable.Empty<string>())
+            .Select(Utils.GetBlockData);
 
         [SerializeField] internal List<string> packageDependencies;
-
-        public IReadOnlyList<string> PackageDependencies => packageDependencies ?? EmptyPackageList;
-
-        private static readonly IReadOnlyList<string> EmptyPackageList = new List<string>();
+        public virtual IEnumerable<string> PackageDependencies => packageDependencies ?? Enumerable.Empty<string>();
 
         [Tooltip("Indicates whether only one instance of this block can be installed per scene.")]
         [SerializeField]
@@ -170,14 +161,14 @@ namespace Meta.XR.BuildingBlocks.Editor
 
         internal override bool CanBeAdded => !HasMissingDependencies && !IsSingletonAndAlreadyPresent;
         internal bool HasMissingDependencies => GetMissingDependencies.Any();
+
         private IEnumerable<string> GetMissingDependencies =>
             (dependencies ?? Enumerable.Empty<string>())
-                .Concat(
-                    PackageDependencies.All(OVRProjectSetupUtils.IsPackageInstalled)
-                        ? externalBlockDependencies ?? Enumerable.Empty<string>()
-                        : Enumerable.Empty<string>())
-                .Where(dependencyId => Utils.GetBlockData(dependencyId) == null)
-                .ToList();
+            .Concat(
+                PackageDependencies.All(OVRProjectSetupUtils.IsPackageInstalled)
+                    ? externalBlockDependencies ?? Enumerable.Empty<string>()
+                    : Enumerable.Empty<string>())
+            .Where(dependencyId => Utils.GetBlockData(dependencyId) == null);
 
         private bool IsSingletonAndAlreadyPresent => IsSingleton && IsBlockPresentInScene();
 
@@ -243,11 +234,11 @@ namespace Meta.XR.BuildingBlocks.Editor
             foreach (var spawnedObject in spawnedObjects)
             {
                 var block = Undo.AddComponent<T>(spawnedObject);
-                block.blockId = Id;
-                block.version = Version;
+                SetupBlockComponent(block);
                 while (UnityEditorInternal.ComponentUtility.MoveComponentUp(block))
                 {
                 }
+                Undo.RegisterCompleteObjectUndo(block, $"Setup {nameof(T)}");
 
                 OVRTelemetry.Start(OVRTelemetryConstants.BB.MarkerId.AddBlock)
                     .AddBlockInfo(block)
@@ -256,6 +247,12 @@ namespace Meta.XR.BuildingBlocks.Editor
             }
 
             return spawnedObjects;
+        }
+
+        protected virtual void SetupBlockComponent<T>(T block) where T : BuildingBlock
+        {
+            block.blockId = Id;
+            block.version = Version;
         }
 
         protected virtual List<GameObject> InstallRoutine(GameObject selectedGameObject)
@@ -290,10 +287,7 @@ namespace Meta.XR.BuildingBlocks.Editor
             return IsBlockPresentInScene(Id);
         }
 
-        internal bool IsUpdateAvailableForBlock(BuildingBlock block)
-        {
-            return Version > block.Version;
-        }
+        internal bool IsUpdateAvailableForBlock(BuildingBlock block) => Version > block.Version;
 
         internal void UpdateBlockToLatestVersion(BuildingBlock block)
         {

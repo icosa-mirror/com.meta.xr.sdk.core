@@ -15,7 +15,7 @@ MonoBehaviour:
   id: e47682b9-c270-40b1-b16d-90b627a5ce1b
   version: 1
   blockName: Camera Rig
-  description: Camera Rig for Oculus Development
+  description: Camera Rig for Meta Quest Development
   tags:
     array:
     - name: Core

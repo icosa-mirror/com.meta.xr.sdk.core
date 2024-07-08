@@ -39,6 +39,40 @@ public readonly partial struct OVRAnchor : IEquatable<OVRAnchor>, IDisposable
 
     public static readonly OVRAnchor Null = new OVRAnchor(0, Guid.Empty);
 
+    internal static unsafe Result SaveSpaceList(ulong* spaces, uint numSpaces, SpaceStorageLocation location,
+        out ulong requestId)
+    {
+        var marker = OVRTelemetry
+            .Start((int)Telemetry.MarkerId.SaveSpaceList)
+            .AddAnnotation(Telemetry.Annotation.SpaceCount, (long)numSpaces)
+            .AddAnnotation(Telemetry.Annotation.StorageLocation, (long)location);
+
+        var result = OVRPlugin.SaveSpaceList(spaces, numSpaces, location, out requestId);
+
+        Telemetry.SetSyncResult(marker, requestId, result);
+        return result;
+    }
+
+    // Invoked by OVRManager event loop
+    internal static void OnSpaceListSaveResult(OVRDeserialize.SpaceListSaveResultData eventData)
+        => Telemetry.SetAsyncResultAndSend(Telemetry.MarkerId.SaveSpaceList, eventData.RequestId, eventData.Result);
+
+    internal static Result EraseSpace(ulong space, SpaceStorageLocation location, out ulong requestId)
+    {
+        var marker = OVRTelemetry
+            .Start((int)Telemetry.MarkerId.EraseSingleSpace)
+            .AddAnnotation(Telemetry.Annotation.StorageLocation, (long)location);
+
+        var result = OVRPlugin.EraseSpaceWithResult(space, location, out requestId);
+
+        Telemetry.SetSyncResult(marker, requestId, result);
+        return result;
+    }
+
+    // Invoked by OVRManager event loop
+    internal static void OnSpaceEraseComplete(OVRDeserialize.SpaceEraseCompleteData eventData)
+        => Telemetry.SetAsyncResultAndSend(Telemetry.MarkerId.EraseSingleSpace, eventData.RequestId, eventData.Result);
+
     internal static OVRPlugin.SpaceQueryInfo GetQueryInfo(SpaceComponentType type,
         OVRSpace.StorageLocation location, int maxResults, double timeout) => new OVRSpaceQuery.Options
         {
@@ -131,7 +165,34 @@ public readonly partial struct OVRAnchor : IEquatable<OVRAnchor>, IDisposable
 
         anchors.Clear();
 
-        if (!OVRPlugin.QuerySpaces(queryInfo, out var requestId))
+        var telemetryMarker = OVRTelemetry
+            .Start((int)Telemetry.MarkerId.QuerySpaces)
+            .AddAnnotation(Telemetry.Annotation.Timeout, (double)queryInfo.Timeout)
+            .AddAnnotation(Telemetry.Annotation.MaxResults, (long)queryInfo.MaxQuerySpaces)
+            .AddAnnotation(Telemetry.Annotation.StorageLocation, (long)queryInfo.Location);
+
+        if (queryInfo is { FilterType: SpaceQueryFilterType.Components, ComponentsInfo: { Components: { Length: > 0 } } })
+        {
+            unsafe
+            {
+                var componentTypes = stackalloc long[queryInfo.ComponentsInfo.NumComponents];
+                for (var i = 0; i < queryInfo.ComponentsInfo.NumComponents; i++)
+                {
+                    componentTypes[i] = (long)queryInfo.ComponentsInfo.Components[i];
+                }
+                telemetryMarker.AddAnnotation(Telemetry.Annotation.ComponentTypes, componentTypes,
+                    queryInfo.ComponentsInfo.NumComponents);
+            }
+        }
+        else if (queryInfo is { FilterType: SpaceQueryFilterType.Ids })
+        {
+            telemetryMarker.AddAnnotation(Telemetry.Annotation.UuidCount, (long)queryInfo.IdInfo.NumIds);
+        }
+
+        var result = QuerySpacesWithResult(queryInfo, out var requestId);
+        Telemetry.SetSyncResult(telemetryMarker, requestId, result);
+
+        if (!result.IsSuccess())
         {
             return OVRTask.FromResult(false);
         }
@@ -142,36 +203,54 @@ public readonly partial struct OVRAnchor : IEquatable<OVRAnchor>, IDisposable
     }
 
 
-    internal static void OnSpaceQueryCompleteData(OVRDeserialize.SpaceQueryCompleteData data)
+    internal static void OnSpaceQueryComplete(OVRDeserialize.SpaceQueryCompleteData data)
     {
-        var requestId = data.RequestId;
-        var task = OVRTask.GetExisting<bool>(requestId);
-        if (!task.IsPending)
+        OVRTelemetryMarker? telemetryMarker = null;
+        var task = OVRTask.GetExisting<bool>(data.RequestId);
+        bool? taskResult = null;
+        try
         {
-            return;
-        }
+            telemetryMarker =
+                Telemetry.SetAsyncResult(Telemetry.MarkerId.QuerySpaces, data.RequestId, (long)data.Result);
 
-        if (!task.TryGetInternalData<IList<OVRAnchor>>(out var anchors) || anchors == null)
+            var requestId = data.RequestId;
+            if (!task.IsPending)
+            {
+                return;
+            }
+
+            if (!task.TryGetInternalData<IList<OVRAnchor>>(out var anchors) || anchors == null)
+            {
+                taskResult = false;
+                return;
+            }
+
+            if (!RetrieveSpaceQueryResults(requestId, out var rawResults, Allocator.Temp))
+            {
+                taskResult = false;
+                return;
+            }
+
+            using (rawResults)
+            {
+                telemetryMarker?.AddAnnotation(Telemetry.Annotation.ResultsCount, (long)rawResults.Length);
+
+                foreach (var result in rawResults)
+                {
+                    anchors.Add(new OVRAnchor(result.space, result.uuid));
+                }
+
+                taskResult = true;
+            }
+        }
+        finally
         {
-            task.SetResult(false);
-            return;
+            telemetryMarker?.Send();
+            if (taskResult.HasValue)
+            {
+                task.SetResult(taskResult.Value);
+            }
         }
-
-        if (!OVRPlugin.RetrieveSpaceQueryResults(requestId, out var rawResults, Allocator.Temp))
-        {
-            task.SetResult(false);
-            return;
-        }
-
-        foreach (var result in rawResults)
-        {
-            var anchor = new OVRAnchor(result.space, result.uuid);
-            anchors.Add(anchor);
-        }
-
-        rawResults.Dispose();
-
-        task.SetResult(true);
     }
 
     /// <summary>
@@ -345,135 +424,10 @@ public readonly partial struct OVRAnchor : IEquatable<OVRAnchor>, IDisposable
     /// </remarks>
     public void Dispose() => OVRPlugin.DestroySpace(Handle);
 
-    struct DeferredValue
-    {
-        public OVRTask<bool> Task;
-        public bool EnabledDesired;
-        public ulong RequestId;
-        public double Timeout;
-        public float StartTime;
-    }
-
-    struct DeferredKey : IEquatable<DeferredKey>
-    {
-        public ulong Space;
-        public SpaceComponentType ComponentType;
-        public static DeferredKey FromEvent(OVRDeserialize.SpaceSetComponentStatusCompleteData eventData) => new()
-        {
-            Space = eventData.Space,
-            ComponentType = eventData.ComponentType,
-        };
-
-        public bool Equals(DeferredKey other) => Space == other.Space && ComponentType == other.ComponentType;
-        public override bool Equals(object obj) => obj is DeferredKey other && Equals(other);
-        public override int GetHashCode() => unchecked(Space.GetHashCode() * 486187739 + ((int)ComponentType).GetHashCode());
-    }
-
-    static readonly Dictionary<DeferredKey, List<DeferredValue>> _deferredTasks = new();
-
     [RuntimeInitializeOnLoadMethod]
-    internal static void Init() => _deferredTasks.Clear();
-
-    internal static OVRTask<bool> CreateDeferredSpaceComponentStatusTask(ulong space, SpaceComponentType componentType, bool enabledDesired, double timeout)
+    internal static void Init()
     {
-        var key = new DeferredKey
-        {
-            Space = space,
-            ComponentType = componentType
-        };
-
-        if (!_deferredTasks.TryGetValue(key, out var list))
-        {
-            list = OVRObjectPool.List<DeferredValue>();
-            _deferredTasks.Add(key, list);
-        }
-
-        var task = OVRTask.FromGuid<bool>(Guid.NewGuid());
-
-        list.Add(new DeferredValue
-        {
-            EnabledDesired = enabledDesired,
-            Task = task,
-            Timeout = timeout,
-            StartTime = Time.realtimeSinceStartup,
-        });
-
-        return task;
-    }
-
-    internal static void OnSpaceSetComponentStatusComplete(OVRDeserialize.SpaceSetComponentStatusCompleteData eventData)
-    {
-        var key = DeferredKey.FromEvent(eventData);
-        if (!_deferredTasks.TryGetValue(key, out var list)) return;
-
-        try
-        {
-            var isEnabled = eventData.Enabled != 0;
-            for (var i = 0; i < list.Count; i++)
-            {
-                var value = list[i];
-                var task = value.Task;
-                bool? result = null;
-
-                if (eventData.RequestId == value.RequestId)
-                {
-                    // If this result was initiated by us, then use that value
-                    result = eventData.Result >= 0;
-                }
-                else if (isEnabled == value.EnabledDesired)
-                {
-                    // We're done!
-                    result = true;
-                }
-                // Check to see if there is any other change pending
-                else if (!GetSpaceComponentStatus(eventData.Space, eventData.ComponentType, out _,
-                        out var changePending))
-                {
-                    result = false;
-                }
-                // If there's no other change pending, then try to change the component status
-                else if (!changePending)
-                {
-                    var timeout = value.Timeout;
-                    if (timeout > 0)
-                    {
-                        // Subtract elapsed time
-                        timeout -= Time.realtimeSinceStartup - value.StartTime;
-                        if (timeout <= 0)
-                        {
-                            result = false;
-                        }
-                    }
-
-                    if (result == null)
-                    {
-                        if (SetSpaceComponentStatus(eventData.Space, eventData.ComponentType, value.EnabledDesired,
-                                timeout, out var requestId))
-                        {
-                            value.RequestId = requestId;
-                            list[i] = value;
-                        }
-                        else
-                        {
-                            result = false;
-                        }
-                    }
-                }
-
-                if (result.HasValue)
-                {
-                    list.RemoveAt(i--);
-                    task.SetResult(result.Value);
-                }
-            }
-        }
-        finally
-        {
-            if (list.Count == 0)
-            {
-                OVRObjectPool.Return(list);
-                _deferredTasks.Remove(key);
-            }
-        }
+        _deferredTasks.Clear();
+        Telemetry.OnInit();
     }
 }

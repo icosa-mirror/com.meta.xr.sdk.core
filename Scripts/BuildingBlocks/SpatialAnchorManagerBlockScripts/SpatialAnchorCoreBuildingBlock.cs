@@ -29,15 +29,15 @@ namespace Meta.XR.BuildingBlocks
     public class SpatialAnchorCoreBuildingBlock : MonoBehaviour
     {
         public UnityEvent<OVRSpatialAnchor, OVRSpatialAnchor.OperationResult> OnAnchorCreateCompleted { get => _onAnchorCreateCompleted; set => _onAnchorCreateCompleted = value; }
-        public UnityEvent<List<Guid>> OnAnchorsLoadCompleted { get => _onAnchorsLoadCompleted; set => _onAnchorsLoadCompleted = value; }
+        public UnityEvent<List<OVRSpatialAnchor>> OnAnchorsLoadCompleted { get => _onAnchorsLoadCompleted; set => _onAnchorsLoadCompleted = value; }
         public UnityEvent<OVRSpatialAnchor.OperationResult> OnAnchorsEraseAllCompleted { get => _onAnchorsEraseAllCompleted; set => _onAnchorsEraseAllCompleted = value; }
-        public UnityEvent<Guid, OVRSpatialAnchor.OperationResult> OnAnchorEraseCompleted { get => _onAnchorEraseCompleted; set => _onAnchorEraseCompleted = value; }
+        public UnityEvent<OVRSpatialAnchor, OVRSpatialAnchor.OperationResult> OnAnchorEraseCompleted { get => _onAnchorEraseCompleted; set => _onAnchorEraseCompleted = value; }
 
         [Header("# Events")]
         [SerializeField] private UnityEvent<OVRSpatialAnchor, OVRSpatialAnchor.OperationResult> _onAnchorCreateCompleted;
-        [SerializeField] private UnityEvent<List<Guid>> _onAnchorsLoadCompleted;
+        [SerializeField] private UnityEvent<List<OVRSpatialAnchor>> _onAnchorsLoadCompleted;
         [SerializeField] private UnityEvent<OVRSpatialAnchor.OperationResult> _onAnchorsEraseAllCompleted;
-        [SerializeField] private UnityEvent<Guid, OVRSpatialAnchor.OperationResult> _onAnchorEraseCompleted;
+        [SerializeField] private UnityEvent<OVRSpatialAnchor, OVRSpatialAnchor.OperationResult> _onAnchorEraseCompleted;
 
         protected OVRSpatialAnchor.OperationResult Result { get; set; } = OVRSpatialAnchor.OperationResult.Success;
 
@@ -192,25 +192,26 @@ namespace Meta.XR.BuildingBlocks
             }
 
             // Localize the anchors
-            using var _ = new OVRObjectPool.ListScope<Guid>(out var loadedAnchors);
-            foreach (var anchor in unboundAnchors)
+            using var _ = new OVRObjectPool.ListScope<OVRSpatialAnchor>(out var loadedAnchors);
+            foreach (var unboundAnchor in unboundAnchors)
             {
-                if (!anchor.Localized)
+                if (!unboundAnchor.Localized)
                 {
-                    var localizeTask = anchor.LocalizeAsync();
+                    var localizeTask = unboundAnchor.LocalizeAsync();
                     while (!localizeTask.IsCompleted)
                         yield return null;
 
                     if (!localizeTask.GetResult())
                     {
-                        Debug.LogWarning($"[{nameof(SpatialAnchorCoreBuildingBlock)}] Failed to localize the anchor. Uuid: {anchor.Uuid}");
+                        Debug.LogWarning($"[{nameof(SpatialAnchorCoreBuildingBlock)}] Failed to localize the anchor. Uuid: {unboundAnchor.Uuid}");
                         continue;
                     }
                 }
 
-                var spatialAnchorGo = Instantiate(prefab, anchor.Pose.position, anchor.Pose.rotation);
-                anchor.BindTo(spatialAnchorGo.AddComponent<OVRSpatialAnchor>());
-                loadedAnchors.Add(anchor.Uuid);
+                var spatialAnchorGo = Instantiate(prefab, unboundAnchor.Pose.position, unboundAnchor.Pose.rotation);
+                var anchor = spatialAnchorGo.AddComponent<OVRSpatialAnchor>();
+                unboundAnchor.BindTo(anchor);
+                loadedAnchors.Add(anchor);
             }
 
             OnAnchorsLoadCompleted?.Invoke(loadedAnchors);
@@ -244,7 +245,7 @@ namespace Meta.XR.BuildingBlocks
 
             if (!task.GetResult())
             {
-                OnAnchorEraseCompleted?.Invoke(anchor.Uuid, OVRSpatialAnchor.OperationResult.Failure);
+                OnAnchorEraseCompleted?.Invoke(anchor, OVRSpatialAnchor.OperationResult.Failure);
                 yield break;
             }
 
@@ -252,7 +253,7 @@ namespace Meta.XR.BuildingBlocks
             if (OVRSpatialAnchor.SpatialAnchors.ContainsKey(anchor.Uuid))
                 yield return null;
 
-            OnAnchorEraseCompleted?.Invoke(anchor.Uuid, OVRSpatialAnchor.OperationResult.Success);
+            OnAnchorEraseCompleted?.Invoke(anchor, OVRSpatialAnchor.OperationResult.Success);
         }
 
         internal static List<SpatialAnchorCoreBuildingBlock> GetBaseInstances()
