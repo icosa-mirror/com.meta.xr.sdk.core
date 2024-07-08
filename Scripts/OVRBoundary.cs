@@ -37,7 +37,7 @@ using Boundary = UnityEngine.Experimental.XR.Boundary;
 /// <summary>
 /// Provides access to the Oculus boundary system.
 /// </summary>
-[HelpURL("https://developer.oculus.com/reference/unity/latest/class_o_v_r_boundary")]
+[HelpURL("https://developer.oculus.com/documentation/unity/unity-ovrboundary/")]
 public class OVRBoundary
 {
     /// <summary>

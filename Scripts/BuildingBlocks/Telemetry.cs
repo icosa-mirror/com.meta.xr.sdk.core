@@ -20,17 +20,59 @@
 
 using System.IO;
 using UnityEngine.SceneManagement;
+using static OVRTelemetryConstants.BB;
 
 namespace Meta.XR.BuildingBlocks
 {
     internal static class Telemetry
     {
-        public static OVRTelemetryMarker AddBlockInfo(this OVRTelemetryMarker marker, BuildingBlock block)
+        public static OVRTelemetryMarker AddBlockInfo(this OVRTelemetryMarker marker, BuildingBlock block) =>
+            marker.AddAnnotation(AnnotationType.BlockId, block.BlockId)
+                .AddAnnotation(AnnotationType.InstanceId, block.InstanceId)
+                .AddAnnotation(AnnotationType.BlockName, block.gameObject.name)
+                .AddAnnotation(AnnotationType.Version, block.Version.ToString())
+                .AddBlockVariantInfo(block);
+
+        private static OVRTelemetryMarker AddBlockVariantInfo(this OVRTelemetryMarker marker, BuildingBlock block)
         {
-            return marker.AddAnnotation(OVRTelemetryConstants.BB.AnnotationType.BlockId, block.BlockId)
-                .AddAnnotation(OVRTelemetryConstants.BB.AnnotationType.InstanceId, block.InstanceId)
-                .AddAnnotation(OVRTelemetryConstants.BB.AnnotationType.BlockName, block.gameObject.name)
-                .AddAnnotation(OVRTelemetryConstants.BB.AnnotationType.Version, block.Version.ToString());
+            if (block.InstallationRoutineCheckpoint == null || string.IsNullOrEmpty(block.InstallationRoutineCheckpoint.InstallationRoutineId))
+            {
+                return marker;
+            }
+
+            return marker
+                .AddAnnotation(AnnotationType.InstallationRoutineId,
+                    block.InstallationRoutineCheckpoint.InstallationRoutineId)
+                .AddInstallationRoutineInfo(block.InstallationRoutineCheckpoint);
+        }
+
+        private static OVRTelemetryMarker AddInstallationRoutineInfo(this OVRTelemetryMarker marker, InstallationRoutineCheckpoint checkpoint)
+        {
+            if (checkpoint == null)
+            {
+                return marker;
+            }
+
+            var dataList = OVRObjectPool.List<string>();
+
+            // ReSharper disable once ForeachCanBeConvertedToQueryUsingAnotherGetEnumerator
+            foreach (var variantCheckpoint in checkpoint.InstallationVariants)
+            {
+                if (variantCheckpoint == null)
+                {
+                    continue;
+                }
+
+                dataList.Add($"{variantCheckpoint.MemberName}:{variantCheckpoint.Value}");
+            }
+
+            if (dataList.Count > 0)
+            {
+                marker.AddAnnotation(AnnotationType.InstallationRoutineData, string.Join(',', dataList));
+            }
+
+            OVRObjectPool.Return(dataList);
+            return marker;
         }
 
         public static OVRTelemetryMarker AddSceneInfo(this OVRTelemetryMarker marker, Scene scene)
@@ -42,7 +84,7 @@ namespace Meta.XR.BuildingBlocks
                 sceneSizeInB = new FileInfo(scene.path).Length;
             }
 
-            return marker.AddAnnotation(OVRTelemetryConstants.BB.AnnotationType.SceneSizeInB, sceneSizeInB.ToString());
+            return marker.AddAnnotation(AnnotationType.SceneSizeInB, sceneSizeInB.ToString());
         }
     }
 }

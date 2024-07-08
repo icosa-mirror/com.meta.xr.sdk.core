@@ -29,7 +29,7 @@ using Node = UnityEngine.XR.XRNode;
 /// <summary>
 /// Provides a unified input system for Oculus controllers and gamepads.
 /// </summary>
-[HelpURL("https://developer.oculus.com/reference/unity/latest/class_o_v_r_input")]
+[HelpURL("https://developer.oculus.com/documentation/unity/unity-ovrinput/")]
 public static class OVRInput
 {
     // dotnet-format does not yet support columnar formatting

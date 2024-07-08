@@ -24,7 +24,7 @@ using UnityEngine.EventSystems;
 /// <summary>
 /// Simple helper script that conditionally enables rendering of a controller if it is connected.
 /// </summary>
-[HelpURL("https://developer.oculus.com/reference/unity/latest/class_o_v_r_controller_helper")]
+[HelpURL("https://developer.oculus.com/documentation/unity/controller-animations/")]
 public class OVRControllerHelper : MonoBehaviour,
     OVRInputModule.InputSource
 {
@@ -481,6 +481,11 @@ public class OVRControllerHelper : MonoBehaviour,
     public bool IsActive()
     {
         return m_isActive;
+    }
+
+    public OVRPlugin.Hand GetHand()
+    {
+        return m_controller == OVRInput.Controller.LTouch ? OVRPlugin.Hand.HandLeft : OVRPlugin.Hand.HandRight;
     }
 
     public void UpdatePointerRay(OVRInputRayData rayData)

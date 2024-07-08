@@ -18,6 +18,7 @@
  * limitations under the License.
  */
 
+using System;
 using UnityEngine;
 using System.Collections.Generic;
 using System.Linq;
@@ -32,7 +33,8 @@ using UnityEditor;
 /// <see cref="OVRSceneManager.VolumePrefab"/> based on a semantic <see cref="OVRSceneManager.Classification"/>.
 /// </summary>
 [System.Serializable]
-[HelpURL("https://developer.oculus.com/reference/unity/latest/class_o_v_r_scene_prefab_override")]
+[HelpURL("https://developer.oculus.com/documentation/unity/unity-scene-use-scene-anchors/")]
+[Obsolete(OVRSceneManager.DeprecationMessage)]
 public class OVRScenePrefabOverride : ISerializationCallbackReceiver
 {
     /// <summary>
@@ -107,6 +109,7 @@ public class OVRScenePrefabOverride : ISerializationCallbackReceiver
 
 #if UNITY_EDITOR
 [CustomPropertyDrawer(typeof(OVRScenePrefabOverride))]
+[Obsolete(OVRSceneManager.DeprecationMessage)]
 internal class OVRSceneManagerEditor : PropertyDrawer
 {
     private static readonly string[] ClassificationList = OVRSceneManager.Classification.List.ToArray();

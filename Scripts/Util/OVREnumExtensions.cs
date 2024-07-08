@@ -26,12 +26,25 @@ public static class OVREnumExtensions
 {
     public static bool IsHand(this OVRSkeleton.SkeletonType skeletonType)
     {
-        return skeletonType == OVRSkeleton.SkeletonType.HandLeft || skeletonType == OVRSkeleton.SkeletonType.HandRight;
+        if (skeletonType == OVRSkeleton.SkeletonType.HandLeft || skeletonType == OVRSkeleton.SkeletonType.HandRight)
+        {
+            return true;
+        }
+        return false;
+    }
+
+    public static bool IsLeft(this OVRSkeleton.SkeletonType type)
+    {
+        if (type == OVRSkeleton.SkeletonType.HandLeft)
+        {
+            return true;
+        }
+        return false;
     }
 
     public static OVRHand.Hand AsHandType(this OVRSkeleton.SkeletonType skeletonType)
     {
-        switch(skeletonType)
+        switch (skeletonType)
         {
             case OVRSkeleton.SkeletonType.HandLeft:
                 return OVRHand.Hand.HandLeft;
@@ -44,7 +57,7 @@ public static class OVREnumExtensions
 
     public static OVRSkeleton.SkeletonType AsSkeletonType(this OVRHand.Hand hand)
     {
-        switch( hand )
+        switch (hand)
         {
             case OVRHand.Hand.HandLeft:
                 return OVRSkeleton.SkeletonType.HandLeft;

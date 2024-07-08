@@ -24,7 +24,7 @@ using UnityEngine;
 /// <summary>
 /// An object that can be grabbed and thrown by OVRGrabber.
 /// </summary>
-[HelpURL("https://developer.oculus.com/reference/unity/latest/class_o_v_r_grabbable")]
+[HelpURL("https://developer.oculus.com/documentation/unity/unity-sf-customhands/")]
 public class OVRGrabbable : MonoBehaviour
 {
     [SerializeField]

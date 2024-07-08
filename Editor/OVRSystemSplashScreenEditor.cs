@@ -29,7 +29,7 @@ namespace Oculus.VR.Editor
 {
     public class OVRSystemSplashScreenEditor
     {
-        public const string SplashScreenTexturePath = "Assets/Oculus/OculusSystemSplashScreen.png";
+        private const string DefaultFileName = "OculusSystemSplashScreen";
 
         /// <summary>
         /// Utility method that tries to make a blit copy of the input texture, and outputs its
@@ -74,18 +74,48 @@ namespace Oculus.VR.Editor
                 mipChain: false,
                 linear: false);
             tempTexture.ReadPixels(new Rect(0, 0, rt.width, rt.height), 0, 0);
+
+            string saveTextureFilePath = PromptSaveTextureFilePath();
+            if (string.IsNullOrWhiteSpace(saveTextureFilePath))
+            {
+                // User reject - bail
+                return null;
+            }
+
             try
             {
-                File.WriteAllBytes(SplashScreenTexturePath, tempTexture.EncodeToPNG());
+                File.WriteAllBytes(saveTextureFilePath, tempTexture.EncodeToPNG());
             }
             catch (Exception e)
             {
                 Debug.LogError("Unable to generate splash screen texture: " + e.Message);
                 return null;
             }
-            Debug.LogFormat("Generated system splash screen asset at {0}", SplashScreenTexturePath);
-            AssetDatabase.ImportAsset(SplashScreenTexturePath);
-            return AssetDatabase.LoadAssetAtPath<Texture2D>(SplashScreenTexturePath);
+            Debug.LogFormat("Generated system splash screen asset at {0}", saveTextureFilePath);
+
+            string saveTextureRelativePath = Path.Join("Assets",
+                Path.GetRelativePath(Application.dataPath, saveTextureFilePath));
+            AssetDatabase.ImportAsset(saveTextureRelativePath);
+            var importer = (TextureImporter)AssetImporter.GetAtPath(saveTextureRelativePath);
+
+            importer.alphaIsTransparency = true;
+            importer.mipmapEnabled = false;
+            EditorUtility.SetDirty(importer);
+            importer.SaveAndReimport();
+            return AssetDatabase.LoadAssetAtPath<Texture2D>(saveTextureRelativePath);
+        }
+
+        private static string PromptSaveTextureFilePath()
+        {
+            return EditorUtility.DisplayDialog("System Splash Screen Texture",
+                "A compatible texture copy has been generated. Save and apply it now?",
+                "Save and use copy",
+                "Use original")
+                ? EditorUtility.SaveFilePanel("Save generated system splash screen texture...",
+                    "Assets",
+                    DefaultFileName,
+                    "png")
+                : null;
         }
     }
 }

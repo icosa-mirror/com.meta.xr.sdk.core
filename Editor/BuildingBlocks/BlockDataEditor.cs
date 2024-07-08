@@ -20,12 +20,10 @@
 
 using System;
 using System.Linq;
-using Meta.XR.Editor.Tags;
-using Meta.XR.Editor.UserInterface;
 using UnityEditor;
 using UnityEditorInternal;
 using UnityEngine;
-using static Meta.XR.Editor.UserInterface.Styles.Constants;
+using static Meta.XR.Editor.UserInterface.Styles;
 using static Meta.XR.Editor.UserInterface.Utils;
 
 namespace Meta.XR.BuildingBlocks.Editor
@@ -34,13 +32,23 @@ namespace Meta.XR.BuildingBlocks.Editor
     /// An inspector override that shows BlockData information.
     /// </summary>
     [CustomEditor(typeof(BlockData), true)]
-    public class BlockDataEditor : UnityEditor.Editor
+    public class BlockDataEditor : DataEditor<BlockData>
     {
         private ReorderableList _dependencyList;
-        private bool _foldoutAdvanced;
+        private readonly string _blockInstructions = $"<b>{nameof(BlockData)}s</b> let you describe a block and its installation routine." +
+                                                     $"\n• Setup the Block here to have it populated in the <b>{Utils.BlocksPublicName}</b> tool." +
+                                                     $"\n• Check out the documentation for more information on best practices and how to customize your block.";
 
-        private void OnEnable()
+        private readonly string _routineInstructions = $"When inheriting from <b>{nameof(InterfaceBlockData)}</b>, you can setup your own custom <b>{nameof(InstallationRoutine)}s</b>." +
+                                                       $"\n• <b>{nameof(InstallationRoutine)}</b> are directly linked to <b>{nameof(BlockData)}s</b>, those that are linked to this block id will be listed below.";
+
+        protected override string Instructions => _blockInstructions;
+        protected override BlockData BlockData => Data;
+
+        protected override void OnEnable()
         {
+            base.OnEnable();
+
             var depProperty = serializedObject.FindProperty(nameof(BlockData.dependencies));
             _dependencyList = new ReorderableList(serializedObject, depProperty)
             {
@@ -54,9 +62,7 @@ namespace Meta.XR.BuildingBlocks.Editor
                     list.serializedProperty.GetArrayElementAtIndex(list.index).stringValue = "";
                 }
             };
-
         }
-
 
         void DrawListItems(Rect rect, int index, bool isActive, bool isFocused)
         {
@@ -70,120 +76,81 @@ namespace Meta.XR.BuildingBlocks.Editor
             }
         }
 
-        public override void OnInspectorGUI()
+
+        protected override void OnGUIImplementation()
         {
-            using var disabledScope = new EditorGUI.DisabledScope(true);
-            serializedObject.Update();
-            var blockData = (BlockData)serializedObject.targetObject;
-
-            // Thumbnail display
-            DrawThumbnail(blockData);
-
-            EditorGUILayout.Space();
-
-
-            // Sub-header
-            EditorGUILayout.LabelField("Information", EditorStyles.boldLabel);
-
-            // Block name
+            DrawHeader("Information");
             EditorGUILayout.PropertyField(serializedObject.FindProperty(nameof(BlockData.blockName)));
-
-            // Description
             EditorGUILayout.PropertyField(serializedObject.FindProperty(nameof(BlockData.description)));
-
-            // Thumbnail
             EditorGUILayout.PropertyField(serializedObject.FindProperty(nameof(BlockData.thumbnail)));
-
-            // Tags
             EditorGUILayout.PropertyField(serializedObject.FindProperty(nameof(BlockData.tags)));
+            ShowBlock(Data);
 
-            EditorGUILayout.Space();
-
-            // Sub-header
-            EditorGUILayout.Space();
-            EditorGUILayout.LabelField("Assets", EditorStyles.boldLabel);
-
-            // Prefab
-            using (new EditorGUI.DisabledScope(!blockData.GetUsesPrefab))
+            DrawHeader("Setup");
+            _dependencyList.DoLayoutList();
+            EditorGUILayout.PropertyField(serializedObject.FindProperty(nameof(BlockData.externalBlockDependencies)));
+            EditorGUILayout.PropertyField(serializedObject.FindProperty(nameof(BlockData.packageDependencies)));
+            using (new EditorGUI.DisabledScope(!Data.GetUsesPrefab))
             {
                 EditorGUILayout.PropertyField(serializedObject.FindProperty(nameof(BlockData.prefab)));
             }
 
-            // Dependencies
-            EditorGUILayout.Space();
-            _dependencyList.DoLayoutList();
 
-            // External block dependencies
-            EditorGUILayout.PropertyField(serializedObject.FindProperty(nameof(BlockData.externalBlockDependencies)));
-
-            // Package dependencies
-            EditorGUILayout.PropertyField(serializedObject.FindProperty(nameof(BlockData.packageDependencies)));
-
-
-            serializedObject.ApplyModifiedProperties();
-
+            DrawInstallationRoutines();
         }
 
 
-
-        private void DrawThumbnail(BlockData blockData)
+        private void DrawInstallationRoutines()
         {
-            var currentWidth = EditorGUIUtility.currentViewWidth;
-            var expectedHeight = currentWidth / Styles.Constants.ThumbnailRatio;
-            expectedHeight *= 0.5f;
+            if (serializedObject.targetObject is not InterfaceBlockData interfaceBlockData) return;
 
-            // Thumbnail
-            var rect = GUILayoutUtility.GetRect(currentWidth, expectedHeight);
-            rect.x -= 20;
-            rect.width += 40;
-            rect.y -= 4;
-            GUI.DrawTexture(rect, blockData.Thumbnail, ScaleMode.ScaleAndCrop);
+            DrawHeader("Installation Routines");
+            DrawInstructions(_routineInstructions);
 
-            // Statuses
-            GUILayout.BeginArea(new Rect(Styles.GUIStyles.TagStyle.margin.left, Styles.GUIStyles.TagStyle.margin.top, currentWidth, expectedHeight));
-            foreach (var tag in blockData.Tags)
+            var installationRoutines = interfaceBlockData.GetAvailableInstallationRoutines();
+            foreach (var installationRoutine in installationRoutines)
             {
-                if (tag.Behavior.ShowOverlay)
-                {
-                    DrawTag(tag, true);
-                }
+                DrawInstallRoutine(installationRoutine, null, 12.0f);
             }
-            GUILayout.EndArea();
-
-            // Separator
-            rect = GUILayoutUtility.GetRect(currentWidth, 1);
-            rect.x -= 20;
-            rect.width += 40;
-            rect.y -= 4;
-            GUI.DrawTexture(rect, Styles.Colors.AccentColor.ToTexture(),
-                ScaleMode.ScaleAndCrop);
         }
 
-        private void DrawTag(Tag tag, bool overlay = false)
+        public static void DrawInstallRoutine(InstallationRoutine installationRoutine, Color? pillColor, float offset)
         {
-            var tagBehavior = tag.Behavior;
-            var style = tagBehavior.Icon != null ? Styles.GUIStyles.TagStyleWithIcon : Styles.GUIStyles.TagStyle;
-            var backgroundColors = overlay ? Styles.GUIStyles.TagOverlayBackgroundColors : Styles.GUIStyles.TagBackgroundColors;
-
-            var tagContent = new GUIContent(tag.Name);
-            var tagSize = style.CalcSize(tagContent);
-            var rect = GUILayoutUtility.GetRect(tagContent, style, GUILayout.MinWidth(tagSize.x + 1));
-            var color = backgroundColors.GetColor(false, false);
-            using (new ColorScope(ColorScope.Scope.Background, color))
+            EditorGUILayout.BeginHorizontal();
+            if (pillColor.HasValue)
             {
-                using (new ColorScope(ColorScope.Scope.Content,
-                           tagBehavior.Color))
+                using (new Meta.XR.Editor.UserInterface.Utils.ColorScope(ColorScope.Scope.Background, pillColor.Value))
                 {
-                    if (GUI.Button(rect, tagContent, style))
-                    {
-                    }
+                    EditorGUILayout.BeginHorizontal(Styles.GUIStyles.PillBox);
+                    EditorGUILayout.EndHorizontal();
+                }
+            }
 
-                    if (tagBehavior.Icon != null)
+            EditorGUILayout.BeginVertical(GUIStyles.ContentBox);
+
+            EditorGUILayout.BeginHorizontal();
+            var foldout = Foldout(installationRoutine, installationRoutine.name, offset);
+            using (new EditorGUI.DisabledScope(true))
+            {
+                EditorGUILayout.ObjectField(installationRoutine, typeof(InstallationRoutine), true);
+            }
+            EditorGUILayout.EndHorizontal();
+
+            if (foldout)
+            {
+                using (new IndentScope(EditorGUI.indentLevel + 1))
+                {
+                    using (new IndentScope(EditorGUI.indentLevel + 1))
                     {
-                        GUI.Label(rect, tagBehavior.Icon, Styles.GUIStyles.TagIcon);
+                        DrawVariants("Definition Variants", installationRoutine.DefinitionVariants, null);
+                        DrawVariants("Parameter Variants", installationRoutine.ParameterVariants, null);
+                        DrawVariants("Constants", installationRoutine.Constants, null);
                     }
                 }
             }
+            EditorGUILayout.EndVertical();
+
+            EditorGUILayout.EndHorizontal();
         }
     }
 }

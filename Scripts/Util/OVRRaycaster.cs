@@ -32,7 +32,7 @@ using UnityEngine.Serialization;
 /// pointer positions
 /// </summary>
 [RequireComponent(typeof(Canvas))]
-[HelpURL("https://developer.oculus.com/reference/unity/latest/class_o_v_r_raycaster")]
+[HelpURL("https://developer.oculus.com/documentation/unity/unity-dronerage-example-scenes/")]
 public class OVRRaycaster : GraphicRaycaster, IPointerEnterHandler
 {
     [Tooltip("A world space pointer for this canvas")]

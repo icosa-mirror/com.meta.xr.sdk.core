@@ -38,6 +38,7 @@ internal static class OVRTelemetryConstants
             public const string ProjectGuid = "ProjectGuid";
             public const string Origin = "Origin";
             public const string EngineVersion = "developer_platform_version";
+            public const string BatchMode = "BatchMode";
         }
 
         public enum ConsentOrigins
@@ -66,6 +67,7 @@ internal static class OVRTelemetryConstants
         {
             public const string ComponentName = "ComponentName";
             public const string AssemblyName = "AssemblyName";
+            public const string UsesProSkin = "UsesProSkin";
         }
     }
 
@@ -83,6 +85,8 @@ internal static class OVRTelemetryConstants
             public const int InstallBlockData = 163065449;
             public const int OpenSceneWithBlock = 163063649;
             public const int DownloadContent = 163067281;
+            public const int VariantsWindowFlow = 163065580;
+            public const int VariantsWindowOpen = 163068476;
         }
 
         public static class AnnotationType
@@ -94,6 +98,8 @@ internal static class OVRTelemetryConstants
             public const string ActionTrigger = "action_trigger";
             public const string Error = "error";
             public const string SceneSizeInB = "SceneSizeInB";
+            public const string InstallationRoutineId = "InstallationRoutineId";
+            public const string InstallationRoutineData = "InstallationRoutineData";
         }
     }
 
@@ -142,6 +148,8 @@ internal static class OVRTelemetryConstants
         {
             public const int UseOVRSceneManager = 163061745;
             public const int UseDefaultSceneModelLoader = 163059869;
+            public const int SceneOpen = 163063049;
+            public const int SceneClose = 163068562;
         }
 
         public static class AnnotationType
@@ -150,6 +158,10 @@ internal static class OVRTelemetryConstants
             public const string UsingPrefabOverrides = "prefab_overrides";
             public const string ActiveRoomsOnly = "active_rooms_only";
             public const string ReturnToRooms = "return_to_rooms";
+            public const string Guid = "Guid";
+            public const string BuildTarget = "BuildTarget";
+            public const string RuntimePlatform = "RuntimePlatform";
         }
     }
+
 }

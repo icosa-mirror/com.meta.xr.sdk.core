@@ -27,7 +27,7 @@ using UnityEngine;
 /// <remarks>
 /// See <see cref="OVRPlugin.EyeGazeState"/> structure for list of eye state parameters.
 /// </remarks>
-[HelpURL("https://developer.oculus.com/reference/unity/latest/class_o_v_r_eye_gaze")]
+[HelpURL("https://developer.oculus.com/documentation/unity/move-eye-tracking/")]
 public class OVREyeGaze : MonoBehaviour
 {
     /// <summary>

@@ -31,7 +31,7 @@ using UnityEngine.Rendering;
 [RequireComponent(typeof(MeshFilter))]
 [RequireComponent(typeof(MeshRenderer))]
 [ExecuteAlways]
-[HelpURL("https://developer.oculus.com/reference/unity/latest/class_o_v_r_overlay_mesh_generator")]
+[HelpURL("https://developer.oculus.com/documentation/unity/unity-sf-stereo180video/")]
 public class OVROverlayMeshGenerator : MonoBehaviour
 {
 

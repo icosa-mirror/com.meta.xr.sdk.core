@@ -1,0 +1,36 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 242d2acb275369548bc4aa131df6fe52, type: 3}
+  m_Name: ControllerTeleporter
+  m_EditorClassIdentifier:
+  id: 3503368f-ae74-4ba8-a0c1-cf904f4bf5b6
+  version: 1
+  blockName: Controller Teleporter
+  description: Teleport to a different location with your controller in VR, requires
+    a floor with collider.
+  tags:
+    array:
+    - name: Interaction
+    - name: Locomotion
+    - name: Experimental
+    - name: Prototyping
+  thumbnail: {fileID: 2800000, guid: f2ec2c3b8501e45f59224dbc167c9c46, type: 3}
+  order: 0
+  prefab: {fileID: 4722603795147086806, guid: 6f542e4e234e30e4abb517cfaaa18730, type: 3}
+  externalBlockDependencies: []
+  dependencies:
+  - e47682b9-c270-40b1-b16d-90b627a5ce1b
+  - 5817f7c0-f2a5-45f9-a5ca-64264e0166e8
+  packageDependencies: []
+  isSingleton: 1
+  usageInstructions: For quick prototyping only, add a collider to the surface you
+    want to allow teleporting to, use controller joystick to teleport.

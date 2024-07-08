@@ -142,12 +142,16 @@ internal struct OVRTelemetryMarker : IDisposable
     private static string _unityVersion;
     private static string UnityVersion => _unityVersion ??= Application.unityVersion;
 
+    private static bool? _isBatchMode;
+    private static bool IsBatchMode => _isBatchMode ??= Application.isBatchMode;
+
     public OVRTelemetryMarker Send()
     {
 
         AddAnnotation(OVRTelemetryConstants.OVRManager.AnnotationTypes.ProjectName, ApplicationIdentifier);
         AddAnnotation(OVRTelemetryConstants.OVRManager.AnnotationTypes.ProjectGuid, OVRRuntimeSettings.Instance.TelemetryProjectGuid);
         AddAnnotation(OVRTelemetryConstants.OVRManager.AnnotationTypes.EngineVersion, UnityVersion);
+        AddAnnotation(OVRTelemetryConstants.OVRManager.AnnotationTypes.BatchMode, IsBatchMode);
 
         State = new OVRTelemetryMarkerState(true, Result);
         _client.MarkerEnd(MarkerId, Result, InstanceKey);

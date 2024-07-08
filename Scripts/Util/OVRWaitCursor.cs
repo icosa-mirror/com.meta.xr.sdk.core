@@ -23,7 +23,7 @@ using UnityEngine;
 /// <summary>
 /// Rotates this GameObject at a given speed.
 /// </summary>
-[HelpURL("https://developer.oculus.com/reference/unity/latest/class_o_v_r_wait_cursor")]
+[HelpURL("https://developer.oculus.com/documentation/unity/unity-core-overview/#scripts")]
 public class OVRWaitCursor : MonoBehaviour
 {
     public Vector3 rotateSpeeds = new Vector3(0.0f, 0.0f, -60.0f);

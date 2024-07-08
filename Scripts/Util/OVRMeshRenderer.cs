@@ -125,6 +125,12 @@ public class OVRMeshRenderer : MonoBehaviour
         return true;
     }
 
+    public void ForceRebind()
+    {
+        IsInitialized = false;
+        Initialize();
+    }
+
     private void Initialize()
     {
         _skinnedMeshRenderer = GetComponent<SkinnedMeshRenderer>();
@@ -136,13 +142,16 @@ public class OVRMeshRenderer : MonoBehaviour
         _skinnedMeshRenderer.sharedMesh = _ovrMesh.Mesh;
         _originalMaterial = _skinnedMeshRenderer.sharedMaterial;
 
+        var skeletonType = (OVRPlugin.SkeletonType?)(_ovrSkeleton?.GetSkeletonType()) ?? OVRPlugin.SkeletonType.None;
+
         if ((_ovrSkeleton != null))
         {
             int numSkinnableBones = _ovrSkeleton.GetCurrentNumSkinnableBones();
             var bindPoses = new Matrix4x4[numSkinnableBones];
             var bones = new Transform[numSkinnableBones];
             var localToWorldMatrix = transform.localToWorldMatrix;
-            for (int i = 0; i < numSkinnableBones && i < _ovrSkeleton.Bones.Count; ++i)
+
+            for (int i = 0; i < numSkinnableBones && i < _ovrSkeleton.Bones.Count; i++)
             {
                 bones[i] = _ovrSkeleton.Bones[i].Transform;
                 bindPoses[i] = _ovrSkeleton.BindPoses[i].Transform.worldToLocalMatrix * localToWorldMatrix;

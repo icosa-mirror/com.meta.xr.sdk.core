@@ -27,8 +27,9 @@ using UnityEngine.Android;
 /// Utility for loading a scene model. Derive from this class to customize the scene loading behavior and respond to
 /// events.
 /// </summary>
-[HelpURL("https://developer.oculus.com/reference/unity/latest/class_o_v_r_scene_model_loader")]
+[HelpURL("https://developer.oculus.com/documentation/unity/unity-scene-use-scene-anchors/#what-does-ovrscenemanager-do")]
 [RequireComponent(typeof(OVRSceneManager))]
+[Obsolete(OVRSceneManager.DeprecationMessage)]
 public class OVRSceneModelLoader : MonoBehaviour
 {
     private const float RetryingReminderDelay = 10;
@@ -40,7 +41,7 @@ public class OVRSceneModelLoader : MonoBehaviour
 
     private bool _sceneCaptureRequested;
 
-    void Start()
+    protected virtual void Start()
     {
         OVRTelemetry.SendEvent(OVRTelemetryConstants.Scene.MarkerId.UseDefaultSceneModelLoader);
 
@@ -191,8 +192,9 @@ public class OVRSceneModelLoader : MonoBehaviour
             "There is no scene model available, and scene capture cannot be invoked over Link. " +
             "Please capture a scene with the HMD in standalone mode, then access the scene model over Link. " +
             "\n\n" +
-            "If a scene model has already been captured, make sure the HMD is connected via Link and that it is donned.",
-            "Ok");
+            "If a scene model has already been captured, make sure the HMD is connected via Link " +
+            "and the spatial data feature has been enabled in Meta Quest Link " +
+            "(Settings > Beta > Spatial Data over Meta Quest Link).", "Ok");
 #else
         if (_sceneCaptureRequested)
         {

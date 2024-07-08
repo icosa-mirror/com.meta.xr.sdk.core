@@ -131,22 +131,6 @@ internal static class OVRProjectSetupUtils
         return PackageManagerListAvailable;
     }
 
-    public static bool InstallPackage(string packageName)
-    {
-        var request = Client.Add(packageName);
-
-        // TODO: make this async later
-        while (!request.IsCompleted)
-        {
-            Thread.Sleep(100);
-        }
-
-        // Refresh the Client list
-        RefreshPackageList(false);
-
-        return request.Status == StatusCode.Success;
-    }
-
     public static bool UninstallPackage(string packageName)
     {
         var request = Client.Remove(packageName);

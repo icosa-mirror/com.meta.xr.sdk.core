@@ -29,9 +29,10 @@ using UnityEngine;
 /// Scene anchors can have one or more string labels associated with them that describes what the anchor represents,
 /// such as COUCH, or DESK. See <see cref="OVRSceneManager.Classification"/> for a list of possible labels.
 /// </remarks>
-[HelpURL("https://developer.oculus.com/reference/unity/latest/class_o_v_r_semantic_classification")]
+[HelpURL("https://developer.oculus.com/documentation/unity/unity-scene-use-scene-anchors/#further-scene-model-unity-components")]
 [DisallowMultipleComponent]
 [RequireComponent(typeof(OVRSceneAnchor))]
+[Obsolete(OVRSceneManager.DeprecationMessage)]
 public class OVRSemanticClassification : MonoBehaviour, IOVRSceneComponent
 {
     public const char LabelSeparator = ',';

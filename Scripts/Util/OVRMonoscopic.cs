@@ -23,7 +23,7 @@ using UnityEngine;
 /// <summary>
 /// Allows you to toggle monoscopic rendering with a gamepad button press.
 /// </summary>
-[HelpURL("https://developer.oculus.com/reference/unity/latest/class_o_v_r_monoscopic")]
+[HelpURL("https://developer.oculus.com/documentation/unity/unity-core-overview/#scriptss")]
 public class OVRMonoscopic : MonoBehaviour
 {
     /// <summary>

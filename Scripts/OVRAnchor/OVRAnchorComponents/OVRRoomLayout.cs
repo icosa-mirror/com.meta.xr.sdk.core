@@ -33,14 +33,18 @@ using System.Collections.Generic;
 public readonly partial struct OVRRoomLayout : IOVRAnchorComponent<OVRRoomLayout>, IEquatable<OVRRoomLayout>
 {
     /// <summary>
-    /// Asynchronous method that fetches anchors contained in the Room Layout.
+    /// (Obsolete) Asynchronous method that fetches anchors contained in the Room Layout.
     /// </summary>
     /// <param name="anchors">List that will get cleared and populated with the requested anchors.</param>
-    /// <remarks>Dispose of the returned task if you don't use the results</remarks>
+    /// <remarks>
+    /// \deprecated This method is obsolete. Use <see cref="FetchAnchorsAsync"/> instead.
+    ///
+    /// Dispose of the returned task if you don't use the results</remarks>
     /// <returns>A task that will eventually let you test if the fetch was successful or not.
     /// If the result is true, then the <see cref="anchors"/> parameter has been populated with the requested anchors.</returns>
     /// <exception cref="InvalidOperationException">If it fails to retrieve the Room Layout</exception>
     /// <exception cref="ArgumentNullException">If parameter anchors is null</exception>
+    [Obsolete("Use FetchAnchorsAsync instead.")]
     public OVRTask<bool> FetchLayoutAnchorsAsync(List<OVRAnchor> anchors)
     {
         if (!OVRPlugin.GetSpaceRoomLayout(Handle, out var roomLayout))
@@ -54,6 +58,38 @@ public readonly partial struct OVRRoomLayout : IOVRAnchorComponent<OVRRoomLayout
             list.Add(roomLayout.ceilingUuid);
             list.AddRange(roomLayout.wallUuids);
             return OVRAnchor.FetchAnchorsAsync(list, anchors);
+        }
+    }
+
+    /// <summary>
+    /// Fetches the anchors contained in the Room Layout.
+    /// </summary>
+    /// <param name="anchors">List that will get cleared and populated with the requested anchors.</param>
+    /// <remarks>
+    /// Dispose of the returned task if you don't use the results.
+    /// </remarks>
+    /// <returns>A task that will eventually let you test if the fetch was successful or not.
+    /// If the result is true, then the <see cref="anchors"/> parameter has been populated with the requested anchors.</returns>
+    /// <exception cref="InvalidOperationException">Thrown if the method fails to retrieve the Room Layout. This is usually
+    /// because the anchor does not have a RoomLayout component.</exception>
+    /// <exception cref="ArgumentNullException">Thrown if <paramref name="anchors"/> is `null`.</exception>
+    public OVRTask<OVRResult<List<OVRAnchor>, OVRAnchor.FetchResult>> FetchAnchorsAsync(List<OVRAnchor> anchors)
+    {
+        if (anchors == null)
+            throw new ArgumentNullException(nameof(anchors));
+
+        if (!OVRPlugin.GetSpaceRoomLayout(Handle, out var roomLayout))
+            throw new InvalidOperationException("Could not get Room Layout");
+
+        using (new OVRObjectPool.ListScope<Guid>(out var list))
+        {
+            list.Add(roomLayout.floorUuid);
+            list.Add(roomLayout.ceilingUuid);
+            list.AddRange(roomLayout.wallUuids);
+            return OVRAnchor.FetchAnchorsAsync(anchors, new OVRAnchor.FetchOptions
+            {
+                Uuids = list
+            });
         }
     }
 

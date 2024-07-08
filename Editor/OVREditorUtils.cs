@@ -148,6 +148,15 @@ internal static class OVREditorUtils
             hover = IsHover(id, Event.current, rect);
             return isClicked;
         }
+
+        public static bool Button(string id, GUIContent label, GUIContent icon, GUIStyle buttonStyle, GUIStyle iconStyle, out bool hover)
+        {
+            var isClicked = GUILayout.Button(label, buttonStyle);
+            var rect = GUILayoutUtility.GetLastRect();
+            EditorGUI.LabelField(rect, icon, iconStyle);
+            hover = IsHover(id, Event.current, rect);
+            return isClicked;
+        }
     }
 
     public static class TweenHelper

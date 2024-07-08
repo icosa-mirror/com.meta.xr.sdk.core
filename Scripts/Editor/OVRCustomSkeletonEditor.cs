@@ -105,15 +105,15 @@ public static class OVRCustomSkeletonEditorExtensions
     {
         var start = customSkeleton.GetCurrentStartBoneId();
         var end = customSkeleton.GetCurrentEndBoneId();
-        var skeletonType = customSkeleton.GetSkeletonType();
+        var skeletonType = (OVRPlugin.SkeletonType)customSkeleton.GetSkeletonType();
         if (customSkeleton.IsValidBone(start) && customSkeleton.IsValidBone(end))
         {
             for (var bi = (int)start; bi < (int)end; ++bi)
             {
-                string fbxBoneName = FbxBoneNameFromBoneId(skeletonType, (OVRSkeleton.BoneId)bi);
+                string fbxBoneName = FbxBoneNameFromBoneId(skeletonType, (OVRPlugin.BoneId)bi);
                 Transform t = customSkeleton.transform.FindChildRecursive(fbxBoneName);
 
-                if (t == null && skeletonType == OVRSkeleton.SkeletonType.Body)
+                if (t == null && skeletonType == OVRPlugin.SkeletonType.Body)
                 {
                     var legacyBoneName = fbxBoneName
                         .Replace("Little", "Pinky")
@@ -152,22 +152,22 @@ public static class OVRCustomSkeletonEditorExtensions
         return cleared;
     }
 
-    private static string FbxBoneNameFromBoneId(OVRSkeleton.SkeletonType skeletonType, OVRSkeleton.BoneId bi)
+    private static string FbxBoneNameFromBoneId(OVRPlugin.SkeletonType skeletonType, OVRPlugin.BoneId bi)
     {
-        if (skeletonType == OVRSkeleton.SkeletonType.Body)
+        if (skeletonType == OVRPlugin.SkeletonType.Body)
         {
             return FBXBodyBoneNames[(int)bi];
         }
-        else if (skeletonType == OVRSkeleton.SkeletonType.FullBody)
+        else if (skeletonType == OVRPlugin.SkeletonType.FullBody)
         {
             return FBXFullBodyBoneNames[(int)bi];
         }
         else
         {
-            if (bi >= OVRSkeleton.BoneId.Hand_ThumbTip && bi <= OVRSkeleton.BoneId.Hand_PinkyTip)
+            if (bi >= OVRPlugin.BoneId.Hand_ThumbTip && bi <= OVRPlugin.BoneId.Hand_PinkyTip)
             {
                 return FBXHandSidePrefix[(int)skeletonType] +
-                       FBXHandFingerNames[(int)bi - (int)OVRSkeleton.BoneId.Hand_ThumbTip] +
+                       FBXHandFingerNames[(int)bi - (int)OVRPlugin.BoneId.Hand_ThumbTip] +
                        "_finger_tip_marker";
             }
             else

@@ -121,11 +121,34 @@ internal static class OVRDeserialize
     }
 
 
+    public struct SpaceDiscoveryCompleteData
+    {
+        public UInt64 RequestId;
+        public int Result;
+    }
+
+    public struct SpaceDiscoveryResultsData
+    {
+        public UInt64 RequestId;
+    }
+
+    public struct SpacesSaveResultData
+    {
+        public UInt64 RequestId;
+        public OVRAnchor.SaveResult Result;
+    }
+
+    public struct SpacesEraseResultData
+    {
+        public UInt64 RequestId;
+        public OVRAnchor.EraseResult Result;
+    }
 
     public struct PassthroughLayerResumedData
     {
         public int LayerId;
     }
+
 
 
 

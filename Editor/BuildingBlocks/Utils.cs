@@ -71,6 +71,7 @@ namespace Meta.XR.BuildingBlocks.Editor
                 Order = 100,
                 ShowOverlay = true,
                 ToggleableVisibility = true,
+                CanFilterBy = false,
             }
         };
 
@@ -89,6 +90,8 @@ namespace Meta.XR.BuildingBlocks.Editor
                 Order = 101,
                 ShowOverlay = true,
                 ToggleableVisibility = true,
+                Show = true,
+                CanFilterBy = false,
             }
         };
 
@@ -106,6 +109,7 @@ namespace Meta.XR.BuildingBlocks.Editor
                 Order = 90,
                 ShowOverlay = true,
                 ToggleableVisibility = true,
+                CanFilterBy = false,
             }
         };
 
@@ -118,7 +122,80 @@ namespace Meta.XR.BuildingBlocks.Editor
                 Order = 200,
                 Automated = true,
                 Show = false,
-                DefaultVisibility = false
+                DefaultVisibility = false,
+                CanFilterBy = false,
+            }
+        };
+
+        internal static Tag AnchorTag = new("Anchor")
+        {
+            Behavior =
+            {
+                CanFilterBy = true
+            }
+        };
+
+        internal static Tag AvatarsTag = new("Avatars")
+        {
+            Behavior =
+            {
+                CanFilterBy = true
+            }
+        };
+
+        internal static Tag InteractionTag = new("Interaction")
+        {
+            Behavior =
+            {
+                CanFilterBy = true
+            }
+        };
+
+        internal static Tag MultiplayerTag = new("Multiplayer")
+        {
+            Behavior =
+            {
+                CanFilterBy = true
+            }
+        };
+
+        internal static Tag PassthroughTag = new("Passthrough")
+        {
+            Behavior =
+            {
+                CanFilterBy = true
+            }
+        };
+
+        internal static Tag SceneTag = new("Scene")
+        {
+            Behavior =
+            {
+                CanFilterBy = true
+            }
+        };
+
+        internal static Tag TrackingTag = new("Tracking")
+        {
+            Behavior =
+            {
+                CanFilterBy = true
+            }
+        };
+
+        internal static Tag UITag = new("UI")
+        {
+            Behavior =
+            {
+                CanFilterBy = true
+            }
+        };
+
+        internal static Tag VoiceTag = new("Voice")
+        {
+            Behavior =
+            {
+                CanFilterBy = true
             }
         };
 
@@ -131,6 +208,7 @@ namespace Meta.XR.BuildingBlocks.Editor
                 Order = 201,
                 Show = false,
                 DefaultVisibility = false,
+                CanFilterBy = false,
             }
         };
 
@@ -148,6 +226,7 @@ namespace Meta.XR.BuildingBlocks.Editor
                 ShowOverlay = true,
                 ToggleableVisibility = true,
                 DefaultVisibility = false,
+                CanFilterBy = false,
             }
         };
 
@@ -250,6 +329,11 @@ namespace Meta.XR.BuildingBlocks.Editor
                 .FirstOrDefault(x => x.BlockId == data.Id);
         }
 
+        public static InstallationRoutine GetInstallationRoutine(this BuildingBlock block) =>
+            GetInstallationRoutine(block.InstallationRoutineCheckpoint.InstallationRoutineId);
+
+        public static InstallationRoutine GetInstallationRoutine(string installationRoutineId) =>
+            InstallationRoutine.Registry[installationRoutineId];
 
         public static BuildingBlock GetBlock(string blockId)
         {
@@ -297,6 +381,13 @@ namespace Meta.XR.BuildingBlocks.Editor
             return Object.FindObjectsByType<BuildingBlock>(FindObjectsSortMode.InstanceID).ToList();
         }
 
+        public static IEnumerable<BuildingBlock> GetInterfaceBlocksInScene(string blockId, string installationRoutineId) =>
+            GetBlocksInScene()
+                .Where(b =>
+                    b.BlockId == blockId
+                    && b.InstallationRoutineCheckpoint.InstallationRoutineId ==
+                    installationRoutineId
+                );
         public static List<BuildingBlock> GetUsingBlocksInScene(this BlockData requiredData)
         {
             return Object.FindObjectsByType<BuildingBlock>(FindObjectsSortMode.None).Where(x =>
@@ -361,7 +452,27 @@ namespace Meta.XR.BuildingBlocks.Editor
             return rootGameObjects.FirstOrDefault(go => go.GetComponentInChildren<T>())?.GetComponentInChildren<T>();
         }
 
+        public static HashSet<string> CollectPackageDependencies(this BlockData blockData, HashSet<string> set)
+        {
+            foreach (var packageDependency in blockData.PackageDependencies)
+            {
+                set.Add(packageDependency);
+            }
 
+            foreach (var dep in blockData.Dependencies)
+            {
+                CollectPackageDependencies(dep, set);
+            }
+
+            return set;
+        }
+
+        internal static bool IsPackageInstalled(string packageId)
+        {
+            return CustomPackageDependencyRegistry.IsPackageDepInCustomRegistry(packageId)
+                ? CustomPackageDependencyRegistry.IsPackageInstalled(packageId)
+                : OVRProjectSetupUtils.IsPackageInstalled(packageId);
+        }
 
 
         public static TResult Let<TSource, TResult>(this TSource source, Func<TSource, TResult> func) => func(source);

@@ -172,6 +172,16 @@ public struct OVRResult<TStatus> : IEquatable<OVRResult<TStatus>>
             return hash;
         }
     }
+
+    /// <summary>
+    /// Generates a string representation of this result object.
+    /// </summary>
+    /// <remarks>
+    /// The string representation is the stringification of <see cref="Status"/>, or "(invalid result)" if this result
+    /// object has not been initialized.
+    /// </remarks>
+    /// <returns>A string representation of this <see cref="OVRResult{TStatus}"/></returns>
+    public override string ToString() => _initialized ? _status.ToString() : "(invalid result)";
 }
 
 /// <summary>
@@ -180,7 +190,11 @@ public struct OVRResult<TStatus> : IEquatable<OVRResult<TStatus>>
 /// <typeparam name="TValue">The type of the value.</typeparam>
 /// <typeparam name="TStatus">The type of the status code.</typeparam>
 /// <remarks>
-/// The <see cref="OVRResult{TValue, TStatus}"/> struct provides a wrapper around a value and a status code. It exposes properties for success, status retrieval, value retrieval, and try-get-value functionality.
+/// An <see cref="OVRResult{TValue,TStatus}"/> represents the result of an operation which may fail. If the operation
+/// succeeds (<see cref="Success"/> is `True`), then you can access the value using the <see cref="Value"/> property.
+///
+/// If it fails (<see cref="Success"/> is `False`), then the `OVRResult` does not have a value, and it is an error to
+/// access the <see cref="Value"/> property. In this case, the <see cref="Status"/> property will contain an error code.
 /// </remarks>
 public struct OVRResult<TValue, TStatus> : IEquatable<OVRResult<TValue, TStatus>>
     where TStatus : struct, Enum, IConvertible
@@ -220,12 +234,33 @@ public struct OVRResult<TValue, TStatus> : IEquatable<OVRResult<TValue, TStatus>
     public bool HasValue => Success;
 
     /// <summary>
-    /// Gets the value of the result.
+    /// The value of the result.
     /// </summary>
-    /// <exception cref="InvalidOperationException">Thrown when the result was unsuccessful and no value is available.</exception>
+    /// <remarks>
+    /// It is an error to access this property unless <see cref="Success"/> is `True`. See also
+    /// <see cref="TryGetValue"/>.
+    /// </remarks>
+    /// <exception cref="InvalidOperationException">Thrown if <see cref="Success"/> is `False`.</exception>
     /// <seealso cref="TryGetValue"/>
     /// <seealso cref="HasValue"/>
-    public TValue Value => HasValue ? _value : throw new InvalidOperationException("OVRResult must have a value");
+    public TValue Value
+    {
+        get
+        {
+            if (!_initialized)
+            {
+                throw new InvalidOperationException($"The {nameof(OVRResult)} object is not valid.");
+            }
+
+            if (_statusCode < 0)
+            {
+                throw new InvalidOperationException($"The {nameof(OVRResult)} does not have a value because the " +
+                                                    $"operation failed with {_status}.");
+            }
+
+            return _value;
+        }
+    }
 
     /// <summary>
     /// Tries to retrieve the value of the result.
@@ -345,4 +380,20 @@ public struct OVRResult<TValue, TStatus> : IEquatable<OVRResult<TValue, TStatus>
             return hash;
         }
     }
+
+    /// <summary>
+    /// Generates a string representation of this result object.
+    /// </summary>
+    /// <remarks>
+    /// If this result object has not been initialized, the string is "(invalid result)". Otherwise, if
+    /// <see cref="Success"/> is `True`, then the string is the stringification of the <see cref="Status"/> and
+    /// <see cref="Value"/>. If <see cref="Success"/> is `False`, then it is just the stringification of
+    /// <see cref="Status"/>.
+    /// </remarks>
+    /// <returns>A string representation of this <see cref="OVRResult{TStatus}"/></returns>
+    public override string ToString() => _initialized
+        ? HasValue
+            ? $"(Value={_value}, Status={_status})"
+            : _status.ToString()
+        : "(invalid result)";
 }

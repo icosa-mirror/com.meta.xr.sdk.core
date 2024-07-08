@@ -21,7 +21,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-[HelpURL("https://developer.oculus.com/reference/unity/latest/class_o_v_r_custom_skeleton")]
+[HelpURL("https://developer.oculus.com/documentation/unity/move-samples/")]
 public class OVRCustomSkeleton : OVRSkeleton, ISerializationCallbackReceiver
 {
     [HideInInspector][SerializeField] private List<Transform> _customBones_V2;

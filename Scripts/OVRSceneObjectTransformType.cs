@@ -40,7 +40,8 @@ using UnityEngine;
 /// then the <seealso cref="OVRSceneVolume"/> will take precedence for
 /// scaling/offseting child objects.
 /// </remarks>
-[HelpURL("https://developer.oculus.com/reference/unity/latest/class_o_v_r_scene_object_transform_type")]
+[HelpURL("https://developer.oculus.com/documentation/unity/unity-scene-use-scene-anchors/#further-scene-model-unity-components")]
+[Obsolete(OVRSceneManager.DeprecationMessage)]
 public class OVRSceneObjectTransformType : MonoBehaviour
 {
     [Serializable]

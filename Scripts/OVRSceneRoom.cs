@@ -20,15 +20,17 @@
 
 using System;
 using System.Collections.Generic;
-using System.Linq;
+using System.Diagnostics;
 using UnityEngine;
+using Debug = UnityEngine.Debug;
 
 /// <summary>
 /// Represents a <see cref="OVRRoomLayout"/> type Scene anchor.
 /// </summary>
 [DisallowMultipleComponent]
 [RequireComponent(typeof(OVRSceneAnchor))]
-[HelpURL("https://developer.oculus.com/reference/unity/latest/class_o_v_r_scene_room")]
+[HelpURL("https://developer.oculus.com/documentation/unity/unity-scene-use-scene-anchors/#further-scene-model-unity-components")]
+[Obsolete(OVRSceneManager.DeprecationMessage)]
 public class OVRSceneRoom : MonoBehaviour, IOVRSceneComponent
 {
 
@@ -48,225 +50,143 @@ public class OVRSceneRoom : MonoBehaviour, IOVRSceneComponent
     public OVRScenePlane[] Walls { get; private set; } = Array.Empty<OVRScenePlane>();
 
 
-    internal List<OVRScenePlane> _walls = new List<OVRScenePlane>();
+    OVRSceneAnchor _sceneAnchor;
 
-    private readonly Dictionary<Guid, int> _orderedRoomGuids = new Dictionary<Guid, int>();
-    private Comparison<OVRScenePlane> _wallOrderComparer;
+    OVRSceneManager _sceneManager;
 
-    private OVRSceneAnchor _sceneAnchor;
-    private OVRSceneManager _sceneManager;
-    private Guid _uuid;
+    Guid _uuid;
 
-    internal HashSet<Guid> _uuidToQuery = new HashSet<Guid>();
-    private List<OVRAnchor> _roomAnchors = OVRObjectPool.Get<List<OVRAnchor>>();
+    internal static readonly Dictionary<Guid, OVRSceneRoom> SceneRooms = new();
 
-    internal static readonly Dictionary<Guid, OVRSceneRoom> SceneRooms = new Dictionary<Guid, OVRSceneRoom>();
-    internal static readonly List<OVRSceneRoom> SceneRoomsList = new List<OVRSceneRoom>();
-    private int _taskCount;
-
-    private Action<bool> _onFetchAnchorsCompleted;
-    private Action<bool, OVRAnchor> _onAnchorLocalizationCompleted;
+    internal static readonly List<OVRSceneRoom> SceneRoomsList = new();
 
     private void Awake()
     {
         _sceneAnchor = GetComponent<OVRSceneAnchor>();
-        _uuid = _sceneAnchor.Uuid;
         _sceneManager = FindAnyObjectByType<OVRSceneManager>();
-
-        _wallOrderComparer = (planeA, planeB) =>
-        {
-            bool TryGetUuid(OVRScenePlane plane, out int index)
-            {
-                var guid = plane.GetComponent<OVRSceneAnchor>().Uuid;
-                if (_orderedRoomGuids.TryGetValue(guid, out index)) return true;
-
-                OVRSceneManager.Development.LogWarning(nameof(OVRSceneRoom),
-                    $"{nameof(OVRScenePlane)} {guid} does not belong to the current room layout.");
-                return false;
-            }
-
-            if (!TryGetUuid(planeA, out var indexA)) return 0;
-            if (!TryGetUuid(planeB, out var indexB)) return 0;
-
-            return indexA.CompareTo(indexB);
-        };
-
+        _uuid = _sceneAnchor.Uuid;
         if (_sceneAnchor.Space.Valid)
         {
             ((IOVRSceneComponent)this).Initialize();
         }
-
-        _onFetchAnchorsCompleted = OnFetchAnchorsCompleted;
-        _onAnchorLocalizationCompleted = OnLocalizationCompleted;
     }
 
     void IOVRSceneComponent.Initialize()
     {
-        GetUuidsToQuery();
         SceneRooms[_uuid] = this;
         SceneRoomsList.Add(this);
     }
 
-    internal void LoadRoom()
+    internal async OVRTask<bool> LoadRoom(Guid floor, Guid ceiling, Guid[] walls)
     {
-        if (!_uuidToQuery.Any()) return;
-
-        _roomAnchors.Clear();
-        OVRAnchor.FetchAnchorsAsync(_uuidToQuery, _roomAnchors).ContinueWith(_onFetchAnchorsCompleted);
-    }
-
-    private void OnFetchAnchorsCompleted(bool success)
-    {
-        if (!success)
+        using (new OVRObjectPool.HashSetScope<Guid>(out var uuids))
+        using (new OVRObjectPool.ListScope<OVRAnchor>(out var anchors))
         {
-            _sceneManager.Verbose?.LogWarning(nameof(OVRSceneRoom), "Failed to fetch the room anchors.");
-            return;
-        }
-
-        _walls.Clear();
-        _taskCount = _roomAnchors.Count;
-
-        foreach (var anchor in _roomAnchors)
-        {
-            // Check if already exist.
-            if (OVRSceneAnchor.SceneAnchors.ContainsKey(anchor.Uuid))
+            uuids.Add(floor);
+            uuids.Add(ceiling);
+            foreach (var wall in walls)
             {
-                OVRSceneAnchor.SceneAnchors[anchor.Uuid].IsTracked = true;
-                continue;
+                uuids.Add(wall);
             }
 
-            if (!anchor.TryGetComponent(out OVRLocatable locatableComponent))
+            if (_sceneAnchor.Anchor.TryGetComponent<OVRAnchorContainer>(out var container))
             {
-                continue;
+                foreach (var uuid in container.Uuids)
+                {
+                    uuids.Add(uuid);
+                }
+            }
+            else
+            {
+                LogWarning($"{name} has no anchor container. Some elements may be missing.");
             }
 
-            if (locatableComponent.IsEnabled)
+            var result = await OVRSceneManager.FetchAnchorsAsync(uuids, anchors);
+            if (!result)
             {
-                OnLocalizationCompleted(true, anchor);
-                continue;
+                LogError($"Failed to fetch the {uuids.Count} anchors belonging to {name}");
+                return false;
             }
 
-            locatableComponent.SetEnabledAsync(true).ContinueWith(_onAnchorLocalizationCompleted, anchor);
-        }
-    }
+            Log($"{name} has {anchors.Count} anchors.");
 
-    private void OnLocalizationCompleted(bool success, OVRAnchor anchor)
-    {
-        _taskCount--;
-
-        if (!success)
-        {
-            _sceneManager.Verbose?.LogWarning(nameof(OVRSceneRoom),
-                $"Failed to enable the {nameof(OVRLocatable)} component for anchor {anchor.Uuid}",
-                gameObject);
-            return;
-        }
-
-        OVRPlugin.GetSpaceComponentStatus(anchor.Handle, OVRPlugin.SpaceComponentType.Bounded2D,
-            out bool bounded2dEnabled, out _);
-        OVRPlugin.GetSpaceComponentStatus(anchor.Handle, OVRPlugin.SpaceComponentType.Bounded3D,
-            out bool bounded3dEnabled, out _);
-        var isStrictly2D = bounded2dEnabled && !bounded3dEnabled;
-        OVRPlugin.GetSpaceComponentStatus(anchor.Handle, OVRPlugin.SpaceComponentType.TriangleMesh,
-            out bool triangleMeshEnabled, out _);
-        isStrictly2D = bounded2dEnabled && !(bounded3dEnabled || triangleMeshEnabled);
-
-        // The plane prefab is for anchors that are only 2D, i.e. they only have
-        // a 2D component. If a volume component exists, we use a volume prefab,
-        // else we pass null (prefab overrides may be used)
-        var prefab = isStrictly2D ? _sceneManager.PlanePrefab :
-            (bounded3dEnabled ? _sceneManager.VolumePrefab : null);
-
-        var sceneAnchor = _sceneManager.InstantiateSceneAnchor(anchor, prefab);
-        if (sceneAnchor != null)
-        {
-            sceneAnchor.transform.parent = transform;
-            if (isStrictly2D)
-                UpdateRoomInformation(sceneAnchor.GetComponent<OVRScenePlane>());
-        }
-
-        if (_taskCount == 0)
-        {
-            _walls.Sort(_wallOrderComparer);
-            Walls = _walls.ToArray();
-            _sceneManager.Verbose?.Log(nameof(OVRSceneRoom), "Scene room loaded successfully.",
-                gameObject);
-
-            // Room load completed.
-            _sceneManager.OnSceneRoomLoadCompleted();
-        }
-    }
-
-    private void UpdateRoomInformation(OVRScenePlane plane)
-    {
-        if (!plane.TryGetComponent(out OVRSemanticClassification classification))
-            return;
-
-        foreach (var label in classification.Labels)
-        {
-            switch (label)
+            using (new OVRObjectPool.ListScope<bool>(out var results))
+            using (new OVRObjectPool.ListScope<OVRTask<bool>>(out var tasks))
             {
-                case OVRSceneManager.Classification.Floor:
-                    Floor = plane;
-                    break;
-                case OVRSceneManager.Classification.Ceiling:
-                    Ceiling = plane;
-                    break;
-                case OVRSceneManager.Classification.WallFace:
-                    _walls.Add(plane);
-                    break;
+                foreach (var anchor in anchors)
+                {
+                    if (anchor.TryGetComponent<OVRLocatable>(out var locatable))
+                    {
+                        tasks.Add(locatable.SetEnabledAsync(true));
+                    }
+                }
+
+                await OVRTask.WhenAll(tasks, results);
+            }
+
+            foreach (var anchor in anchors)
+            {
+                if (!anchor.TryGetComponent<OVRLocatable>(out var locatable) || !locatable.IsEnabled)
+                {
+#if DEVELOPMENT_BUILD || UNITY_EDITOR
+                    var labels = anchor.TryGetComponent<OVRSemanticLabels>(out var component)
+                                 && component.IsEnabled ? component.Labels : null;
+                    LogWarning($"Anchor {anchor}{(string.IsNullOrEmpty(labels) ? "" : $" ({labels})")} could not be localized. Ignoring.");
+#endif
+                    continue;
+                }
+
+                OVRPlugin.GetSpaceComponentStatus(anchor.Handle, OVRPlugin.SpaceComponentType.Bounded2D,
+                    out var bounded2dEnabled, out _);
+                OVRPlugin.GetSpaceComponentStatus(anchor.Handle, OVRPlugin.SpaceComponentType.Bounded3D,
+                    out var bounded3dEnabled, out _);
+                OVRPlugin.GetSpaceComponentStatus(anchor.Handle, OVRPlugin.SpaceComponentType.TriangleMesh,
+                    out var triangleMeshEnabled, out _);
+
+                var isStrictly2d = bounded2dEnabled && !(bounded3dEnabled || triangleMeshEnabled);
+
+                // The plane prefab is for anchors that are only 2D, i.e. they only have
+                // a 2D component. If a volume component exists, we use a volume prefab,
+                // else we pass null (prefab overrides may be used)
+                var prefab = isStrictly2d
+                    ? _sceneManager.PlanePrefab
+                    : bounded3dEnabled ? _sceneManager.VolumePrefab : null;
+
+                var sceneAnchor = _sceneManager.InstantiateSceneAnchor(anchor, prefab);
+                if (sceneAnchor)
+                {
+                    sceneAnchor.transform.parent = transform;
+                    sceneAnchor.IsTracked = true;
+                }
+            }
+
+            bool TryGetPlane(Guid uuid, out OVRScenePlane plane)
+            {
+                plane = null;
+                return OVRSceneAnchor.SceneAnchors.TryGetValue(uuid, out var sceneAnchor) &&
+                       sceneAnchor.TryGetComponent(out plane);
+            }
+
+            OVRScenePlane GetPlane(Guid uuid) => TryGetPlane(uuid, out var plane) ? plane : null;
+
+            Floor = GetPlane(floor);
+            Ceiling = GetPlane(ceiling);
+
+            using (new OVRObjectPool.ListScope<OVRScenePlane>(out var planes))
+            {
+                foreach (var wall in walls)
+                {
+                    if (TryGetPlane(wall, out var plane))
+                    {
+                        planes.Add(plane);
+                    }
+                }
+
+                Walls = planes.ToArray();
             }
         }
-    }
 
-    private void GetUuidsToQuery()
-    {
-        _uuidToQuery.Clear();
-
-        if (!_sceneAnchor.Anchor.TryGetComponent<OVRAnchorContainer>(out var container))
-        {
-            return;
-        }
-
-        foreach (var uuid in container.Uuids)
-        {
-            _uuidToQuery.Add(uuid);
-        }
-
-        _sceneManager.Verbose?.Log(nameof(OVRSceneRoom),
-            $"{nameof(_sceneAnchor.Anchor.TryGetComponent)}<{nameof(OVRAnchorContainer)}>: success [{true}], count [{_uuidToQuery.Count}]");
-
-        if (!_sceneAnchor.Anchor.TryGetComponent<OVRRoomLayout>(out var roomLayout))
-        {
-            _sceneManager.Verbose?.LogWarning(nameof(OVRSceneRoom),
-                $"[{_sceneAnchor.Uuid}] has component {nameof(OVRPlugin.SpaceComponentType.RoomLayout)} " +
-                $"but {nameof(_sceneAnchor.Anchor.TryGetComponent)}<{nameof(OVRRoomLayout)}> failed. Ignoring room.",
-                gameObject);
-        }
-
-        if (!roomLayout.TryGetRoomLayout(out var ceilingUuid, out var floorUuid, out var wallUuids))
-        {
-            _sceneManager.Verbose?.LogWarning(nameof(OVRSceneRoom),
-                $"Failed to get the ceiling, floor and walls unique identifiers.",
-                gameObject);
-            return;
-        }
-
-        // save room ids and add to queryables (duplicates are filtered)
-        if (!ceilingUuid.Equals(Guid.Empty))
-            _uuidToQuery.Add(ceilingUuid);
-        if (!floorUuid.Equals(Guid.Empty))
-            _uuidToQuery.Add(floorUuid);
-
-        _orderedRoomGuids.Clear();
-        int validWallsCount = 0;
-        foreach (var wallUuid in wallUuids)
-        {
-            _sceneManager.Verbose?.Log(nameof(OVRSceneManager),
-                $"{nameof(roomLayout.TryGetRoomLayout)}: wall [{wallUuid}]", gameObject);
-            _orderedRoomGuids[wallUuid] = validWallsCount++;
-            if (!wallUuid.Equals(Guid.Empty)) _uuidToQuery.Add(wallUuid);
-        }
+        return true;
     }
 
     private void OnDestroy()
@@ -274,4 +194,13 @@ public class OVRSceneRoom : MonoBehaviour, IOVRSceneComponent
         SceneRooms.Remove(_uuid);
         SceneRoomsList.Remove(this);
     }
+
+    [Conditional("DEVELOPMENT_BUILD"), Conditional("UNITY_EDITOR")]
+    void Log(string message) => Debug.Log($"[{nameof(OVRSceneRoom)}] {message}", gameObject);
+
+    [Conditional("DEVELOPMENT_BUILD"), Conditional("UNITY_EDITOR")]
+    void LogWarning(string message) => Debug.LogWarning($"[{nameof(OVRSceneRoom)}] {message}", gameObject);
+
+    [Conditional("DEVELOPMENT_BUILD"), Conditional("UNITY_EDITOR")]
+    void LogError(string message) => Debug.LogError($"[{nameof(OVRSceneRoom)}] {message}", gameObject);
 }

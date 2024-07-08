@@ -31,7 +31,8 @@ using UnityEngine;
 /// generates a mesh from its boundary vertices.
 /// </remarks>
 [RequireComponent(typeof(MeshFilter))]
-[HelpURL("https://developer.oculus.com/reference/unity/latest/class_o_v_r_scene_plane_mesh_filter")]
+[HelpURL("https://developer.oculus.com/documentation/unity/unity-scene-use-scene-anchors/#further-scene-model-unity-components")]
+[Obsolete(OVRSceneManager.DeprecationMessage)]
 public class OVRScenePlaneMeshFilter : MonoBehaviour
 {
     private MeshFilter _meshFilter;

@@ -104,8 +104,16 @@ partial struct OVRAnchor
 
         public enum MarkerId
         {
+            // XR_META_spatial_entity_discovery
+            DiscoverSpaces = 163054959,
+            // XR_META_spatial_entity_persistence
+            SaveSpaces = 163056974,
+            EraseSpaces = 163061838,
+            // XR_FB_spatial_entity_query
             QuerySpaces = 163069062,
+            // XR_FB_spatial_entity_storage_batch
             SaveSpaceList = 163065048,
+            // XR_FB_spatial_entity_storage
             EraseSingleSpace = 163062284,
         }
 

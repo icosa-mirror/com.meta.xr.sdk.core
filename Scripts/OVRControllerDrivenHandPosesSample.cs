@@ -35,7 +35,7 @@ using UnityEngine.Serialization;
 /// Simple script for running the ControllerDrivenHandPosesSample
 /// </summary>
 [DisallowMultipleComponent]
-[HelpURL("https://developer.oculus.com/reference/unity/latest/class_o_v_r_controller_driven_hand_poses_sample")]
+[HelpURL("https://developer.oculus.com/documentation/unity/move-body-tracking/#appendix-b-isdk-integration")]
 public class OVRControllerDrivenHandPosesSample : MonoBehaviour
 {
     [SerializeField]

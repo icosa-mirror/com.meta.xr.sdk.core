@@ -26,7 +26,7 @@ namespace UnityEngine.EventSystems
     /// <summary>
     /// Simple event system using physics raycasts. Very closely based on UnityEngine.EventSystems.PhysicsRaycaster
     /// </summary>
-    [HelpURL("https://developer.oculus.com/reference/unity/latest/class_o_v_r_physics_raycaster")]
+    [HelpURL("https://developer.oculus.com/documentation/unity/unity-dronerage-example-scenes/")]
 
     public class OVRPhysicsRaycaster : BaseRaycaster
     {

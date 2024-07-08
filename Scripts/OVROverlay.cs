@@ -51,7 +51,7 @@ using System.Collections.Generic;
 /// 5. Equirect: Display overlay as a 360-degree equirectangular skybox.
 /// </summary>
 [ExecuteInEditMode]
-[HelpURL("https://developer.oculus.com/reference/unity/latest/class_o_v_r_overlay")]
+[HelpURL("https://developer.oculus.com/documentation/unity/unity-ovroverlay/")]
 public class OVROverlay : MonoBehaviour
 {
     #region Interface

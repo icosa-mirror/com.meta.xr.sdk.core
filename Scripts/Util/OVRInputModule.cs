@@ -20,6 +20,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Text;
 using UnityEngine;
 
 namespace UnityEngine.EventSystems
@@ -27,7 +28,7 @@ namespace UnityEngine.EventSystems
     /// <summary>
     /// VR extension of PointerInputModule which supports gaze and controller pointing.
     /// </summary>
-    [HelpURL("https://developer.oculus.com/reference/unity/latest/class_o_v_r_input_module")]
+    [HelpURL("https://developer.oculus.com/documentation/unity/unity-isdk-input-processing/")]
     public class OVRInputModule : PointerInputModule
     {
         [Tooltip("Object which points with Z axis. E.g. CentreEyeAnchor from OVRCameraRig")]
@@ -75,7 +76,6 @@ namespace UnityEngine.EventSystems
 
         [SerializeField]
         private float m_SpherecastRadius = 1.0f;
-
 
         // The following region contains code exactly the same as the implementation
         // of StandaloneInputModule. It is copied here rather than inheriting from StandaloneInputModule
@@ -524,7 +524,7 @@ namespace UnityEngine.EventSystems
 
             // Handle controllers / hands if we have them. If not, fallback to tracking the gaze cursor.
             bool hadActiveInputSource = false;
-            for (int i = 0; i < _trackedInputSources.Count; i++)
+            for (int i = _trackedInputSources.Count - 1; i >= 0; i-- )
             {
                 if (_trackedInputSources[i].IsActive())
                 {
@@ -534,7 +534,7 @@ namespace UnityEngine.EventSystems
                 }
             }
 
-            if (!hadActiveInputSource)
+            if (!hadActiveInputSource && rayTransform != null)
             {
                 // Process gaze event.
                 ProcessMouseEvent(GetMouseStateFromRaycast(rayTransform));
@@ -1155,6 +1155,9 @@ namespace UnityEngine.EventSystems
             // Update the projected ray showing where this input source is pointing.
             // Use the OVRControllerRayHelper as a starting point.
             void UpdatePointerRay(OVRInputRayData rayData);
+            // Provide which hand this input source is for - we should only track one source for each hand
+            // to properly handle capsense / multimodal situations where we show controllers and hands.
+            OVRPlugin.Hand GetHand();
         }
 
     }

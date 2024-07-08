@@ -25,7 +25,7 @@ using System.Linq;
 using UnityEngine;
 using UnityEngine.Assertions;
 
-[HelpURL("https://developer.oculus.com/reference/unity/latest/class_o_v_r_custom_face_extensions")]
+[HelpURL("https://developer.oculus.com/documentation/unity/move-face-tracking/")]
 public static class OVRCustomFaceExtensions
 {
     /// <summary>

@@ -19,6 +19,7 @@
  */
 
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using Meta.XR.Editor.Tags;
 using UnityEngine;
@@ -139,7 +140,7 @@ namespace Meta.XR.BuildingBlocks.Editor
             }
         }
 
-        public virtual bool Hidden => Tags.Contains(Utils.HiddenTag);
+        public virtual bool Hidden => Tags.Any(tag => tag.Behavior.Visibility == false);
 
         public bool Experimental => Tags.Contains(Utils.ExperimentalTag);
 
@@ -151,6 +152,14 @@ namespace Meta.XR.BuildingBlocks.Editor
         internal abstract bool CanBeAdded { get; }
 
         internal abstract void AddToProject(GameObject selectedGameObject = null, Action onInstall = null);
+
+        internal virtual void AddToObjects(List<GameObject> selectedGameObjects)
+        {
+            foreach (var obj in selectedGameObjects.DefaultIfEmpty())
+            {
+                AddToProject(obj);
+            }
+        }
 
         internal virtual bool RequireListRefreshAfterInstall => false;
 

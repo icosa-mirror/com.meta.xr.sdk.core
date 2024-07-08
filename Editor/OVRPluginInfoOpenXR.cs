@@ -207,7 +207,6 @@ namespace Oculus.VR.Editor
             plugin.SetCompatibleWithPlatform(BuildTarget.StandaloneWindows, false);
             plugin.SetCompatibleWithPlatform(BuildTarget.StandaloneWindows64, false);
             plugin.SetCompatibleWithPlatform(BuildTarget.StandaloneOSX, false);
-
             switch (platform)
             {
                 case PluginPlatform.AndroidOpenXR:
@@ -224,7 +223,13 @@ namespace Oculus.VR.Editor
                 default:
                     throw new ArgumentException("Unsupported BuildTarget: " + platform);
             }
+            plugin.SaveAndReimport();
 
+            // Manually mark local OVRPlugin as non-overridable, and reimport
+            string metaFilePath = Path.GetFullPath(plugin.assetPath) + ".meta";
+            string metaFile = File.ReadAllText(metaFilePath).Replace("isOverridable: 1", "isOverridable: 0");
+            File.WriteAllText(metaFilePath, metaFile);
+            plugin = AssetImporter.GetAtPath(plugin.assetPath) as PluginImporter;
             plugin.SaveAndReimport();
         }
 

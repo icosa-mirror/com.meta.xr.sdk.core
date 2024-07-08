@@ -29,7 +29,7 @@ using UnityEngine;
 /// <remarks>
 /// Refers to the <see cref="OVRFaceExpressions.FaceExpression"/> enum for the list of face expressions.
 /// </remarks>
-[HelpURL("https://developer.oculus.com/reference/unity/latest/class_o_v_r_face_expressions")]
+[HelpURL("https://developer.oculus.com/documentation/unity/move-face-tracking/")]
 public class OVRFaceExpressions : MonoBehaviour, IReadOnlyCollection<float>, OVRFaceExpressions.WeightProvider
 {
     /// <summary>
@@ -87,6 +87,7 @@ public class OVRFaceExpressions : MonoBehaviour, IReadOnlyCollection<float>, OVR
     public bool EyeFollowingBlendshapesValid { get; private set; }
 
     private OVRPlugin.FaceState _currentFaceState;
+
 
     private const OVRPermissionsRequester.Permission FaceTrackingPermission =
         OVRPermissionsRequester.Permission.FaceTracking;
@@ -181,6 +182,7 @@ public class OVRFaceExpressions : MonoBehaviour, IReadOnlyCollection<float>, OVR
             && _currentFaceState.Status.IsValid;
 
         EyeFollowingBlendshapesValid = ValidExpressions && _currentFaceState.Status.IsEyeFollowingBlendshapesValid;
+
     }
 
 
@@ -230,6 +232,7 @@ public class OVRFaceExpressions : MonoBehaviour, IReadOnlyCollection<float>, OVR
         weight = _currentFaceState.ExpressionWeights[(int)expression];
         return true;
     }
+
 
     /// <summary>
     /// List of face parts used for getting the face tracking confidence weight in <see cref="TryGetWeightConfidence"/>.
@@ -292,6 +295,7 @@ public class OVRFaceExpressions : MonoBehaviour, IReadOnlyCollection<float>, OVR
                 $"Face expressions are not valid at this time. Use {nameof(ValidExpressions)} to check for validity.");
         }
     }
+
 
     /// <summary>
     /// Copies expression weights to a pre-allocated array.
@@ -429,7 +433,7 @@ public class OVRFaceExpressions : MonoBehaviour, IReadOnlyCollection<float>, OVR
         Max = OVRPlugin.FaceExpression2.Max,
     }
 
-#region Face expressions enumerator
+    #region Face expressions enumerator
 
     public FaceExpressionsEnumerator GetEnumerator() =>
         new FaceExpressionsEnumerator(_currentFaceState.ExpressionWeights);
@@ -468,6 +472,6 @@ public class OVRFaceExpressions : MonoBehaviour, IReadOnlyCollection<float>, OVR
         }
     }
 
-#endregion
+    #endregion
 
 }

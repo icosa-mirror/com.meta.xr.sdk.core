@@ -29,6 +29,7 @@ public readonly struct OVRSpace : IEquatable<OVRSpace>
     /// <summary>
     /// Represents a storage location for an <see cref="OVRSpace"/>.
     /// </summary>
+    [Obsolete("Anchor APIs no longer require a storage location.")]
     public enum StorageLocation
     {
         /// <summary>
@@ -103,6 +104,7 @@ public readonly struct OVRSpace : IEquatable<OVRSpace>
 
 public static partial class OVRExtensions
 {
+    [Obsolete("Anchor APIs that specify a storage location are obsolete.")]
     internal static OVRPlugin.SpaceStorageLocation ToSpaceStorageLocation(this OVRSpace.StorageLocation storageLocation)
     {
         switch (storageLocation)

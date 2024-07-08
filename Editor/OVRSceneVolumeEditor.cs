@@ -18,9 +18,11 @@
  * limitations under the License.
  */
 
+using System;
 using UnityEditor;
 
 [CustomEditor(typeof(OVRSceneVolume))]
+[Obsolete(OVRSceneManager.DeprecationMessage)]
 public class OVRSceneVolumeEditor : Editor
 {
     OVRSceneVolume _object;

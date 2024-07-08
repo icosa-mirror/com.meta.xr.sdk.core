@@ -52,8 +52,7 @@ internal static class OVRProjectSetupXRTasks
             level: OVRProjectSetup.TaskLevel.Required,
             group: XRTaskGroup,
             isDone: buildTargetGroup => OVRProjectSetupUtils.IsPackageInstalled(OculusXRPackageName) || OVRProjectSetupUtils.IsPackageInstalled(UnityXRPackage),
-            message: "Either the Oculus XR or OpenXR Plugin package must be installed.\nClick 'Fix' to install the Oculus XR Plugin. If you want to install OpenXR Plugin, please use the Package Manager.",
-            fix: buildTargetGroup => OVRProjectSetupUtils.InstallPackage(OculusXRPackageName),
+            message: "Either the Oculus XR or OpenXR Plugin package must be installed through the Package Manager.",
             fixMessage: $"Install {OculusXRPackageName} package"
         );
 
@@ -63,7 +62,6 @@ internal static class OVRProjectSetupXRTasks
             group: XRTaskGroup,
             isDone: buildTargetGroup => OVRProjectSetupUtils.IsPackageInstalled(XRPluginManagementPackageName),
             message: "The XR Plug-in Management package must be installed",
-            fix: buildTargetGroup => OVRProjectSetupUtils.InstallPackage(XRPluginManagementPackageName),
             fixMessage: $"Install {XRPluginManagementPackageName} package"
         );
 

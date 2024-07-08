@@ -21,6 +21,7 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Threading.Tasks;
 using UnityEngine;
 using UnityEngine.Events;
 
@@ -33,16 +34,20 @@ namespace Meta.XR.BuildingBlocks
             get => _onSpatialAnchorsShareCompleted;
             set => _onSpatialAnchorsShareCompleted = value;
         }
+        public UnityEvent<List<OVRSpatialAnchor>, OVRSpatialAnchor.OperationResult> OnSharedSpatialAnchorsLoadCompleted
+        {
+            get => _onSharedSpatialAnchorsLoadCompleted;
+            set => _onSharedSpatialAnchorsLoadCompleted = value;
+        }
 
         [SerializeField] private UnityEvent<List<OVRSpatialAnchor>, OVRSpatialAnchor.OperationResult> _onSpatialAnchorsShareCompleted;
+        [SerializeField] private UnityEvent<List<OVRSpatialAnchor>, OVRSpatialAnchor.OperationResult> _onSharedSpatialAnchorsLoadCompleted;
 
         private Action<OVRSpatialAnchor.OperationResult, IEnumerable<OVRSpatialAnchor>> _onShareCompleted;
 
-        protected override OVRSpatialAnchor.EraseOptions EraseOptions => new() { Storage = OVRSpace.StorageLocation.Cloud };
-
         private void Start() => _onShareCompleted += OnShareCompleted;
 
-        public new void InstantiateSpatialAnchor(GameObject prefab, Vector3 position, Quaternion rotation)
+        public async new void InstantiateSpatialAnchor(GameObject prefab, Vector3 position, Quaternion rotation)
         {
             if (prefab == null)
             {
@@ -51,26 +56,25 @@ namespace Meta.XR.BuildingBlocks
 
             var anchorGameObject = Instantiate(prefab, position, rotation);
             var spatialAnchor = anchorGameObject.AddComponent<OVRSpatialAnchor>();
-            StartCoroutine(InitSpatialAnchor(spatialAnchor));
+            await InitSpatialAnchor(spatialAnchor);
         }
 
-        private IEnumerator InitSpatialAnchor(OVRSpatialAnchor anchor)
+        private async Task InitSpatialAnchor(OVRSpatialAnchor anchor)
         {
-            yield return WaitForInit(anchor);
+            await WaitForInit(anchor);
             if (Result == OVRSpatialAnchor.OperationResult.Failure)
             {
                 OnAnchorCreateCompleted?.Invoke(anchor, Result);
-                yield break;
+                return;
             }
 
-            yield return SaveLocalAsync(anchor);
-            if (Result == OVRSpatialAnchor.OperationResult.Failure)
+            await SaveAsync(anchor);
+            if (Result.IsError())
             {
                 OnAnchorCreateCompleted?.Invoke(anchor, Result);
-                yield break;
+                return;
             }
 
-            yield return SaveCloudAsync(anchor);
             OnAnchorCreateCompleted?.Invoke(anchor, Result);
         }
 
@@ -86,40 +90,49 @@ namespace Meta.XR.BuildingBlocks
                 throw new ArgumentException($"[{nameof(SpatialAnchorCoreBuildingBlock)}] Uuid list is empty.");
             }
 
-            var options = new OVRSpatialAnchor.LoadOptions
-            {
-                Timeout = 0,
-                StorageLocation = OVRSpace.StorageLocation.Cloud,
-                Uuids = uuids
-            };
-
-            StartCoroutine(LoadAnchorsRoutine(prefab, options));
+            LoadSharedSpatialAnchorsRoutine(prefab, uuids);
         }
 
-        private IEnumerator SaveCloudAsync(OVRSpatialAnchor anchor)
+        private async void LoadSharedSpatialAnchorsRoutine(GameObject prefab, IEnumerable<Guid> uuids)
         {
-            var saveOption = new OVRSpatialAnchor.SaveOptions
+
+            // Load unbounded anchors
+            using var unboundAnchorsPoolHandle =
+                new OVRObjectPool.ListScope<OVRSpatialAnchor.UnboundAnchor>(out var unboundAnchors);
+            var result = await OVRSpatialAnchor.LoadUnboundSharedAnchorsAsync(uuids, unboundAnchors);
+            if (!result.Success)
             {
-                Storage = OVRSpace.StorageLocation.Cloud
-            };
-
-            using var _ = new OVRObjectPool.ListScope<OVRSpatialAnchor>(out var anchors);
-            anchors.Add(anchor);
-
-            var task = OVRSpatialAnchor.SaveAsync(anchors, saveOption);
-            while (!task.IsCompleted)
-                yield return null;
-
-            if (!task.TryGetResult(out var result))
+                Debug.LogWarning($"[{nameof(SharedSpatialAnchorCore)}] Failed to load the shared spatial anchors: {result.Status}");
+                OnSpatialAnchorsShareCompleted?.Invoke(null, result.Status);
+                return;
+            }
+            if (unboundAnchors.Count == 0)
             {
-                Result = OVRSpatialAnchor.OperationResult.Failure;
-                yield break;
+                Debug.LogWarning($"[{nameof(SharedSpatialAnchorCore)}] There's no shared spatial anchors being loaded.");
+                OnSpatialAnchorsShareCompleted?.Invoke(null, result.Status);
+                return;
             }
 
-            if (result != OVRSpatialAnchor.OperationResult.Success)
+            // Localize the anchors
+            using var _ = new OVRObjectPool.ListScope<OVRSpatialAnchor>(out var loadedAnchors);
+            foreach (var unboundAnchor in unboundAnchors)
             {
-                Result = result;
+                if (!unboundAnchor.Localized)
+                {
+                    if (!await unboundAnchor.LocalizeAsync())
+                    {
+                        Debug.LogWarning($"[{nameof(SharedSpatialAnchorCore)}] Failed to localize the anchor. Uuid: {unboundAnchor.Uuid}");
+                        continue;
+                    }
+                }
+
+                var spatialAnchorGo = Instantiate(prefab, unboundAnchor.Pose.position, unboundAnchor.Pose.rotation);
+                var anchor = spatialAnchorGo.AddComponent<OVRSpatialAnchor>();
+                unboundAnchor.BindTo(anchor);
+                loadedAnchors.Add(anchor);
             }
+
+            OnSharedSpatialAnchorsLoadCompleted?.Invoke(new List<OVRSpatialAnchor>(loadedAnchors), result.Status);
         }
 
         public void ShareSpatialAnchors(List<OVRSpatialAnchor> anchors, List<OVRSpaceUser> users)
@@ -148,7 +161,7 @@ namespace Meta.XR.BuildingBlocks
             using var _ = new OVRObjectPool.ListScope<OVRSpatialAnchor>(out var sharedAnchors);
             sharedAnchors.AddRange(anchors);
 
-            OnSpatialAnchorsShareCompleted?.Invoke(sharedAnchors, OVRSpatialAnchor.OperationResult.Success);
+            OnSpatialAnchorsShareCompleted?.Invoke(new List<OVRSpatialAnchor>(sharedAnchors), OVRSpatialAnchor.OperationResult.Success);
         }
 
         private void OnDestroy() => _onShareCompleted -= OnShareCompleted;

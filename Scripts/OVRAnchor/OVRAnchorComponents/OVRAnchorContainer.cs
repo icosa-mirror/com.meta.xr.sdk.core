@@ -43,13 +43,33 @@ public readonly partial struct OVRAnchorContainer : IOVRAnchorComponent<OVRAncho
         : throw new InvalidOperationException("Could not get Uuids");
 
     /// <summary>
-    /// Asynchronous method that fetches anchors contained by this Anchor Container.
+    /// (Obsolete) Asynchronous method that fetches anchors contained by this Anchor Container.
     /// </summary>
-    /// <param name="anchors">IList that will get cleared and populated with the requested anchors.</param>
-    /// <remarks>Dispose of the returned <see cref="OVRTask{bool}"/> if you don't use the results</remarks>
-    /// <returns>An <see cref="OVRTask{bool}"/> that will eventually let you test if the fetch was successful or not.
+    /// <param name="anchors">List that will get cleared and populated with the requested anchors.</param>
+    /// <remarks>
+    /// \deprecated This method is obsolete. Use <see cref="FetchAnchorsAsync"/> instead.
+    ///
+    /// Dispose of the returned <see cref="OVRTask{T}"/> if you don't use the results</remarks>
+    /// <returns>An <see cref="OVRTask{T}"/> that will eventually let you test if the fetch was successful or not.
     /// If the result is true, then the <see cref="anchors"/> parameter has been populated with the requested anchors.</returns>
     /// <exception cref="InvalidOperationException">If it fails to retrieve the Uuids</exception>
     /// <exception cref="ArgumentNullException">If parameter anchors is null</exception>
+    [Obsolete("Use FetchAnchorsAsync instead")]
     public OVRTask<bool> FetchChildrenAsync(List<OVRAnchor> anchors) => OVRAnchor.FetchAnchorsAsync(Uuids, anchors);
+
+    /// <summary>
+    /// Fetches anchors contained by this Anchor Container.
+    /// </summary>
+    /// <param name="anchors">List that will get cleared and populated with the requested anchors.</param>
+    /// <remarks>
+    /// Dispose of the returned <see cref="OVRTask{T}"/> if you don't use the results</remarks>
+    /// <returns>An <see cref="OVRTask{T}"/> that will eventually let you test if the fetch was successful or not.
+    /// If the result is true, then the <see cref="anchors"/> parameter has been populated with the requested anchors.</returns>
+    /// <exception cref="InvalidOperationException">If it fails to retrieve the Uuids</exception>
+    /// <exception cref="ArgumentNullException">If parameter anchors is null</exception>
+    public OVRTask<OVRResult<List<OVRAnchor>, OVRAnchor.FetchResult>> FetchAnchorsAsync(List<OVRAnchor> anchors)
+        => OVRAnchor.FetchAnchorsAsync(anchors, new OVRAnchor.FetchOptions
+        {
+            Uuids = Uuids,
+        });
 }

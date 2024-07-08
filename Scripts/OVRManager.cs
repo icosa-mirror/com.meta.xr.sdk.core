@@ -78,7 +78,7 @@ using Node = UnityEngine.XR.XRNode;
 /// <summary>
 /// Configuration data for Oculus virtual reality.
 /// </summary>
-[HelpURL("https://developer.oculus.com/reference/unity/latest/class_o_v_r_manager")]
+[HelpURL("https://developer.oculus.com/documentation/unity/unity-add-camera-rig/#configure-settings")]
 public partial class OVRManager : MonoBehaviour, OVRMixedRealityCaptureConfiguration
 {
     public enum XrApi
@@ -380,6 +380,7 @@ public partial class OVRManager : MonoBehaviour, OVRMixedRealityCaptureConfigura
     /// @params (int layerId)
     /// </remarks>
     public static event Action<int> PassthroughLayerResumed;
+
 
 
 
@@ -2862,16 +2863,15 @@ public partial class OVRManager : MonoBehaviour, OVRMixedRealityCaptureConfigura
                     break;
                 }
                 case OVRPlugin.EventType.SpaceShareResult:
-                    if (ShareSpacesComplete != null)
-                    {
-                        var data =
-                            OVRDeserialize.ByteArrayToStructure<OVRDeserialize.SpaceShareResultData>(
-                                eventDataBuffer.EventData);
+                {
+                    var data =
+                        OVRDeserialize.ByteArrayToStructure<OVRDeserialize.SpaceShareResultData>(
+                            eventDataBuffer.EventData);
 
-                        ShareSpacesComplete(data.RequestId, (OVRSpatialAnchor.OperationResult)data.Result);
-                    }
-
+                    OVRTask.SetResult(data.RequestId, OVRResult.From((OVRAnchor.ShareResult)data.Result));
+                    ShareSpacesComplete?.Invoke(data.RequestId, (OVRSpatialAnchor.OperationResult)data.Result);
                     break;
+                }
                 case OVRPlugin.EventType.SpaceListSaveResult:
                 {
                     var data =
@@ -2892,6 +2892,38 @@ public partial class OVRManager : MonoBehaviour, OVRMixedRealityCaptureConfigura
                 }
 
                 break;
+
+                case OVRPlugin.EventType.SpaceDiscoveryComplete:
+                {
+                    var data = OVRDeserialize.ByteArrayToStructure<OVRDeserialize.SpaceDiscoveryCompleteData>(
+                        eventDataBuffer.EventData);
+                    OVRAnchor.OnSpaceDiscoveryComplete(data);
+                    break;
+                }
+                case OVRPlugin.EventType.SpaceDiscoveryResultsAvailable:
+                {
+                    var data = OVRDeserialize.ByteArrayToStructure<OVRDeserialize.SpaceDiscoveryResultsData>(
+                        eventDataBuffer.EventData);
+                    OVRAnchor.OnSpaceDiscoveryResultsAvailable(data);
+                    break;
+                }
+                case OVRPlugin.EventType.SpacesSaveResult:
+                {
+                    var data = OVRDeserialize.ByteArrayToStructure<OVRDeserialize.SpacesSaveResultData>(
+                        eventDataBuffer.EventData);
+                    OVRAnchor.OnSaveSpacesResult(data);
+                    OVRTask.SetResult(data.RequestId, OVRResult.From(data.Result));
+                    break;
+                }
+                case OVRPlugin.EventType.SpacesEraseResult:
+                {
+                    var data = OVRDeserialize.ByteArrayToStructure<OVRDeserialize.SpacesEraseResultData>(
+                        eventDataBuffer.EventData);
+                    OVRAnchor.OnEraseSpacesResult(data);
+                    OVRTask.SetResult(data.RequestId, OVRResult.From(data.Result));
+                    break;
+                }
+
                 case OVRPlugin.EventType.PassthroughLayerResumed:
                 {
                     if (PassthroughLayerResumed != null)
@@ -3064,7 +3096,7 @@ public partial class OVRManager : MonoBehaviour, OVRMixedRealityCaptureConfigura
         Debug.Log("[OVRManager] OnApplicationQuit");
     }
 
-#endregion // Unity Messages
+    #endregion // Unity Messages
 
     /// <summary>
     /// Leaves the application/game and returns to the launcher/dashboard
@@ -3443,7 +3475,7 @@ public partial class OVRManager : MonoBehaviour, OVRMixedRealityCaptureConfigura
             OVRPlugin.PassthroughPreferenceFlags.DefaultToActive;
     }
 
-#region Utils
+    #region Utils
 
     private class Observable<T>
     {
@@ -3481,5 +3513,5 @@ public partial class OVRManager : MonoBehaviour, OVRMixedRealityCaptureConfigura
         }
     }
 
-#endregion
+    #endregion
 }

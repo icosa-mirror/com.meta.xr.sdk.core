@@ -21,6 +21,7 @@
 using System;
 using System.Collections.Generic;
 using UnityEngine;
+using BoneId = OVRPlugin.BoneId;
 
 public partial class OVRUnityHumanoidSkeletonRetargeter
 {
@@ -148,7 +149,7 @@ public partial class OVRUnityHumanoidSkeletonRetargeter
         /// <param name="customBoneIdToHumanBodyBone">Custom bone ID to human body bone mapping.</param>
         /// <param name="bodyBonesMappingInterface">Body bones mapping interface.</param>
         public OVRSkeletonMetadata(OVRSkeleton skeleton, bool useBindPose,
-            Dictionary<OVRSkeleton.BoneId, HumanBodyBones> customBoneIdToHumanBodyBone,
+            Dictionary<BoneId, HumanBodyBones> customBoneIdToHumanBodyBone,
             OVRHumanBodyBonesMappingsInterface bodyBonesMappingInterface)
         {
             BuildBoneDataSkeleton(skeleton, useBindPose, customBoneIdToHumanBodyBone, bodyBonesMappingInterface);
@@ -163,7 +164,7 @@ public partial class OVRUnityHumanoidSkeletonRetargeter
         /// <param name="useFullBody">Whether to use full body or not.</param>
         /// <param name="bodyBonesMappingInterface">Body bones mapping interface.</param>
         public OVRSkeletonMetadata(OVRSkeleton skeleton, bool useBindPose,
-            Dictionary<OVRSkeleton.BoneId, HumanBodyBones> customBoneIdToHumanBodyBone,
+            Dictionary<BoneId, HumanBodyBones> customBoneIdToHumanBodyBone,
             bool useFullBody,
             OVRHumanBodyBonesMappingsInterface bodyBonesMappingInterface)
         {
@@ -185,7 +186,7 @@ public partial class OVRUnityHumanoidSkeletonRetargeter
         /// <param name="customBoneIdToHumanBodyBone">Custom bone ID to human body bone mapping.</param>
         /// <param name="bodyBonesMappingInterface">Body bones mapping interface.</param>
         public void BuildBoneDataSkeleton(OVRSkeleton skeleton, bool useBindPose,
-            Dictionary<OVRSkeleton.BoneId, HumanBodyBones> customBoneIdToHumanBodyBone,
+            Dictionary<BoneId, HumanBodyBones> customBoneIdToHumanBodyBone,
             OVRHumanBodyBonesMappingsInterface bodyBonesMappingInterface)
         {
             AssembleSkeleton(skeleton, useBindPose, customBoneIdToHumanBodyBone,
@@ -200,7 +201,7 @@ public partial class OVRUnityHumanoidSkeletonRetargeter
         /// <param name="customBoneIdToHumanBodyBone">Custom bone ID to human body bone mapping.</param>
         /// <param name="bodyBonesMappingInterface">Body bones mapping interface.</param>
         public void BuildBoneDataSkeletonFullBody(OVRSkeleton skeleton, bool useBindPose,
-            Dictionary<OVRSkeleton.BoneId, HumanBodyBones> customBoneIdToHumanBodyBone,
+            Dictionary<BoneId, HumanBodyBones> customBoneIdToHumanBodyBone,
             OVRHumanBodyBonesMappingsInterface bodyBonesMappingInterface)
         {
             AssembleSkeleton(skeleton, useBindPose, customBoneIdToHumanBodyBone, bodyBonesMappingInterface,
@@ -208,7 +209,7 @@ public partial class OVRUnityHumanoidSkeletonRetargeter
         }
 
         private void AssembleSkeleton(OVRSkeleton skeleton, bool useBindPose,
-            Dictionary<OVRSkeleton.BoneId, HumanBodyBones> customBoneIdToHumanBodyBone,
+            Dictionary<BoneId, HumanBodyBones> customBoneIdToHumanBodyBone,
             OVRHumanBodyBonesMappingsInterface bodyBonesMappingInterface,
             bool useFullBody = false)
         {
@@ -279,7 +280,7 @@ public partial class OVRUnityHumanoidSkeletonRetargeter
             }
         }
 
-        private static OVRBone FindBoneWithBoneId(IList<OVRBone> bones, OVRSkeleton.BoneId boneId)
+        private static OVRBone FindBoneWithBoneId(IList<OVRBone> bones, BoneId boneId)
         {
             for (var i = 0; i < bones.Count; i++)
             {

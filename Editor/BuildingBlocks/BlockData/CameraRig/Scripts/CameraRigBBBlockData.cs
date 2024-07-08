@@ -19,6 +19,7 @@
  */
 
 using System.Collections.Generic;
+using UnityEditor;
 using UnityEngine;
 
 namespace Meta.XR.BuildingBlocks.Editor
@@ -28,9 +29,20 @@ namespace Meta.XR.BuildingBlocks.Editor
         protected override List<GameObject> InstallRoutine(GameObject selectedGameObject)
         {
             var existingCameraRig = FindObjectOfType<OVRCameraRig>();
-            return existingCameraRig != null
-                ? new List<GameObject> { existingCameraRig.gameObject }
-                : base.InstallRoutine(selectedGameObject);
+
+            if (existingCameraRig == null)
+            {
+                return base.InstallRoutine(selectedGameObject);
+            }
+
+#if UNITY_2021
+            if (PrefabUtility.GetPrefabInstanceStatus(existingCameraRig.gameObject) != PrefabInstanceStatus.NotAPrefab)
+            {
+                PrefabUtility.UnpackPrefabInstance(existingCameraRig.gameObject, PrefabUnpackMode.Completely, InteractionMode.AutomatedAction);
+            }
+#endif
+
+            return new List<GameObject> { existingCameraRig.gameObject };
         }
     }
 }

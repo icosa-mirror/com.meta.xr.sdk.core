@@ -34,7 +34,8 @@ using Object = UnityEngine.Object;
 /// <seealso cref="OVRSceneVolume"/>
 /// <seealso cref="OVRSemanticClassification"/>
 [DisallowMultipleComponent]
-[HelpURL("https://developer.oculus.com/reference/unity/latest/class_o_v_r_scene_anchor")]
+[HelpURL("https://developer.oculus.com/documentation/unity/unity-scene-use-scene-anchors/#ovrsceneanchor")]
+[Obsolete(OVRSceneManager.DeprecationMessage)]
 public sealed class OVRSceneAnchor : MonoBehaviour
 {
     /// <summary>

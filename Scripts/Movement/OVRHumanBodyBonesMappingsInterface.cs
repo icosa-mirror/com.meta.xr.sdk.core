@@ -22,6 +22,7 @@ using System;
 using System.Collections.Generic;
 using UnityEngine;
 using static OVRUnityHumanoidSkeletonRetargeter.OVRHumanBodyBonesMappings;
+using BoneId = OVRSkeleton.BoneId;
 
 /// <summary>
 /// Defines interface for mapping OVRBoneId to humanoid bones, joint pairs for
@@ -42,24 +43,24 @@ public interface OVRHumanBodyBonesMappingsInterface
     /// <summary>
     /// Returns full-body bone ID to HumanBodyBone map.
     /// </summary>
-    public Dictionary<OVRSkeleton.BoneId, HumanBodyBones> GetFullBodyBoneIdToHumanBodyBone { get; }
+    public Dictionary<BoneId, HumanBodyBones> GetFullBodyBoneIdToHumanBodyBone { get; }
 
     /// <summary>
     /// Returns half-body bone ID to HumanBodyBone map.
     /// </summary>
-    public Dictionary<OVRSkeleton.BoneId, HumanBodyBones> GetBoneIdToHumanBodyBone { get; }
+    public Dictionary<BoneId, HumanBodyBones> GetBoneIdToHumanBodyBone { get; }
 
     /// <summary>
-    /// Returns OVRSkeleton.BoneID to joint pair map, for full-body.
+    /// Returns BoneId to joint pair map, for full-body.
     /// </summary>
-    public Dictionary<OVRSkeleton.BoneId, Tuple<OVRSkeleton.BoneId, OVRSkeleton.BoneId>>
+    public Dictionary<BoneId, Tuple<BoneId, BoneId>>
         GetFullBodyBoneIdToJointPair
     { get; }
 
     /// <summary>
-    /// Returns OVRSkeleton.BoneID to joint pair map, for half-body.
+    /// Returns BoneId to joint pair map, for half-body.
     /// </summary>
-    public Dictionary<OVRSkeleton.BoneId, Tuple<OVRSkeleton.BoneId, OVRSkeleton.BoneId>>
+    public Dictionary<BoneId, Tuple<BoneId, BoneId>>
         GetBoneIdToJointPair
     { get; }
 }

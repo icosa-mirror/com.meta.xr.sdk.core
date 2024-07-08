@@ -23,7 +23,7 @@ using UnityEngine;
 /// <summary>
 /// Allows you to reset VR input tracking with a gamepad button press.
 /// </summary>
-[HelpURL("https://developer.oculus.com/reference/unity/latest/class_o_v_r_reset_orientation")]
+[HelpURL("https://developer.oculus.com/documentation/unity/unity-core-overview/#scriptss")]
 public class OVRResetOrientation : MonoBehaviour
 {
     /// <summary>

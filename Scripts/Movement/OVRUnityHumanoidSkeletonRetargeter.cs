@@ -22,6 +22,8 @@ using System;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Assertions;
+using SkeletonType = OVRPlugin.SkeletonType;
+using BoneId = OVRPlugin.BoneId;
 
 public partial class OVRUnityHumanoidSkeletonRetargeter : OVRSkeleton
 {

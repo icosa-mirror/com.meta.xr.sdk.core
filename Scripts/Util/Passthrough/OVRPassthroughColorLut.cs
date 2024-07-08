@@ -26,7 +26,7 @@ using UnityEngine;
 /// <summary>
 /// Passthrough Color Look-Up Tables (LUTs).
 /// </summary>
-[HelpURL("https://developer.oculus.com/reference/unity/latest/class_o_v_r_passthrough_color_lut")]
+[HelpURL("https://developer.oculus.com/documentation/unity/unity-customize-passthrough-color-mapping/#color-look-up-tables-luts")]
 public class OVRPassthroughColorLut : System.IDisposable
 {
     private const int RecomendedBatchSize = 128;

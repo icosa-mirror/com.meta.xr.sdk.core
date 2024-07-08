@@ -62,14 +62,24 @@ namespace Meta.XR
             "XR_KHR_visibility_mask " +
             "XR_FB_render_model " +
             "XR_FB_spatial_entity " +
+            "XR_FB_spatial_entity_user " +
             "XR_FB_spatial_entity_query " +
             "XR_FB_spatial_entity_storage " +
+            "XR_FB_spatial_entity_storage_batch " +
+            "XR_META_spatial_entity_mesh " +
             "XR_META_performance_metrics " +
+            "XR_FB_spatial_entity_sharing " +
             "XR_FB_scene " +
             "XR_FB_spatial_entity_container " +
             "XR_FB_scene_capture " +
             "XR_FB_face_tracking " +
+            "XR_FB_face_tracking2 " +
             "XR_FB_eye_tracking " +
+            "XR_FB_eye_tracking_social " +
+            "XR_FB_body_tracking " +
+            "XR_META_body_tracking_full_body " +
+            "XR_META_body_tracking_calibration " +
+            "XR_META_body_tracking_fidelity " +
             "XR_FB_keyboard_tracking " +
             "XR_FB_passthrough " +
             "XR_FB_triangle_mesh " +
@@ -81,6 +91,9 @@ namespace Meta.XR
             "XR_FB_hand_tracking_aim " +
             "XR_FB_touch_controller_pro " +
             "XR_FB_touch_controller_proximity " +
+            "XR_FB_composition_layer_depth_test " +
+            "XR_META_spatial_entity_persistence " +
+            "XR_META_spatial_entity_discovery " +
             ""
             ;
     }

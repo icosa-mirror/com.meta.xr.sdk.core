@@ -43,6 +43,7 @@ public class OVRMeshJobs
 
         public void Execute(int index)
         {
+            // Lets try to flip the mesh & skeleton so that both point in such a way that when the hand data comes in it's correct?
             Vertices[index] = MeshVerticesPosition[index].FromFlippedXVector3f();
             Normals[index] = MeshNormals[index].FromFlippedXVector3f();
 

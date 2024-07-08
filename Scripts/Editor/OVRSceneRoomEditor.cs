@@ -23,6 +23,8 @@ using UnityEditor;
 using UnityEngine;
 
 [CustomEditor(typeof(OVRSceneRoom))]
+[Obsolete(OVRSceneManager.DeprecationMessage)]
+
 class OVRSceneRoomEditor : Editor
 {
     bool _showRuntimeValues = true;

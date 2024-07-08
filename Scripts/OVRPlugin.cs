@@ -59,7 +59,7 @@ public static partial class OVRPlugin
 #if OVRPLUGIN_UNSUPPORTED_PLATFORM && OVRPLUGIN_QPL_UNSUPPORTED_PLATFORM
     public static readonly System.Version wrapperVersion = _versionZero;
 #else
-    public static readonly System.Version wrapperVersion = OVRP_1_96_0.version;
+    public static readonly System.Version wrapperVersion = OVRP_1_97_0.version;
 #endif
 
 #if !(OVRPLUGIN_UNSUPPORTED_PLATFORM && OVRPLUGIN_QPL_UNSUPPORTED_PLATFORM)
@@ -214,6 +214,14 @@ public static partial class OVRPlugin
         Failure_SpaceComponentStatusAlreadySet = -2008,
 
 
+        // XR_META_spatial_entity_persistence & XR_META_spatial_entity_discovery
+        Failure_SpaceInsufficientResources = -9000,
+        Failure_SpaceStorageAtCapacity = -9001,
+        Failure_SpaceInsufficientView = -9002,
+        Failure_SpacePermissionInsufficient = -9003,
+        Failure_SpaceRateLimited = -9004,
+        Failure_SpaceTooDark = -9005,
+        Failure_SpaceTooBright = -9006,
 
     }
 
@@ -720,7 +728,6 @@ public static partial class OVRPlugin
         {
             return string.Format(System.Globalization.CultureInfo.InvariantCulture, "{0}, {1}, {2}, {3}", x, y, z, w);
         }
-
     }
 
     [StructLayout(LayoutKind.Sequential)]
@@ -1507,35 +1514,36 @@ public static partial class OVRPlugin
 
         // hand bones
         Hand_Start = 0,
-        Hand_WristRoot = Hand_Start + 0, // root frame of the hand, where the wrist is located
-        Hand_ForearmStub = Hand_Start + 1, // frame for user's forearm
-        Hand_Thumb0 = Hand_Start + 2, // thumb trapezium bone
-        Hand_Thumb1 = Hand_Start + 3, // thumb metacarpal bone
-        Hand_Thumb2 = Hand_Start + 4, // thumb proximal phalange bone
-        Hand_Thumb3 = Hand_Start + 5, // thumb distal phalange bone
-        Hand_Index1 = Hand_Start + 6, // index proximal phalange bone
-        Hand_Index2 = Hand_Start + 7, // index intermediate phalange bone
-        Hand_Index3 = Hand_Start + 8, // index distal phalange bone
-        Hand_Middle1 = Hand_Start + 9, // middle proximal phalange bone
-        Hand_Middle2 = Hand_Start + 10, // middle intermediate phalange bone
-        Hand_Middle3 = Hand_Start + 11, // middle distal phalange bone
-        Hand_Ring1 = Hand_Start + 12, // ring proximal phalange bone
-        Hand_Ring2 = Hand_Start + 13, // ring intermediate phalange bone
-        Hand_Ring3 = Hand_Start + 14, // ring distal phalange bone
-        Hand_Pinky0 = Hand_Start + 15, // pinky metacarpal bone
-        Hand_Pinky1 = Hand_Start + 16, // pinky proximal phalange bone
-        Hand_Pinky2 = Hand_Start + 17, // pinky intermediate phalange bone
-        Hand_Pinky3 = Hand_Start + 18, // pinky distal phalange bone
+        Hand_WristRoot = Hand_Start + 0,    // root frame of the hand, where the wrist is located
+        Hand_ForearmStub = Hand_Start + 1,  // frame for user's forearm
+        Hand_Thumb0 = Hand_Start + 2,       // thumb trapezium bone
+        Hand_Thumb1 = Hand_Start + 3,       // thumb metacarpal bone
+        Hand_Thumb2 = Hand_Start + 4,       // thumb proximal phalange bone
+        Hand_Thumb3 = Hand_Start + 5,       // thumb distal phalange bone
+        Hand_Index1 = Hand_Start + 6,       // index proximal phalange bone
+        Hand_Index2 = Hand_Start + 7,       // index intermediate phalange bone
+        Hand_Index3 = Hand_Start + 8,       // index distal phalange bone
+        Hand_Middle1 = Hand_Start + 9,      // middle proximal phalange bone
+        Hand_Middle2 = Hand_Start + 10,     // middle intermediate phalange bone
+        Hand_Middle3 = Hand_Start + 11,     // middle distal phalange bone
+        Hand_Ring1 = Hand_Start + 12,       // ring proximal phalange bone
+        Hand_Ring2 = Hand_Start + 13,       // ring intermediate phalange bone
+        Hand_Ring3 = Hand_Start + 14,       // ring distal phalange bone
+        Hand_Pinky0 = Hand_Start + 15,      // pinky metacarpal bone
+        Hand_Pinky1 = Hand_Start + 16,      // pinky proximal phalange bone
+        Hand_Pinky2 = Hand_Start + 17,      // pinky intermediate phalange bone
+        Hand_Pinky3 = Hand_Start + 18,      // pinky distal phalange bone
         Hand_MaxSkinnable = Hand_Start + 19,
 
         // Bone tips are position only. They are not used for skinning but are useful for hit-testing.
         // NOTE: Hand_ThumbTip == Hand_MaxSkinnable since the extended tips need to be contiguous
-        Hand_ThumbTip = Hand_MaxSkinnable + 0, // tip of the thumb
-        Hand_IndexTip = Hand_MaxSkinnable + 1, // tip of the index finger
+        Hand_ThumbTip = Hand_MaxSkinnable + 0,  // tip of the thumb
+        Hand_IndexTip = Hand_MaxSkinnable + 1,  // tip of the index finger
         Hand_MiddleTip = Hand_MaxSkinnable + 2, // tip of the middle finger
-        Hand_RingTip = Hand_MaxSkinnable + 3, // tip of the ring finger
-        Hand_PinkyTip = Hand_MaxSkinnable + 4, // tip of the pinky
+        Hand_RingTip = Hand_MaxSkinnable + 3,   // tip of the ring finger
+        Hand_PinkyTip = Hand_MaxSkinnable + 4,  // tip of the pinky
         Hand_End = Hand_MaxSkinnable + 5,
+
 
         // body bones (upper body)
         Body_Start = 0,
@@ -1789,6 +1797,7 @@ public static partial class OVRPlugin
         public double RequestedTimeStamp;
         public double SampleTimeStamp;
     }
+
 
     [StructLayout(LayoutKind.Sequential)]
     public struct BoneCapsule
@@ -2496,6 +2505,7 @@ public static partial class OVRPlugin
         public bool IsEyeFollowingBlendshapesValid;
     }
 
+
     [StructLayout(LayoutKind.Sequential)]
     public struct FaceState
     {
@@ -2671,6 +2681,7 @@ public static partial class OVRPlugin
         public double Time;
     }
 
+
     public enum FaceRegionConfidence
     {
         Lower = 0,
@@ -2830,11 +2841,12 @@ public static partial class OVRPlugin
         Count = 2,
     }
 
+
     public enum FaceConstants
     {
         MaxFaceExpressions = FaceExpression.Max,
         MaxFaceRegionConfidences = FaceRegionConfidence.Max,
-        MaxFaceExpressions2 = FaceExpression2.Max
+        MaxFaceExpressions2 = FaceExpression2.Max,
     }
 
     [StructLayout(LayoutKind.Sequential)]
@@ -2916,9 +2928,14 @@ public static partial class OVRPlugin
         VirtualKeyboardShown = 204,
         VirtualKeyboardHidden = 205,
 
+        SpaceDiscoveryResultsAvailable = 300,
+        SpaceDiscoveryComplete = 301,
+        SpacesSaveResult = 302,
+        SpacesEraseResult = 303,
 
 
         PassthroughLayerResumed = 500,
+
 
 
 
@@ -3293,6 +3310,12 @@ public static partial class OVRPlugin
         return formattedUuid.ToString();
     }
 
+    public enum SpaceDiscoveryFilterType
+    {
+        None = 0,
+        Ids = 2,
+        Component = 3,
+    }
 
     //-----------------------------------------------------------------
     // Methods
@@ -5240,6 +5263,7 @@ public static partial class OVRPlugin
     }
 
 
+
     public static bool SetWideMotionModeHandPoses(bool wideMotionModeFusionHandPoses)
     {
 #if OVRPLUGIN_UNSUPPORTED_PLATFORM
@@ -6759,6 +6783,10 @@ public static partial class OVRPlugin
 #else
             if (version >= OVRP_1_21_0.version && foveatedRenderingSupported)
             {
+                if (value == FoveatedRenderingLevel.HighTop) {
+                    value = FoveatedRenderingLevel.High;
+                    Debug.LogWarning("FoveatedRenderingLevel.HighTop is not supported in OpenXR, changed to FoveatedRenderingLevel.High instead.");
+                }
                 Result result = OVRP_1_21_0.ovrp_SetTiledMultiResLevel(value);
                 if (result != Result.Success)
                 {
@@ -8074,6 +8102,7 @@ public static partial class OVRPlugin
     }
 
     private static HandStateInternal cachedHandState = new HandStateInternal();
+
     private static Quaternion LeftBoneRotator = Quaternion.AngleAxis(180f, Vector3.right) * Quaternion.AngleAxis(270f, Vector3.up);
     private static Quaternion RightBoneRotator = Quaternion.AngleAxis(270f, Vector3.up);
 
@@ -8087,6 +8116,7 @@ public static partial class OVRPlugin
             Debug.LogWarning("Step.Physics is deprecated when using OpenXR");
             stepId = Step.Render;
         }
+
 
         if (version >= OVRP_1_44_0.version)
         {
@@ -8114,31 +8144,30 @@ public static partial class OVRPlugin
                 handState.Status = cachedHandState.Status;
                 handState.RootPose = cachedHandState.RootPose;
 
-                        handState.BoneRotations[0] = cachedHandState.BoneRotations_0;
-                        handState.BoneRotations[1] = cachedHandState.BoneRotations_1;
-                        handState.BoneRotations[2] = cachedHandState.BoneRotations_2;
-                        handState.BoneRotations[3] = cachedHandState.BoneRotations_3;
-                        handState.BoneRotations[4] = cachedHandState.BoneRotations_4;
-                        handState.BoneRotations[5] = cachedHandState.BoneRotations_5;
-                        handState.BoneRotations[6] = cachedHandState.BoneRotations_6;
-                        handState.BoneRotations[7] = cachedHandState.BoneRotations_7;
-                        handState.BoneRotations[8] = cachedHandState.BoneRotations_8;
-                        handState.BoneRotations[9] = cachedHandState.BoneRotations_9;
-                        handState.BoneRotations[10] = cachedHandState.BoneRotations_10;
-                        handState.BoneRotations[11] = cachedHandState.BoneRotations_11;
-                        handState.BoneRotations[12] = cachedHandState.BoneRotations_12;
-                        handState.BoneRotations[13] = cachedHandState.BoneRotations_13;
-                        handState.BoneRotations[14] = cachedHandState.BoneRotations_14;
-                        handState.BoneRotations[15] = cachedHandState.BoneRotations_15;
-                        handState.BoneRotations[16] = cachedHandState.BoneRotations_16;
-                        handState.BoneRotations[17] = cachedHandState.BoneRotations_17;
-                        handState.BoneRotations[18] = cachedHandState.BoneRotations_18;
-                        handState.BoneRotations[19] = cachedHandState.BoneRotations_19;
-                        handState.BoneRotations[20] = cachedHandState.BoneRotations_20;
-                        handState.BoneRotations[21] = cachedHandState.BoneRotations_21;
-                        handState.BoneRotations[22] = cachedHandState.BoneRotations_22;
-                        handState.BoneRotations[23] = cachedHandState.BoneRotations_23;
-
+                handState.BoneRotations[0] = cachedHandState.BoneRotations_0;
+                handState.BoneRotations[1] = cachedHandState.BoneRotations_1;
+                handState.BoneRotations[2] = cachedHandState.BoneRotations_2;
+                handState.BoneRotations[3] = cachedHandState.BoneRotations_3;
+                handState.BoneRotations[4] = cachedHandState.BoneRotations_4;
+                handState.BoneRotations[5] = cachedHandState.BoneRotations_5;
+                handState.BoneRotations[6] = cachedHandState.BoneRotations_6;
+                handState.BoneRotations[7] = cachedHandState.BoneRotations_7;
+                handState.BoneRotations[8] = cachedHandState.BoneRotations_8;
+                handState.BoneRotations[9] = cachedHandState.BoneRotations_9;
+                handState.BoneRotations[10] = cachedHandState.BoneRotations_10;
+                handState.BoneRotations[11] = cachedHandState.BoneRotations_11;
+                handState.BoneRotations[12] = cachedHandState.BoneRotations_12;
+                handState.BoneRotations[13] = cachedHandState.BoneRotations_13;
+                handState.BoneRotations[14] = cachedHandState.BoneRotations_14;
+                handState.BoneRotations[15] = cachedHandState.BoneRotations_15;
+                handState.BoneRotations[16] = cachedHandState.BoneRotations_16;
+                handState.BoneRotations[17] = cachedHandState.BoneRotations_17;
+                handState.BoneRotations[18] = cachedHandState.BoneRotations_18;
+                handState.BoneRotations[19] = cachedHandState.BoneRotations_19;
+                handState.BoneRotations[20] = cachedHandState.BoneRotations_20;
+                handState.BoneRotations[21] = cachedHandState.BoneRotations_21;
+                handState.BoneRotations[22] = cachedHandState.BoneRotations_22;
+                handState.BoneRotations[23] = cachedHandState.BoneRotations_23;
 
                 handState.Pinches = cachedHandState.Pinches;
                 handState.PinchStrength[0] = cachedHandState.PinchStrength_0;
@@ -8864,7 +8893,7 @@ public static partial class OVRPlugin
             mesh = new Mesh();
             int meshSize = Marshal.SizeOf(mesh);
             System.IntPtr meshPtr = Marshal.AllocHGlobal(meshSize);
-            Result result = OVRP_1_44_0.ovrp_GetMesh(meshType, meshPtr);
+            Result result = OVRP_1_44_0.ovrp_GetMesh((OVRPlugin.MeshType)meshType, meshPtr);
             if (result == Result.Success)
             {
                 Marshal.PtrToStructure(meshPtr, mesh);
@@ -9488,6 +9517,7 @@ public static partial class OVRPlugin
     }
 
 
+
     /// <summary>
     /// True if eye tracking is enabled, otherwise false.
     /// </summary>
@@ -9605,6 +9635,7 @@ public static partial class OVRPlugin
         OVRP_1_92_0.ovrp_GetFaceTracking2Supported(out var value) == Result.Success &&
         value == Bool.True;
 #endif //OVRPLUGIN_UNSUPPORTED_PLATFORM
+
 
     public static bool StartFaceTracking2(FaceTrackingDataSource[] requestedFaceTrackingDataSources) =>
 #if OVRPLUGIN_UNSUPPORTED_PLATFORM
@@ -10611,6 +10642,48 @@ public static partial class OVRPlugin
     }
 
 
+    [StructLayout(LayoutKind.Sequential)]
+    public struct SpaceDiscoveryResult
+    {
+        public ulong Space;
+        public Guid Uuid;
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    public unsafe struct SpaceDiscoveryResults
+    {
+        public uint ResultCapacityInput;
+        public uint ResultCountOutput;
+        public SpaceDiscoveryResult* Results;
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    public struct SpaceDiscoveryFilterInfoHeader
+    {
+        public SpaceDiscoveryFilterType Type;
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    public unsafe struct SpaceDiscoveryFilterInfoIds
+    {
+        public SpaceDiscoveryFilterType Type;
+        public int NumIds;
+        public Guid* Ids;
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    public struct SpaceDiscoveryFilterInfoComponents
+    {
+        public SpaceDiscoveryFilterType Type;
+        public SpaceComponentType Component;
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    public unsafe struct SpaceDiscoveryInfo
+    {
+        public uint NumFilters;
+        public SpaceDiscoveryFilterInfoHeader** Filters;
+    }
 
     [StructLayout(LayoutKind.Sequential)]
     private struct TriangleMeshInternal
@@ -10969,6 +11042,63 @@ public static partial class OVRPlugin
 
 
 
+    public static Result DiscoverSpaces(in SpaceDiscoveryInfo info, out ulong requestId)
+    {
+        requestId = 0;
+#if OVRPLUGIN_UNSUPPORTED_PLATFORM
+        return Result.Failure_Unsupported;
+#else
+        if (version < OVRP_1_97_0.version) return Result.Failure_NotYetImplemented;
+        return OVRP_1_97_0.ovrp_DiscoverSpaces(in info, out requestId);
+#endif // OVRPLUGIN_UNSUPPORTED_PLATFORM
+    }
+
+    public static unsafe Result RetrieveSpaceDiscoveryResults(ulong requestId, SpaceDiscoveryResult* results,
+        int capacityInput, out int countOutput)
+    {
+        countOutput = default;
+#if OVRPLUGIN_UNSUPPORTED_PLATFORM
+        return Result.Failure_Unsupported;
+#else
+
+        if (version < OVRP_1_97_0.version) return Result.Failure_NotYetImplemented;
+
+        var info = new SpaceDiscoveryResults
+        {
+            ResultCapacityInput = (uint)capacityInput,
+            Results = results,
+        };
+
+        var result = OVRP_1_97_0.ovrp_RetrieveSpaceDiscoveryResults(requestId, ref info);
+        countOutput = (int)info.ResultCountOutput;
+        return result;
+#endif // OVRPLUGIN_UNSUPPORTED_PLATFORM
+    }
+
+    public static unsafe Result SaveSpaces(ulong* spaces, int count, out ulong requestId)
+    {
+        requestId = 0;
+#if OVRPLUGIN_UNSUPPORTED_PLATFORM
+        return Result.Failure_Unsupported;
+#else
+        return version < OVRP_1_97_0.version
+            ? Result.Failure_NotYetImplemented
+            : OVRP_1_97_0.ovrp_SaveSpaces((uint)count, spaces, out requestId);
+#endif // OVRPLUGIN_UNSUPPORTED_PLATFORM
+    }
+
+    public static unsafe Result EraseSpaces(uint spaceCount, ulong* spaces, uint uuidCount, Guid* uuids,
+        out UInt64 requestId)
+    {
+        requestId = 0;
+#if OVRPLUGIN_UNSUPPORTED_PLATFORM
+        return Result.Failure_Unsupported;
+#else
+        return version < OVRP_1_97_0.version
+            ? Result.Failure_NotYetImplemented
+            : OVRP_1_97_0.ovrp_EraseSpaces(spaceCount, spaces, uuidCount, uuids, out requestId);
+#endif // OVRPLUGIN_UNSUPPORTED_PLATFORM
+    }
 
 
 
@@ -13186,8 +13316,6 @@ public static partial class OVRPlugin
         [DllImport(pluginName, CallingConvention = CallingConvention.Cdecl)]
         public static extern Result ovrp_GetFaceTracking2Supported(out Bool faceTracking2Enabled);
 
-
-
         [DllImport(pluginName, CallingConvention = CallingConvention.Cdecl)]
         public static extern Result ovrp_RequestBodyTrackingFidelity(BodyTrackingFidelity2 fidelity);
 
@@ -13236,6 +13364,7 @@ public static partial class OVRPlugin
         public static readonly System.Version version = new System.Version(1, 95, 0);
 
 
+
         [DllImport(pluginName, CallingConvention = CallingConvention.Cdecl)]
         public static extern Result ovrp_SetDeveloperTelemetryConsent(Bool consent);
 
@@ -13253,6 +13382,27 @@ public static partial class OVRPlugin
         public static extern unsafe Result ovrp_QplMarkerPointData(int markerId,
             [MarshalAs(UnmanagedType.LPStr)] string name, Qpl.Annotation* annotations, int annotationCount,
             int instanceKey, long timestampMs);
+    }
+
+    private static class OVRP_1_97_0
+    {
+        public static readonly System.Version version = new System.Version(1, 97, 0);
+
+        [DllImport(pluginName, CallingConvention = CallingConvention.Cdecl)]
+        public static extern Result ovrp_DiscoverSpaces(in SpaceDiscoveryInfo info, out UInt64 requestId);
+
+        [DllImport(pluginName, CallingConvention = CallingConvention.Cdecl)]
+        public static extern unsafe Result ovrp_RetrieveSpaceDiscoveryResults(UInt64 requestId,
+            ref SpaceDiscoveryResults results);
+
+        [DllImport(pluginName, CallingConvention = CallingConvention.Cdecl)]
+        public static extern unsafe Result ovrp_SaveSpaces(UInt32 spaceCount, UInt64* spaces, out UInt64 requestId);
+
+        [DllImport(pluginName, CallingConvention = CallingConvention.Cdecl)]
+        public static extern unsafe Result ovrp_EraseSpaces(UInt32 spaceCount, UInt64* spaces, UInt32 uuidCount,
+            Guid* uuids, out UInt64 requestId);
+
+
     }
 
 }

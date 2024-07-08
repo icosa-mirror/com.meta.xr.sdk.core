@@ -56,8 +56,17 @@ namespace Meta.XR.BuildingBlocks.Editor
             public static readonly TextureContent AddIcon =
                 TextureContent.CreateContent("ovr_icon_addblock.png", Utils.BuildingBlocksIcons, "Add Block to current scene");
 
+            public static readonly TextureContent CancelIcon =
+                TextureContent.CreateContent("ovr_icon_cancel.png", Utils.BuildingBlocksIcons, "Cancel");
+
+            public static readonly TextureContent ConfirmIcon =
+                TextureContent.CreateContent("ovr_icon_confirm.png", Utils.BuildingBlocksIcons, "Confirm");
+
             public static readonly TextureContent DownloadIcon =
                 TextureContent.CreateContent("ovr_icon_download.png", Utils.BuildingBlocksIcons, "Download Block to your project");
+
+            public static readonly TextureContent DownloadPackageDependenciesIcon =
+                TextureContent.CreateContent("ovr_icon_download.png", Utils.BuildingBlocksIcons, "This Block requires packages to be installed");
 
             public static readonly TextureContent SelectIcon =
                 TextureContent.CreateContent("ovr_icon_link.png", Utils.BuildingBlocksIcons, "Select Block in current scene");
@@ -197,8 +206,26 @@ namespace Meta.XR.BuildingBlocks.Editor
                 clipping = TextClipping.Overflow,
                 fixedHeight = ItemHeight - Padding * 2,
                 fixedWidth = ItemHeight - Padding * 2,
-                margin = new RectOffset(2, 2, 2, 2),
+                margin = new RectOffset(MiniPadding, MiniPadding, MiniPadding, MiniPadding),
                 padding = new RectOffset(Padding, Padding, Padding, Padding)
+            };
+
+            public readonly GUIStyle LabelledButton = new GUIStyle(EditorStyles.miniButton)
+            {
+                clipping = TextClipping.Overflow,
+                fixedHeight = 32 - Padding * 2,
+                fixedWidth = 128 - Padding * 2,
+                margin = new RectOffset(MiniPadding, MiniPadding, MiniPadding, MiniPadding),
+                padding = new RectOffset(Margin, Margin, Padding, Padding),
+                alignment = TextAnchor.MiddleLeft
+
+            };
+
+            public readonly GUIStyle LabelledButtonIcon = new GUIStyle()
+            {
+                margin = new RectOffset(MiniPadding, MiniPadding, MiniPadding, MiniPadding),
+                padding = new RectOffset(Margin, Margin, Padding, Padding),
+                alignment = TextAnchor.MiddleRight
             };
 
             public readonly GUIStyle LargeButtonArea = new GUIStyle()
@@ -245,6 +272,17 @@ namespace Meta.XR.BuildingBlocks.Editor
             public readonly GUIStyle FoldoutBoldLabel = new GUIStyle(EditorStyles.foldout)
             {
                 fontStyle = FontStyle.Bold
+            };
+
+            public readonly GUIStyle PillBox = new GUIStyle(EditorStyles.helpBox)
+            {
+                normal = { background = Contents.TagBackground.GUIContent.image as Texture2D },
+                fixedWidth = Margin,
+                fixedHeight = LargeMargin + Margin,
+                stretchHeight = true,
+                margin = new RectOffset(0, Margin, Margin, Margin),
+                padding = new RectOffset(0, Padding, 0, 0),
+                border = new RectOffset(4, 4, 4, 4)
             };
 
             public class ColorStates
@@ -343,7 +381,7 @@ namespace Meta.XR.BuildingBlocks.Editor
             public readonly GUIStyle FilterByTagGroup = new GUIStyle()
             {
                 margin = new RectOffset(0, 0, 0, 0),
-                padding = new RectOffset(0, 0, 0 ,0),
+                padding = new RectOffset(0, 0, 0, 0),
                 stretchWidth = false,
                 stretchHeight = false
             };

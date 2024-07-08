@@ -26,11 +26,11 @@ using Unity.Collections.LowLevel.Unsafe;
 partial class OVRSpatialAnchor
 {
     /// <summary>
-    /// Initializes this component from an existing space handle and uuid, e.g., the result of a call to
+    /// (Obsolete) Initializes this component from an existing space handle and uuid, e.g., the result of a call to
     /// <see cref="OVRPlugin.QuerySpaces"/>.
     /// </summary>
     /// <remarks>
-    /// NOTE: This method is obsolete. To create a new anchor, use
+    /// \deprecated This method is obsolete. To create a new anchor, use
     /// <code><![CDATA[AddComponent<OVRSpatialAnchor>()]]></code>. To load a previously saved anchor, use
     /// <see cref="LoadUnboundAnchorsAsync"/>.
     ///
@@ -70,10 +70,10 @@ partial class OVRSpatialAnchor
     }
 
     /// <summary>
-    /// Saves the <see cref="OVRSpatialAnchor"/> to local persistent storage.
+    /// (Obsolete) Saves the <see cref="OVRSpatialAnchor"/> to local persistent storage.
     /// </summary>
     /// <remarks>
-    /// NOTE: This method is obsolete. Use <see cref="SaveAsync()"/> instead. To continue using the
+    /// \deprecated This method is obsolete. Use <see cref="SaveAsync()"/> instead. To continue using the
     /// <paramref name="onComplete"/> callback, use <see cref="OVRTask{T}.ContinueWith"/> on the returned task.
     ///
     /// This method is asynchronous. Use <paramref name="onComplete"/> to be notified of completion.
@@ -96,10 +96,10 @@ partial class OVRSpatialAnchor
     }
 
     /// <summary>
-    /// Saves the <see cref="OVRSpatialAnchor"/> with specified <see cref="SaveOptions"/>.
+    /// (Obsolete) Saves the <see cref="OVRSpatialAnchor"/> with specified <see cref="SaveOptions"/>.
     /// </summary>
     /// <remarks>
-    /// NOTE: This method is obsolete. Use <see cref="SaveAsync()"/> instead. To continue using the
+    /// \deprecated This method is obsolete. Use <see cref="SaveAsync()"/> instead. To continue using the
     /// <paramref name="onComplete"/> callback, use <see cref="OVRTask{T}.ContinueWith"/> on the returned task.
     ///
     /// This method is asynchronous. Use <paramref name="onComplete"/> to be notified of completion.
@@ -141,11 +141,11 @@ partial class OVRSpatialAnchor
     public OVRSpace Space => _anchor.Handle;
 
     /// <summary>
-    /// Shares the anchor to an <see cref="OVRSpaceUser"/>.
+    /// (Obsolete) Shares the anchor to an <see cref="OVRSpaceUser"/>.
     /// The specified user will be able to download, track, and share specified anchors.
     /// </summary>
     /// <remarks>
-    /// NOTE: This method is obsolete. Use <see cref="ShareAsync(OVRSpaceUser)"/> instead. To continue using the
+    /// \deprecated This method is obsolete. Use <see cref="ShareAsync(OVRSpaceUser)"/> instead. To continue using the
     /// <paramref name="onComplete"/> callback, use <see cref="OVRTask{T}.ContinueWith"/> on the returned task.
     ///
     /// This method is asynchronous. Use <paramref name="onComplete"/> to be notified of completion.
@@ -166,11 +166,11 @@ partial class OVRSpatialAnchor
     }
 
     /// <summary>
-    /// Shares the anchor with two <see cref="OVRSpaceUser"/>.
+    /// (Obsolete) Shares the anchor with two <see cref="OVRSpaceUser"/>.
     /// Specified users will be able to download, track, and share specified anchors.
     /// </summary>
     /// <remarks>
-    /// NOTE: This method is obsolete. Use <see cref="ShareAsync(OVRSpaceUser, OVRSpaceUser)"/> instead. To continue
+    /// \deprecated This method is obsolete. Use <see cref="ShareAsync(OVRSpaceUser, OVRSpaceUser)"/> instead. To continue
     /// using the <paramref name="onComplete"/> callback, use <see cref="OVRTask{T}.ContinueWith"/> on the returned task.
     ///
     /// This method is asynchronous. Use <paramref name="onComplete"/> to be notified of completion.
@@ -192,11 +192,11 @@ partial class OVRSpatialAnchor
     }
 
     /// <summary>
-    /// Shares the anchor with three <see cref="OVRSpaceUser"/>.
+    /// (Obsolete) Shares the anchor with three <see cref="OVRSpaceUser"/>.
     /// Specified users will be able to download, track, and share specified anchors.
     /// </summary>
     /// <remarks>
-    /// NOTE: This method is obsolete. Use <see cref="ShareAsync(OVRSpaceUser, OVRSpaceUser, OVRSpaceUser)"/> instead.
+    /// \deprecated This method is obsolete. Use <see cref="ShareAsync(OVRSpaceUser, OVRSpaceUser, OVRSpaceUser)"/> instead.
     /// To continue using the <paramref name="onComplete"/> callback, use <see cref="OVRTask{T}.ContinueWith"/> on the
     /// returned task.
     ///
@@ -221,11 +221,11 @@ partial class OVRSpatialAnchor
     }
 
     /// <summary>
-    /// Shares the anchor with four <see cref="OVRSpaceUser"/>.
+    /// (Obsolete) Shares the anchor with four <see cref="OVRSpaceUser"/>.
     /// Specified users will be able to download, track, and share specified anchors.
     /// </summary>
     /// <remarks>
-    /// NOTE: This method is obsolete. Use
+    /// \deprecated This method is obsolete. Use
     /// <see cref="ShareAsync(OVRSpaceUser, OVRSpaceUser, OVRSpaceUser, OVRSpaceUser)"/> instead. To continue using the
     /// <paramref name="onComplete"/> callback, use <see cref="OVRTask{T}.ContinueWith"/> on the returned task.
     ///
@@ -251,11 +251,11 @@ partial class OVRSpatialAnchor
     }
 
     /// <summary>
-    /// Shares the anchor to a collection of <see cref="OVRSpaceUser"/>.
+    /// (Obsolete) Shares the anchor to a collection of <see cref="OVRSpaceUser"/>.
     /// Specified users will be able to download, track, and share specified anchors.
     /// </summary>
     /// <remarks>
-    /// NOTE: This method is obsolete. Use <see cref="ShareAsync(IEnumerable{OVRSpaceUser})"/>. To continue using the
+    /// \deprecated This method is obsolete. Use <see cref="ShareAsync(IEnumerable{OVRSpaceUser})"/>. To continue using the
     /// <paramref name="onComplete"/> callback, use <see cref="OVRTask{T}.ContinueWith"/> on the returned task.
     ///
     /// This method is asynchronous. Use <paramref name="onComplete"/> to be notified of completion.
@@ -276,10 +276,10 @@ partial class OVRSpatialAnchor
     }
 
     /// <summary>
-    /// Erases the <see cref="OVRSpatialAnchor"/> from persistent storage.
+    /// (Obsolete) Erases the <see cref="OVRSpatialAnchor"/> from persistent storage.
     /// </summary>
     /// <remarks>
-    /// NOTE: This method is obsolete. Use <see cref="EraseAsync()"/>. To continue using the
+    /// \deprecated This method is obsolete. Use <see cref="EraseAsync()"/>. To continue using the
     /// <paramref name="onComplete"/> callback, use <see cref="OVRTask{T}.ContinueWith"/> on the returned task.
     ///
     /// This method is asynchronous. Use <paramref name="onComplete"/> to be notified of completion.
@@ -297,10 +297,10 @@ partial class OVRSpatialAnchor
     }
 
     /// <summary>
-    /// Erases the <see cref="OVRSpatialAnchor"/> from specified storage.
+    /// (Obsolete) Erases the <see cref="OVRSpatialAnchor"/> from specified storage.
     /// </summary>
     /// <remarks>
-    /// NOTE: This method is obsolete. Use <see cref="EraseAsync(EraseOptions)"/>. To continue using the
+    /// \deprecated This method is obsolete. Use <see cref="EraseAsync(EraseOptions)"/>. To continue using the
     /// <paramref name="onComplete"/> callback, use <see cref="OVRTask{T}.ContinueWith"/> on the returned task.
     ///
     /// This method is asynchronous. Use <paramref name="onComplete"/> to be notified of completion.
@@ -324,10 +324,10 @@ partial class OVRSpatialAnchor
     }
 
     /// <summary>
-    /// Performs a query for anchors with the specified <paramref name="options"/>.
+    /// (Obsolete) Performs a query for anchors with the specified <paramref name="options"/>.
     /// </summary>
     /// <remarks>
-    /// NOTE: This method is obsolete. Use <see cref="LoadUnboundAnchorsAsync"/>. To continue using the
+    /// \deprecated This method is obsolete. Use <see cref="LoadUnboundAnchorsAsync"/>. To continue using the
     /// <paramref name="onComplete"/> callback, use <see cref="OVRTask{T}.ContinueWith"/> on the returned task.
     ///
     /// Use this method to find anchors that were previously persisted with
@@ -354,10 +354,10 @@ partial class OVRSpatialAnchor
     partial struct UnboundAnchor
     {
         /// <summary>
-        /// Localizes an anchor.
+        /// (Obsolete) Localizes an anchor.
         /// </summary>
         /// <remarks>
-        /// NOTE: This method is obsolete. Use <see cref="LocalizeAsync"/> instead. To continue using the
+        /// \deprecated This method is obsolete. Use <see cref="LocalizeAsync"/> instead. To continue using the
         /// <paramref name="onComplete"/> callback, use <see cref="OVRTask{T}.ContinueWith"/> on the returned task.
         ///
         /// The delegate supplied to <see cref="OVRSpatialAnchor.LoadUnboundAnchors"/> receives an array of unbound
@@ -397,11 +397,11 @@ partial class OVRSpatialAnchor
     }
 
     /// <summary>
-    /// Shares a collection of <see cref="OVRSpatialAnchor"/> to specified users.
+    /// (Obsolete) Shares a collection of <see cref="OVRSpatialAnchor"/> to specified users.
     /// Specified users will be able to download, track, and share specified anchors.
     /// </summary>
     /// <remarks>
-    /// NOTE: This method is obsolete. Use
+    /// \deprecated This method is obsolete. Use
     /// <see cref="ShareAsync(IEnumerable{OVRSpatialAnchor},IEnumerable{OVRSpaceUser})"/> instead. To continue using the
     /// <paramref name="onComplete"/> callback, use <see cref="OVRTask{T}.ContinueWith"/> on the returned task.
     ///
@@ -456,10 +456,10 @@ partial class OVRSpatialAnchor
     }
 
     /// <summary>
-    /// Saves a collection of anchors to persistent storage.
+    /// (Obsolete) Saves a collection of anchors to persistent storage.
     /// </summary>
     /// <remarks>
-    /// NOTE: This method is obsolete. Use
+    /// \deprecated This method is obsolete. Use
     /// <see cref="SaveAsync(IEnumerable{OVRSpatialAnchor}, SaveOptions)"/> instead. To continue using the
     /// <paramref name="onComplete"/> callback, use <see cref="OVRTask{T}.ContinueWith"/> on the returned task.
     ///
@@ -508,4 +508,428 @@ partial class OVRSpatialAnchor
             onComplete?.Invoke(anchors, (OperationResult)saveResult);
         }
     }
+
+    /// <summary>
+    /// (Obsolete) Represents options for erasing <see cref="OVRSpatialAnchor"/>.
+    /// </summary>
+    /// <remarks>
+    /// \deprecated This method is obsolete. You no longer need to provide a storage location when erasing anchors.
+    /// </remarks>
+    [Obsolete("EraseAnchorAsync no longer requires you to specify options.")]
+    public struct EraseOptions
+    {
+        /// <summary>
+        /// Location from where <see cref="OVRSpatialAnchor"/> will be erased.
+        /// </summary>
+        public OVRSpace.StorageLocation Storage;
+    }
+
+#pragma warning disable CS0618 // Type or member is obsolete
+    readonly SaveOptions _defaultSaveOptions = new()
+    {
+        Storage = OVRSpace.StorageLocation.Local,
+    };
+
+    readonly EraseOptions _defaultEraseOptions = new()
+    {
+        Storage = OVRSpace.StorageLocation.Local,
+    };
+#pragma warning restore
+
+    /// <summary>
+    /// (Obsolete) Erases the <see cref="OVRSpatialAnchor"/> from specified storage.
+    /// </summary>
+    /// <remarks>
+    /// \deprecated This method is obsolete. Use <see cref="EraseAnchorAsync"/> instead.
+    ///
+    /// This method is asynchronous; use the returned <see cref="OVRTask{TResult}"/> to be notified of completion.
+    /// Erasing an <see cref="OVRSpatialAnchor"/> does not destroy the anchor.
+    /// </remarks>
+    /// <returns>
+    /// An <see cref="OVRTask{TResult}"/> with a boolean type parameter indicating the success of the erase operation.
+    /// </returns>
+    [Obsolete("Use EraseAnchorAsync instead.")]
+    public OVRTask<bool> EraseAsync() => EraseAsync(_defaultEraseOptions);
+
+    /// <summary>
+    /// (Obsolete) Erases the <see cref="OVRSpatialAnchor"/> from specified storage.
+    /// </summary>
+    /// <remarks>
+    /// \deprecated This method is obsolete. Use <see cref="EraseAnchorAsync"/> instead.
+    ///
+    /// This method is asynchronous; use the returned <see cref="OVRTask{TResult}"/> to be notified of completion.
+    /// Erasing an <see cref="OVRSpatialAnchor"/> does not destroy the anchor.
+    /// </remarks>
+    /// <param name="eraseOptions">Options for how the anchor should be erased.</param>
+    /// <returns>
+    /// An <see cref="OVRTask{TResult}"/> with a boolean type parameter indicating the success of the erase operation.
+    /// </returns>
+    [Obsolete("Use EraseAnchorAsync instead.")]
+    public OVRTask<bool> EraseAsync(EraseOptions eraseOptions) =>
+        OVRAnchor.EraseSpace(_anchor.Handle, eraseOptions.Storage.ToSpaceStorageLocation(), out var requestId).IsSuccess()
+            ? OVRTask.FromRequest<bool>(requestId)
+            : OVRTask.FromResult(false);
+
+    /// <summary>
+    /// (Obsolete) Represents options for saving <see cref="OVRSpatialAnchor"/>.
+    /// </summary>
+    [Obsolete("SaveAnchorAsync no longer requires you to specify options.")]
+    public struct SaveOptions
+    {
+        /// <summary>
+        /// Location where <see cref="OVRSpatialAnchor"/> will be saved.
+        /// </summary>
+        public OVRSpace.StorageLocation Storage;
+    }
+
+    /// <summary>
+    /// (Obsolete) Saves the <see cref="OVRSpatialAnchor"/> with specified <see cref="SaveOptions"/>.
+    /// </summary>
+    /// <remarks>
+    /// \deprecated This method is obsolete. Use <see cref="SaveAnchorAsync"/> instead.
+    ///
+    /// This method is asynchronous; use the returned <see cref="OVRTask{TResult}"/> to be notified of completion.
+    /// When saved, the <see cref="OVRSpatialAnchor"/> can be loaded by a different session. Use the
+    /// <see cref="Uuid"/> to identify the same <see cref="OVRSpatialAnchor"/> at a future time.
+    ///
+    /// This operation fully succeeds or fails; that is, either all anchors are successfully saved,
+    /// or the operation fails.
+    /// </remarks>
+    /// <returns>
+    /// An <see cref="OVRTask{TResult}"/> with a boolean type parameter indicating the success of the save operation.
+    /// </returns>
+    [Obsolete("Use SaveAnchorAsync instead.")]
+    public OVRTask<bool> SaveAsync() => SaveAsync(_defaultSaveOptions);
+
+    /// <summary>
+    /// (Obsolete) Saves the <see cref="OVRSpatialAnchor"/> with specified <see cref="SaveOptions"/>.
+    /// </summary>
+    /// <remarks>
+    /// \deprecated This method is obsolete. Use <see cref="SaveAnchorAsync"/> instead.
+    ///
+    /// This method is asynchronous; use the returned <see cref="OVRTask{TResult}"/> to be notified of completion.
+    /// When saved, the <see cref="OVRSpatialAnchor"/> can be loaded by a different session. Use the
+    /// <see cref="Uuid"/> to identify the same <see cref="OVRSpatialAnchor"/> at a future time.
+    ///
+    /// This operation fully succeeds or fails; that is, either all anchors are successfully saved,
+    /// or the operation fails.
+    /// </remarks>
+    /// <param name="saveOptions">Options for how the anchor will be saved.</param>
+    /// <returns>
+    /// An <see cref="OVRTask{TResult}"/> with a boolean type parameter indicating the success of the save operation.
+    /// </returns>
+    [Obsolete("Use SaveAnchorAsync instead.")]
+    public OVRTask<bool> SaveAsync(SaveOptions saveOptions)
+    {
+        var requestId = Guid.NewGuid();
+        SaveRequests[saveOptions.Storage].Add(this);
+        AsyncRequestTaskIds[this] = requestId;
+        return OVRTask.FromGuid<bool>(requestId);
+    }
+
+    /// <summary>
+    /// (Obsolete) Saves a collection of anchors to persistent storage.
+    /// </summary>
+    /// <remarks>
+    /// \deprecated This method is obsolete. Use <see cref="SaveAnchorsAsync"/> instead.
+    ///
+    /// This method is asynchronous. Use the returned <see cref="OVRTask{TResult}"/> to track the progress of the
+    /// save operation.
+    ///
+    /// When saved, an <see cref="OVRSpatialAnchor"/> can be loaded in a different session. Use the
+    /// <see cref="Uuid"/> to identify the same <see cref="OVRSpatialAnchor"/> at a future time.
+    /// </remarks>
+    /// <param name="anchors">The collection of anchors to save.</param>
+    /// <param name="saveOptions">Save options, e.g., whether local or cloud.</param>
+    /// <returns>A task that represents the asynchronous save operation.</returns>
+    /// <exception cref="ArgumentNullException">Thrown if <paramref name="anchors"/> is `null`.</exception>
+    [Obsolete("Use SaveAnchorsAsync instead.")]
+    public static OVRTask<OperationResult> SaveAsync(IEnumerable<OVRSpatialAnchor> anchors, SaveOptions saveOptions)
+    {
+        if (anchors == null)
+            throw new ArgumentNullException(nameof(anchors));
+
+        var anchorCollection = anchors.ToNonAlloc();
+        unsafe
+        {
+            var spaces = stackalloc ulong[anchorCollection.GetCount()];
+            uint spaceCount = 0;
+
+            foreach (var anchor in anchorCollection)
+            {
+                spaces[spaceCount++] = anchor._anchor.Handle;
+            }
+
+            var result = OVRAnchor.SaveSpaceList(spaces, spaceCount, saveOptions.Storage.ToSpaceStorageLocation(),
+                out var requestId);
+
+            Development.LogRequestOrError(requestId, result,
+                $"Saving {spaceCount} spatial anchors.",
+                $"xrSaveSpaceListFB failed with error {result}.");
+
+            return result.IsSuccess()
+                ? OVRTask.FromRequest<OperationResult>(requestId)
+                : OVRTask.FromResult((OperationResult)result);
+        }
+    }
+
+    /// <summary>
+    /// (Obsolete) Performs a query for anchors with the specified <paramref name="options"/>.
+    /// </summary>
+    /// <remarks>
+    /// \deprecated This method is obsolete. Use
+    /// <see cref="LoadUnboundAnchorsAsync(IEnumerable{Guid},List{UnboundAnchor},Action{List{UnboundAnchor}, int}"/>
+    /// instead.
+    ///
+    /// Use this method to find anchors that were previously persisted with
+    /// <see cref="Save(Action{OVRSpatialAnchor, bool}"/>. The query is asynchronous; when the query completes,
+    /// the returned <see cref="OVRTask{TResult}"/> will contain an array of <see cref="UnboundAnchor"/>s for which tracking
+    /// may be requested.
+    /// </remarks>
+    /// <param name="options">Options that affect the query.</param>
+    /// <returns>
+    /// An <see cref="OVRTask{TResult}"/> with a <see cref="T:UnboundAnchor[]"/> type parameter containing the loaded unbound anchors.
+    /// </returns>
+    /// <exception cref="InvalidOperationException">Thrown if <see cref="LoadOptions.Uuids"/> of <paramref name="options"/> is `null`.</exception>
+    [Obsolete("Use the overload of LoadUnboundAnchorsAsync that accepts a collection of Guids instead.")]
+    public static OVRTask<UnboundAnchor[]> LoadUnboundAnchorsAsync(LoadOptions options)
+    {
+        if (options.Uuids == null)
+        {
+            throw new InvalidOperationException($"{nameof(LoadOptions)}.{nameof(LoadOptions.Uuids)} must not be null.");
+        }
+
+        if (!options.ToQueryOptions().TryQuerySpaces(out var requestId))
+        {
+            Development.LogError($"{nameof(OVRPlugin.QuerySpaces)} failed.");
+            return OVRTask.FromResult<UnboundAnchor[]>(null);
+        }
+
+        Development.LogRequest(requestId, $"{nameof(OVRPlugin.QuerySpaces)}: Query created.");
+        return OVRTask.FromRequest<UnboundAnchor[]>(requestId);
+    }
+
+    private static NativeArray<ulong> ToNativeArray(ICollection<OVRSpatialAnchor> anchors)
+    {
+        var count = anchors.Count;
+        var spaces = new NativeArray<ulong>(count, Allocator.Temp);
+        var i = 0;
+        foreach (var anchor in anchors.ToNonAlloc())
+        {
+            spaces[i++] = anchor ? anchor._anchor.Handle : 0;
+        }
+
+        return spaces;
+    }
+
+    private static List<OVRSpatialAnchor> CopyAnchorListIntoListFromPool(
+        IEnumerable<OVRSpatialAnchor> anchorList)
+    {
+        var poolList = OVRObjectPool.List<OVRSpatialAnchor>();
+        poolList.AddRange(anchorList);
+        return poolList;
+    }
+
+    [Obsolete]
+    private static void SaveBatchAnchors()
+    {
+        foreach (var pair in SaveRequests)
+        {
+            if (pair.Value.Count == 0)
+            {
+                continue;
+            }
+
+            Save(pair.Value, new SaveOptions { Storage = pair.Key });
+            pair.Value.Clear();
+        }
+    }
+
+    private static void OnSpaceSaveComplete(ulong requestId, OVRSpace space, bool result, Guid uuid)
+    {
+        Development.LogRequestResult(requestId, result,
+            $"[{uuid}] Saved.",
+            $"[{uuid}] Save failed.");
+    }
+
+    private static void OnSpaceEraseComplete(ulong requestId, bool result, Guid uuid,
+        OVRPlugin.SpaceStorageLocation location)
+    {
+        Development.LogRequestResult(requestId, result,
+            $"[{uuid}] Erased.",
+            $"[{uuid}] Erase failed.");
+    }
+
+    /// <summary>
+    /// (Obsolete) Options for loading unbound spatial anchors used by
+    /// <see cref="OVRSpatialAnchor.LoadUnboundAnchorsAsync(LoadOptions)"/>.
+    /// </summary>
+    /// <example>
+    /// NOTE: This struct is obsolete. It is only for use with the obsolete
+    /// <see cref="OVRSpatialAnchor.LoadUnboundAnchorsAsync(LoadOptions)"/>. Instead, consider the newer version
+    /// <see cref="OVRSpatialAnchor.LoadUnboundAnchorsAsync(IEnumerable{Guid},List{UnboundAnchor},Action{List{UnboundAnchor},int})"/>.
+    ///
+    /// This example shows how to create LoadOptions for loading anchors when given a set of UUIDs.
+    /// <example><code><![CDATA[
+    /// OVRSpatialAnchor.LoadOptions options = new OVRSpatialAnchor.LoadOptions
+    /// {
+    ///     Timeout = 0,
+    ///     Uuids = savedAnchorUuids
+    /// };
+    /// ]]></code></example>
+    /// </example>
+    [Obsolete("Only for use with the obsolete version of LoadUnboundAnchorsAsync. Use the overload of " +
+              "LoadUnboundAnchorsAsync that accepts a collection of Guids")]
+    public struct LoadOptions
+    {
+        /// <summary>
+        /// The maximum number of uuids that may be present in the <see cref="Uuids"/> collection.
+        /// </summary>
+        public const int MaxSupported = OVRSpaceQuery.Options.MaxUuidCount;
+
+        /// <summary>
+        /// The storage location from which to query spatial anchors.
+        /// </summary>
+        public OVRSpace.StorageLocation StorageLocation { get; set; }
+
+        /// <summary>
+        /// (Obsolete) The maximum number of anchors to query.
+        /// </summary>
+        /// <remarks>
+        /// In prior SDK versions, it was mandatory to set this property to receive any
+        /// results. However, this property is now obsolete. If <see cref="MaxAnchorCount"/> is zero,
+        /// i.e., the default initialized value, it will automatically be set to the count of
+        /// <see cref="Uuids"/>.
+        ///
+        /// If non-zero, the number of anchors in the result will be limited to
+        /// <see cref="MaxAnchorCount"/>, preserving the previous behavior.
+        /// </remarks>
+        [Obsolete(
+            "This property is no longer required. MaxAnchorCount will be automatically set to the number of uuids to load.")]
+        public int MaxAnchorCount { get; set; }
+
+        /// <summary>
+        /// The timeout, in seconds, for the query operation.
+        /// </summary>
+        /// <remarks>
+        /// A value of zero indicates no timeout.
+        /// </remarks>
+        public double Timeout { get; set; }
+
+        /// <summary>
+        /// The set of spatial anchors to query, identified by their UUIDs.
+        /// </summary>
+        /// <remarks>
+        /// The UUIDs are copied by the <see cref="OVRSpatialAnchor.LoadUnboundAnchorsAsync"/> method and no longer
+        /// referenced internally afterwards.
+        ///
+        /// You must supply a list of UUIDs. <see cref="OVRSpatialAnchor.LoadUnboundAnchorsAsync"/> will throw if this
+        /// property is null.
+        /// </remarks>
+        /// <exception cref="System.ArgumentException">Thrown if <see cref="Uuids"/> contains more
+        ///     than <see cref="MaxSupported"/> elements.</exception>
+        public IReadOnlyList<Guid> Uuids
+        {
+            get => _uuids;
+            set
+            {
+                if (value?.Count > OVRSpaceQuery.Options.MaxUuidCount)
+                    throw new ArgumentException(
+                        $"There must not be more than {MaxSupported} UUIDs (new value contains {value.Count} UUIDs).",
+                        nameof(value));
+
+                _uuids = value;
+            }
+        }
+
+        private IReadOnlyList<Guid> _uuids;
+
+
+        internal OVRSpaceQuery.Options ToQueryOptions() => new OVRSpaceQuery.Options
+        {
+#pragma warning disable CS0618 // Type or member is obsolete
+            Location = StorageLocation,
+            MaxResults = MaxAnchorCount == 0 ? Uuids?.Count ?? 0 : MaxAnchorCount,
+#pragma warning restore CS0618
+            Timeout = Timeout,
+            UuidFilter = Uuids,
+            QueryType = OVRPlugin.SpaceQueryType.Action,
+            ActionType = OVRPlugin.SpaceQueryActionType.Load,
+        };
+    }
+
+    private static void OnSpaceQueryComplete(ulong requestId, bool queryResult)
+    {
+        Development.LogRequestResult(requestId, queryResult,
+            $"{nameof(OVRPlugin.QuerySpaces)}: Query succeeded.",
+            $"{nameof(OVRPlugin.QuerySpaces)}: Query failed.");
+
+        var hasPendingTask = OVRTask.GetExisting<UnboundAnchor[]>(requestId).IsPending;
+
+        if (!hasPendingTask)
+        {
+            return;
+        }
+
+        if (!queryResult)
+        {
+            OVRTask.GetExisting<UnboundAnchor[]>(requestId).SetResult(null);
+            return;
+        }
+
+        if (OVRPlugin.RetrieveSpaceQueryResults(requestId, out var results, Allocator.Temp))
+        {
+            Development.Log(
+                $"{nameof(OVRPlugin.RetrieveSpaceQueryResults)}({requestId}): Retrieved {results.Length} results.");
+        }
+        else
+        {
+            Development.LogError(
+                $"{nameof(OVRPlugin.RetrieveSpaceQueryResults)}({requestId}): Failed to retrieve results.");
+            OVRTask.GetExisting<UnboundAnchor[]>(requestId).SetResult(null);
+            return;
+        }
+
+        using var disposer = results;
+
+        using (new OVRObjectPool.ListScope<UnboundAnchor>(out var unboundAnchorList))
+        {
+            foreach (var result in results)
+            {
+                if (TryGetUnbound(new OVRAnchor(result.space, result.uuid), out var unboundAnchor))
+                {
+                    unboundAnchorList.Add(unboundAnchor);
+                }
+            }
+
+            var unboundAnchors = unboundAnchorList.Count == 0
+                ? Array.Empty<UnboundAnchor>()
+                : unboundAnchorList.ToArray();
+
+            Development.Log(
+                $"Invoking callback with {unboundAnchors.Length} unbound anchor{(unboundAnchors.Length == 1 ? "" : "s")}.");
+
+            OVRTask.GetExisting<UnboundAnchor[]>(requestId).SetResult(unboundAnchors);
+        }
+    }
+
+    private static void OnSpaceListSaveComplete(ulong requestId, OperationResult result)
+    {
+        Development.LogRequestResult(requestId, result >= 0,
+            $"Spaces saved.",
+            $"Spaces save failed with error {result}.");
+
+        OVRTask.SetResult(requestId, result);
+        InvokeMultiAnchorDelegate(requestId, result, MultiAnchorActionType.Save);
+    }
+
+    [Obsolete]
+    private static readonly Dictionary<OVRSpace.StorageLocation, List<OVRSpatialAnchor>> SaveRequests = new()
+    {
+        { OVRSpace.StorageLocation.Cloud, new List<OVRSpatialAnchor>() },
+        { OVRSpace.StorageLocation.Local, new List<OVRSpatialAnchor>() },
+    };
+
+
+
 }

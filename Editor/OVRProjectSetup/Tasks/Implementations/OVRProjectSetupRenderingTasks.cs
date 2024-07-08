@@ -27,6 +27,9 @@ using UnityEngine.Rendering;
 #if USING_URP
 using UnityEngine.Rendering.Universal;
 #endif
+#if USING_XR_SDK_OPENXR
+using UnityEngine.XR.OpenXR;
+#endif
 
 
 [InitializeOnLoad]
@@ -318,17 +321,72 @@ internal static class OVRProjectSetupRenderingTasks
 #endif
         );
 
+        //[Recommended] Enable Subsampled Layout
+        OVRProjectSetup.AddTask(
+            level: OVRProjectSetup.TaskLevel.Recommended,
+            platform: BuildTargetGroup.Android,
+            group: targetGroup,
+            isDone: buildTargetGroup =>
+            {
+                var useVK = GetGraphicsAPIs(buildTargetGroup).Any(item => item == GraphicsDeviceType.Vulkan);
+                if (!useVK)
+                    return true;
+
+#if USING_XR_SDK_OCULUS
+                if (OculusSettings != null)
+                {
+                    return OculusSettings.SubsampledLayout;
+                }
+#elif USING_XR_SDK_OPENXR
+                var settings = OpenXRSettings.GetSettingsForBuildTargetGroup(BuildTargetGroup.Android);
+                if (settings)
+                {
+                    var ext = settings.GetFeature<Meta.XR.MetaXRSubsampledLayout>();
+                    if (ext)
+                        return ext.enabled;
+                }
+#endif
+                return true;
+            },
+            message: "Subsampled Layout should be enabled to improve GPU performance when foveation is enabled.",
+            fix: buildTargetGroup =>
+            {
+#if USING_XR_SDK_OCULUS
+                if (OculusSettings != null)
+                {
+                    OculusSettings.SubsampledLayout = true;
+                }
+#elif USING_XR_SDK_OPENXR
+                var settings = OpenXRSettings.GetSettingsForBuildTargetGroup(BuildTargetGroup.Android);
+                if (settings)
+                {
+                    var ext = settings.GetFeature<Meta.XR.MetaXRSubsampledLayout>();
+                    if (ext)
+                        ext.enabled = true;
+                }
+#endif
+                return;
+            },
+#if USING_XR_SDK_OCULUS
+            fixMessage: "OculusSettings.SubsampledLayout = true"
+#elif USING_XR_SDK_OPENXR
+            fixMessage: "OpenXRSettings.Instance.GetFeature<MetaXRSubsampledLayout>.enabled = true"
+#else
+            fixMessage: ""
+#endif
+        );
+
 #if USING_URP && UNITY_2022_2_OR_NEWER
-        //[Recommended] When using URP, set Intermediate texture to "Auto"
+        //[Recommended] When using URP, set Intermediate Texture to "Auto"
         OVRProjectSetup.AddTask(
             level: OVRProjectSetup.TaskLevel.Recommended,
             group: targetGroup,
             isDone: buildTargetGroup =>
                 ForEachRendererData(rd => { return rd.intermediateTextureMode == IntermediateTextureMode.Auto; }),
-            message: "Setting the intermate texture mode to \"Always\" might have a performance impact, it is recommended to use \"Auto\"",
+            message: "Setting the Intermediate Texture Mode to \"Always\" might have a performance impact, it is recommended to use \"Auto\"",
             fix: buildTargetGroup =>
                 ForEachRendererData(rd => { rd.intermediateTextureMode = IntermediateTextureMode.Auto; return true; }),
-            fixMessage: "Set Intermediate texture to \"Auto\""
+            fixMessage: "Set Intermediate Texture Mode to \"Auto\""
         );
 
         //[Recommended] When using URP, disable SSAO

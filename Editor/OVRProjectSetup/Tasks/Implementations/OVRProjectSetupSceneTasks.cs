@@ -27,11 +27,13 @@ internal static class OVRProjectSetupSceneTasks
 
     static OVRProjectSetupSceneTasks()
     {
-
+        // OVRSceneManager is deprecated but we still keep the project setup task for projects that are still using it
         OVRProjectSetup.AddTask(
             level: OVRProjectSetup.TaskLevel.Required,
             group: Group,
+#pragma warning disable CS0618 // Type or member is obsolete
             isDone: buildTargetGroup => OVRProjectSetupUtils.FindComponentInScene<OVRSceneManager>() == null ||
+#pragma warning restore CS0618 // Type or member is obsolete
                                         OVRProjectConfig.CachedProjectConfig.sceneSupport != OVRProjectConfig.FeatureSupport.None,
             message: "When using Scene in your project it's required to enable its capability in the project config",
             fix: buildTargetGroup =>

@@ -67,9 +67,14 @@ public class SharedSpatialAnchorErrorHandler : MonoBehaviour
         }
     }
 
-    public void OnAnchorLoad(List<OVRSpatialAnchor> loadedAnchors)
+    public void OnSharedSpatialAnchorLoad(List<OVRSpatialAnchor> loadedAnchors, OVRSpatialAnchor.OperationResult result)
     {
-        if (loadedAnchors.Count == 0) LogWarning($"Failed to load the spatial anchor(s).");
+        if (result == OVRSpatialAnchor.OperationResult.Failure_SpaceCloudStorageDisabled)
+        {
+            LogWarning(cloudPermissionMsg);
+            return;
+        }
+        if (loadedAnchors == null || loadedAnchors.Count == 0) LogWarning($"Failed to load the spatial anchor(s).");
     }
 
     public void OnAnchorEraseAll(OVRSpatialAnchor.OperationResult result)

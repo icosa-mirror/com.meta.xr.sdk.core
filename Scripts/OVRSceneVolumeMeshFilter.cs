@@ -18,6 +18,7 @@
  * limitations under the License.
  */
 
+using System;
 using System.Collections;
 using Unity.Collections;
 using Unity.Jobs;
@@ -36,8 +37,9 @@ using UnityEngine.Rendering;
 ///
 /// The Unity Job System is used to avoid blocking the main thread.
 /// </remarks>
-[HelpURL("https://developer.oculus.com/reference/unity/latest/class_o_v_r_scene_volume_mesh_filter")]
+[HelpURL("https://developer.oculus.com/documentation/unity/unity-scene-use-scene-anchors/#further-scene-model-unity-components")]
 [RequireComponent(typeof(MeshFilter))]
+[Obsolete(OVRSceneManager.DeprecationMessage)]
 public class OVRSceneVolumeMeshFilter : MonoBehaviour
 {
     /// <summary>

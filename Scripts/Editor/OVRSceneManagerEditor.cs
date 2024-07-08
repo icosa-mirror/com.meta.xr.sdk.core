@@ -18,10 +18,12 @@
  * limitations under the License.
  */
 
+using System;
 using UnityEditor;
 using UnityEngine;
 
 [CustomEditor(typeof(OVRSceneManager))]
+[Obsolete(OVRSceneManager.DeprecationMessage)]
 internal class OVRSceneManagerEditor : Editor
 {
     private SerializedProperty _planePrefab;

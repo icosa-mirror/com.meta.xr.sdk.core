@@ -18,10 +18,12 @@
  * limitations under the License.
  */
 
+using System;
 using UnityEngine;
 using UnityEditor;
 
 [CustomEditor(typeof(OVRScenePlane))]
+[Obsolete(OVRSceneManager.DeprecationMessage)]
 public class OVRScenePlaneEditor : Editor
 {
     OVRScenePlane _object;

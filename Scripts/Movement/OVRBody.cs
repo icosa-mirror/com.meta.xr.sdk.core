@@ -28,7 +28,7 @@ using UnityEngine;
 /// Typically, you would use this in conjunction with an <see cref="OVRSkeleton"/> and/or
 /// <see cref="OVRSkeletonRenderer"/>.
 /// </remarks>
-[HelpURL("https://developer.oculus.com/reference/unity/latest/class_o_v_r_body")]
+[HelpURL("https://developer.oculus.com/documentation/unity/move-body-tracking/")]
 public class OVRBody : MonoBehaviour,
     OVRSkeleton.IOVRSkeletonDataProvider,
     OVRSkeletonRenderer.IOVRSkeletonRendererDataProvider

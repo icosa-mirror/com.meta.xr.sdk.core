@@ -314,10 +314,19 @@ public class OVRProjectConfigEditor : Editor
                         "If set, the Splash Screen will be presented by the Operating System as a high quality composition layer at launch time."),
                     ref projectConfig.systemSplashScreen, ref splashScreenTextureModified,
                     "https://developer.oculus.com/documentation/unity/unity-splash-screen/");
+
                 if (splashScreenTextureModified)
                 {
-                    projectConfig.systemSplashScreen = OVRSystemSplashScreenEditor.ProcessTexture(projectConfig.systemSplashScreen);
-                    hasModified = true;
+                    Texture2D newSystemSplashScreen =
+                        OVRSystemSplashScreenEditor.ProcessTexture(
+                            projectConfig.systemSplashScreen);
+
+                    if (newSystemSplashScreen != null &&
+                        !projectConfig.systemSplashScreen.Equals(newSystemSplashScreen))
+                    {
+                        projectConfig.systemSplashScreen = newSystemSplashScreen;
+                        hasModified = true;
+                    }
                 }
 
                 // System Splash Screen: "Mono", "Stereo"

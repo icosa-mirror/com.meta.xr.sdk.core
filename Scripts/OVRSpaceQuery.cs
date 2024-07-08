@@ -24,6 +24,7 @@ using System.Collections.Generic;
 /// <summary>
 /// Utility to assist with queries for <see cref="OVRSpace"/>s.
 /// </summary>
+[Obsolete("This helper is for xrQuerySpacesFB, which is obsolete. See OVRAnchor.FetchAnchorsAsync.")]
 internal static class OVRSpaceQuery
 {
     /// <summary>

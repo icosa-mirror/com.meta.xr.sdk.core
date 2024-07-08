@@ -19,10 +19,12 @@ MonoBehaviour:
   tags:
     array:
     - name: Helper
+    - name: Interaction
     - name: Experimental
   thumbnail: {fileID: 2800000, guid: 1d66a150b7116734dacf2f40c4103150, type: 3}
   order: 11
   prefab: {fileID: 6562618446772997398, guid: 7f2c10fd4e18aee42b3be07fb299acc3, type: 3}
+  externalBlockDependencies: []
   dependencies:
   - e47682b9-c270-40b1-b16d-90b627a5ce1b
   packageDependencies: []

@@ -60,7 +60,6 @@ namespace Meta.XR.BuildingBlocks.Editor
             DrawMessageWithIcon(Styles.Contents.ErrorIcon, "Meta Platform SDK is missing.");
             EditorGUILayout.Space();
 
-
 #endif // USING_META_XR_PLATFORM_SDK
             EditorGUILayout.EndVertical();
         }
@@ -90,9 +89,5 @@ namespace Meta.XR.BuildingBlocks.Editor
 #endif
         }
 #endif // USING_META_XR_PLATFORM_SDK
-
-        protected void InstallPlatformSDK()
-        {
-        }
     }
 }

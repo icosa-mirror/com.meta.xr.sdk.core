@@ -126,13 +126,16 @@ namespace Meta.XR.BuildingBlocks.Editor
             public void Refresh(EditorWindow window)
             {
                 var windowWidth = (int)window.position.width - Margin;
-                if (Math.Abs(WindowWidth - windowWidth) <= Mathf.Epsilon)
+                var windowHeight = (int)window.position.height;
+
+                if (Math.Abs(WindowWidth - windowWidth) <= Mathf.Epsilon
+                    && Math.Abs(WindowHeight - windowHeight) <= Mathf.Epsilon)
                 {
                     return;
                 }
 
                 WindowWidth = windowWidth;
-                WindowHeight = (int)window.position.height;
+                WindowHeight = windowHeight;
 
                 var blockWidth = Styles.Constants.IdealThumbnailWidth;
                 windowWidth = Mathf.Max(Styles.Constants.IdealThumbnailWidth + Padding * 3, windowWidth);
@@ -304,9 +307,7 @@ namespace Meta.XR.BuildingBlocks.Editor
 
         private bool Match(BlockBaseData block)
         {
-            if (block.Hidden && Utils.HiddenTag.Behavior.Visibility == false) return false;
-
-            if (block.Tags.Any(tag => tag.Behavior.Visibility == false)) return false;
+            if (block.Hidden) return false;
 
             if (TagSearch.Any(tag => !block.Tags.Contains(tag))) return false;
 
@@ -395,6 +396,19 @@ namespace Meta.XR.BuildingBlocks.Editor
             EditorGUILayout.EndVertical();
         }
 
+        private static bool CanBeAdded(BlockBaseData block)
+        {
+            if (block is InterfaceBlockData interfaceBlockData)
+            {
+                return interfaceBlockData.HasInstallationRoutine && !interfaceBlockData.HasMissingDependencies && !interfaceBlockData.IsSingletonAndAlreadyPresent;
+            }
+
+            return block.CanBeAdded;
+        }
+
+        private static bool ShouldShowMissingPackageDependencies(BlockData block)
+            => block != null && block.HasMissingPackageDependencies;
+
         private void ShowButtons(BlockBaseData block, Rect blockRect, bool canBeAdded, bool canBeSelected)
         {
             GUILayout.BeginArea(blockRect, Styles.GUIStyles.LargeButtonArea);
@@ -409,6 +423,30 @@ namespace Meta.XR.BuildingBlocks.Editor
                 if (ShowLargeButton(block.Id, addIcon))
                 {
                     block.AddToProject(null, block.RequireListRefreshAfterInstall ? RefreshBlockList : null);
+                }
+            }
+            else if (ShouldShowMissingPackageDependencies(blockData))
+            {
+                if (ShowLargeButton(block.Id, Styles.Contents.DownloadPackageDependenciesIcon))
+                {
+                    var message = new StringBuilder();
+                    message.Append(
+                        $"In order to install {blockData.BlockName} the following packages are required:\n\n");
+
+                    foreach (var packageId in blockData.GetMissingPackageDependencies)
+                    {
+                        if (CustomPackageDependencyRegistry.IsPackageDepInCustomRegistry(packageId))
+                        {
+                            var packageDepInfo = CustomPackageDependencyRegistry.GetPackageDepInfo(packageId);
+                            message.Append($"- {packageDepInfo.PackageDisplayName}: {packageDepInfo.InstallationInstructions}\n");
+                        }
+                        else
+                        {
+                            message.Append($"- {packageId}\n");
+                        }
+                    }
+
+                    EditorUtility.DisplayDialog("Package Dependencies Required", message.ToString(), "Ok");
                 }
             }
 
@@ -497,7 +535,7 @@ namespace Meta.XR.BuildingBlocks.Editor
             int expectedThumbnailHeight)
         {
             var blockData = block as BlockData;
-            var canBeAdded = block.CanBeAdded;
+            var canBeAdded = CanBeAdded(block);
             var numberInScene = blockData != null ? blockData.ComputeNumberOfBlocksInScene() : 0;
             var canBeSelected = numberInScene > 0;
             var isHover = OVREditorUtils.HoverHelper.IsHover(block.Id + "Description");
@@ -547,6 +585,8 @@ namespace Meta.XR.BuildingBlocks.Editor
             var currentWidth = 0.0f;
             foreach (var tag in tagArray)
             {
+                if (!tag.Behavior.ShouldDraw(listType)) continue;
+
                 var addedWidth = tag.Behavior.StyleWidth + Meta.XR.Editor.UserInterface.Styles.Constants.MiniPadding;
                 currentWidth += addedWidth;
 
@@ -694,13 +734,7 @@ namespace Meta.XR.BuildingBlocks.Editor
 
             if (block.OverridesInstallRoutine && Selection.objects.Contains(dropUpon))
             {
-                foreach (var obj in Selection.objects)
-                {
-                    if (obj is GameObject gameObject)
-                    {
-                        block.AddToProject(gameObject);
-                    }
-                }
+                block.AddToObjects(Selection.objects.OfType<GameObject>().ToList());
             }
             else
             {

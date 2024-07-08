@@ -89,7 +89,9 @@ namespace Meta.XR.BuildingBlocks.Editor
                 if (EditorUtility.DisplayDialog("Confirmation",
                         "Any changes done to this block will be lost. Do you want to proceed?", "Yes", "No"))
                 {
+#pragma warning disable CS4014
                     _blockData.UpdateBlockToLatestVersion(_block);
+#pragma warning restore CS4014
                 }
             }
             else

@@ -22,6 +22,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
+using System.Threading.Tasks;
 using UnityEditor;
 using UnityEditor.SceneManagement;
 using UnityEngine;
@@ -62,11 +63,20 @@ namespace Meta.XR.BuildingBlocks.Editor
         public bool IsSingleton => isSingleton;
 
 
-        internal override void AddToProject(GameObject selectedGameObject = null, Action onInstall = null)
+        internal override async void AddToProject(GameObject selectedGameObject = null, Action onInstall = null)
         {
             using (new OVREditorUtils.UndoScope($"Install {Utils.BlockPublicTag} {BlockName}"))
             {
-                InstallPackagesAndBlockData(selectedGameObject, onInstall);
+                await InstallWithDependenciesAndCommit(selectedGameObject);
+                onInstall?.Invoke();
+            }
+        }
+
+        internal override async void AddToObjects(List<GameObject> selectedGameObjects)
+        {
+            using (new OVREditorUtils.UndoScope($"Install {Utils.BlockPublicTag} {BlockName}"))
+            {
+                await InstallWithDependenciesAndCommit(selectedGameObjects);
             }
         }
 
@@ -76,40 +86,21 @@ namespace Meta.XR.BuildingBlocks.Editor
             AddToProject(null, null);
         }
 
-        private void InstallPackagesAndBlockData(GameObject selectedGameObject = null, Action onInstall = null)
-        {
-            try
-            {
-                var (success, nInstalled) = InstallPackageDependencies();
-
-                if (success && nInstalled > 0)
-                {
-                    BlockInstaller.RequestInstallation(this, selectedGameObject);
-                }
-                else
-                {
-                    InstallWithDependenciesAndCommit(selectedGameObject);
-                    onInstall?.Invoke();
-                }
-            }
-            catch (Exception e)
-            {
-                OVRTelemetry.Start(OVRTelemetryConstants.BB.MarkerId.InstallBlockData)
-                    .SetResult(OVRPlugin.Qpl.ResultType.Fail)
-                    .AddAnnotation(OVRTelemetryConstants.BB.AnnotationType.BlockId, Id)
-                    .AddAnnotationIfNotNullOrEmpty(OVRTelemetryConstants.BB.AnnotationType.Error, e.Message)
-                    .Send();
-                throw;
-            }
-        }
-
-        internal void InstallWithDependenciesAndCommit(GameObject selectedGameObject = null)
+        private async Task InstallWithDependenciesAndCommit(List<GameObject> selectedGameObjects)
         {
             Exception installException = null;
             try
             {
-                var installedObjects = InstallWithDependencies(selectedGameObject);
-
+                List<GameObject> installedObjects;
+                // use different signatures for multiple selected objects vs. single/null selected object
+                if (selectedGameObjects.Count <= 1)
+                {
+                    installedObjects = await InstallWithDependencies(selectedGameObjects.FirstOrDefault());
+                }
+                else
+                {
+                    installedObjects = await InstallWithDependencies(selectedGameObjects);
+                }
                 SaveScene();
                 FixSetupRules();
 
@@ -128,6 +119,11 @@ namespace Meta.XR.BuildingBlocks.Editor
                     .AddAnnotationIfNotNullOrEmpty(OVRTelemetryConstants.BB.AnnotationType.Error, installException?.Message)
                     .Send();
             }
+        }
+
+        private async Task InstallWithDependenciesAndCommit(GameObject selectedGameObject = null)
+        {
+            await InstallWithDependenciesAndCommit(new List<GameObject> { selectedGameObject });
         }
 
         internal static void FixSetupRules()
@@ -159,50 +155,37 @@ namespace Meta.XR.BuildingBlocks.Editor
             UpdateTasks(processor.BuildTargetGroup);
         }
 
-        internal override bool CanBeAdded => !HasMissingDependencies && !IsSingletonAndAlreadyPresent;
+        internal override bool CanBeAdded => !HasMissingDependencies && !IsSingletonAndAlreadyPresent && !HasMissingPackageDependencies;
+
+        internal bool HasMissingPackageDependencies => GetMissingPackageDependencies.Any();
+
+        internal IEnumerable<string> GetMissingPackageDependencies =>
+            this.CollectPackageDependencies(new HashSet<string>())
+                .Where(packageId => !Utils.IsPackageInstalled(packageId));
+
         internal bool HasMissingDependencies => GetMissingDependencies.Any();
 
         private IEnumerable<string> GetMissingDependencies =>
             (dependencies ?? Enumerable.Empty<string>())
             .Concat(
-                PackageDependencies.All(OVRProjectSetupUtils.IsPackageInstalled)
+                PackageDependencies.All(Utils.IsPackageInstalled)
                     ? externalBlockDependencies ?? Enumerable.Empty<string>()
                     : Enumerable.Empty<string>())
             .Where(dependencyId => Utils.GetBlockData(dependencyId) == null);
 
-        private bool IsSingletonAndAlreadyPresent => IsSingleton && IsBlockPresentInScene();
+        internal bool IsSingletonAndAlreadyPresent => IsSingleton && IsBlockPresentInScene();
 
-        private (bool, int) InstallPackageDependencies()
+        internal virtual async Task<List<GameObject>> InstallWithDependencies(List<GameObject> selectedGameObjects)
         {
-            var nInstalled = PackageDependencies.Count(packageId => InstallPackage(packageId) == InstallPackageStatus.Installed);
-            return (true, nInstalled);
-        }
-
-        private enum InstallPackageStatus
-        {
-            AlreadyInstalled,
-            Installed
-        }
-
-        private InstallPackageStatus InstallPackage(string packageId)
-        {
-            if (OVRProjectSetupUtils.IsPackageInstalled(packageId))
+            var createdObjects = new List<GameObject>();
+            foreach (var obj in selectedGameObjects.DefaultIfEmpty())
             {
-                return InstallPackageStatus.AlreadyInstalled;
+                createdObjects.AddRange(await InstallWithDependencies(obj));
             }
-
-            var installed = OVRProjectSetupUtils.InstallPackage(packageId);
-
-            if (!installed)
-            {
-                throw new InvalidOperationException(
-                    $"Installation of package dependency {packageId} failed for block {BlockName}.");
-            }
-
-            return InstallPackageStatus.Installed;
+            return createdObjects;
         }
 
-        internal List<GameObject> InstallWithDependencies(GameObject selectedGameObject = null)
+        internal virtual async Task<List<GameObject>> InstallWithDependencies(GameObject selectedGameObject = null)
         {
             if (IsSingletonAndAlreadyPresent)
             {
@@ -217,28 +200,35 @@ namespace Meta.XR.BuildingBlocks.Editor
 
             using (new OVREditorUtils.UndoScope($"Install {Utils.BlockPublicTag} {BlockName}"))
             {
-                InstallDependencies(Dependencies, selectedGameObject);
-                return Install(selectedGameObject);
+                await InstallDependenciesAsync(Dependencies, selectedGameObject);
+                return await InstallAsync(selectedGameObject);
             }
         }
 
-        internal virtual List<GameObject> Install(GameObject selectedGameObject = null)
+        protected virtual Type ComponentType => typeof(BuildingBlock);
+
+        internal async Task<List<GameObject>> InstallAsync(GameObject selectedGameObject = null)
         {
-            return InstallBlock<BuildingBlock>(selectedGameObject);
+            return await InstallBlockAsync(selectedGameObject);
         }
 
-        internal List<GameObject> InstallBlock<T>(GameObject selectedGameObject) where T : BuildingBlock
+        internal async Task<List<GameObject>> InstallBlockAsync(GameObject selectedGameObject)
         {
-            var spawnedObjects = InstallRoutine(selectedGameObject);
+            var spawnedObjects = await InstallRoutineAsync(selectedGameObject);
 
             foreach (var spawnedObject in spawnedObjects)
             {
-                var block = Undo.AddComponent<T>(spawnedObject);
+                if (spawnedObject.GetComponent(ComponentType) != null)
+                {
+                    continue;
+                }
+
+                var block = Undo.AddComponent(spawnedObject, ComponentType) as BuildingBlock;
                 SetupBlockComponent(block);
                 while (UnityEditorInternal.ComponentUtility.MoveComponentUp(block))
                 {
                 }
-                Undo.RegisterCompleteObjectUndo(block, $"Setup {nameof(T)}");
+                Undo.RegisterCompleteObjectUndo(block, $"Setup {nameof(ComponentType)}");
 
                 OVRTelemetry.Start(OVRTelemetryConstants.BB.MarkerId.AddBlock)
                     .AddBlockInfo(block)
@@ -249,7 +239,7 @@ namespace Meta.XR.BuildingBlocks.Editor
             return spawnedObjects;
         }
 
-        protected virtual void SetupBlockComponent<T>(T block) where T : BuildingBlock
+        protected virtual void SetupBlockComponent(BuildingBlock block)
         {
             block.blockId = Id;
             block.version = Version;
@@ -257,6 +247,10 @@ namespace Meta.XR.BuildingBlocks.Editor
 
         protected virtual List<GameObject> InstallRoutine(GameObject selectedGameObject)
         {
+            if (!UsesPrefab)
+            {
+                return new List<GameObject>();
+            }
             var instance = Instantiate(Prefab, Vector3.zero, Quaternion.identity);
             instance.SetActive(true);
             instance.name = $"{Utils.BlockPublicTag} {BlockName}";
@@ -264,7 +258,12 @@ namespace Meta.XR.BuildingBlocks.Editor
             return new List<GameObject> { instance };
         }
 
-        private static void InstallDependencies(IEnumerable<BlockData> dependencies, GameObject selectedGameObject = null)
+        protected virtual Task<List<GameObject>> InstallRoutineAsync(GameObject selectedGameObject)
+        {
+            return Task.FromResult(InstallRoutine(selectedGameObject));
+        }
+
+        private static async Task InstallDependenciesAsync(IEnumerable<BlockData> dependencies, GameObject selectedGameObject = null)
         {
             foreach (var dependency in dependencies)
             {
@@ -273,7 +272,7 @@ namespace Meta.XR.BuildingBlocks.Editor
                     continue;
                 }
 
-                dependency.InstallWithDependencies(selectedGameObject);
+                await dependency.InstallWithDependencies(selectedGameObject);
             }
         }
 
@@ -289,7 +288,7 @@ namespace Meta.XR.BuildingBlocks.Editor
 
         internal bool IsUpdateAvailableForBlock(BuildingBlock block) => Version > block.Version;
 
-        internal void UpdateBlockToLatestVersion(BuildingBlock block)
+        internal async Task UpdateBlockToLatestVersion(BuildingBlock block)
         {
             if (!IsUpdateAvailableForBlock(block))
             {
@@ -309,7 +308,7 @@ namespace Meta.XR.BuildingBlocks.Editor
                 DestroyImmediate(block.gameObject);
             }
 
-            InstallWithDependenciesAndCommit();
+            await InstallWithDependenciesAndCommit();
 
             OVRTelemetry.Start(OVRTelemetryConstants.BB.MarkerId.UpdateBlock)
                 .AddAnnotation(OVRTelemetryConstants.BB.AnnotationType.BlockId, Id)

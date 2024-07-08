@@ -19,6 +19,7 @@
  */
 
 using System;
+using System.Collections.Generic;
 using UnityEngine;
 #if UNITY_EDITOR
 using UnityEditor;
@@ -39,6 +40,12 @@ namespace Meta.XR.BuildingBlocks
         [SerializeField, OVRReadOnly] internal int version = 1;
         public int Version => version;
 
+        [SerializeField, HideInInspector] private InstallationRoutineCheckpoint installationRoutineCheckpoint;
+        public InstallationRoutineCheckpoint InstallationRoutineCheckpoint
+        {
+            get => installationRoutineCheckpoint;
+            set => installationRoutineCheckpoint = value;
+        }
 
         private void Awake()
         {

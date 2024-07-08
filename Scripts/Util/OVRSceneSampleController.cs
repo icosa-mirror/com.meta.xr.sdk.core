@@ -24,7 +24,7 @@ using System.Collections;
 /// <summary>
 /// Sample that allows you to play with various VR settings.
 /// </summary>
-[HelpURL("https://developer.oculus.com/reference/unity/latest/class_o_v_r_scene_sample_controller")]
+[HelpURL("https://developer.oculus.com/documentation/unity/unity-scene-samples-overview/")]
 public class OVRSceneSampleController : MonoBehaviour
 {
     /// <summary>

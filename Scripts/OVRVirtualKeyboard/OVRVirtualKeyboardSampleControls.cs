@@ -24,7 +24,7 @@ using UnityEngine.EventSystems;
 using UnityEngine.UI;
 
 [RequireComponent(typeof(OVRVirtualKeyboardSampleInputHandler))]
-[HelpURL("https://developer.oculus.com/reference/unity/latest/class_o_v_r_virtual_keyboard_sample_controls")]
+[HelpURL("https://developer.oculus.com/documentation/unity/VK-unity-sample/")]
 public class OVRVirtualKeyboardSampleControls : MonoBehaviour
 {
     private struct OVRVirtualKeyboardBackup

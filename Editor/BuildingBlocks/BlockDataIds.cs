@@ -50,5 +50,36 @@ namespace Meta.XR.BuildingBlocks.Editor
         public const string SyntheticHands = "6b67162c-2460-4766-a931-980388647573";
         public const string ThrowableItem = "803f3803-bb5e-464a-ac45-dad44c840fb6";
 
+
+        // Multiplayer Blocks
+        public const string IAutoMatchmaking = "d45b4309-f823-42e4-b871-0f58e8e647d8";
+        public const string AutoMatchmakingNGOInstallationRoutine = "0d740637-ae4c-40f5-98e2-1a9bac152d35";
+        public const string AutoMatchmakingFusionInstallationRoutine = "6436b892-b7d4-4073-8113-00ab41af3be1";
+
+        public const string INetworkManager = "1d8db162-54f6-43df-b4ef-b499df1f6769";
+        public const string NetworkManagerNGOInstallationRoutine = "45364db4-f880-45c3-9d76-d366c46500d3";
+        public const string NetworkManagerFusionInstallationRoutine = "676820bd-24bb-4da2-9785-74ad32626885";
+
+        public const string IPlayerNameTag = "97a7e1ae-ac65-4ee6-9167-10b3b94782f6";
+        public const string PlayerNameTagNGOInstallationRoutine = "5fa4d807-dad5-45f9-8d2a-fd910366fd35";
+        public const string PlayerNameTagFusionInstallationRoutine = "d2603dd8-0302-481a-a5e8-29f8e329a3e0";
+
+        public const string INetworkedAvatar = "b627f6cd-e738-4827-bfb1-7332719112b3";
+        public const string NetworkedAvatarNGOInstallationRoutine = "e7255571-f7d7-46a3-a005-558934863c26";
+        public const string NetworkedAvatarFusionInstallationRoutine = "4e28f6ff-1e9b-4a90-b9e0-ebc3fb118408";
+
+        public const string ControllerTeleporter = "3503368f-ae74-4ba8-a0c1-cf904f4bf5b6";
+        public const string PlatformInit = "40089589-8290-4ae3-a056-d9ca1ccaa35a";
+
+        public const string PlayerVoiceChat = "5523ee0f-69d0-4e9f-b4b3-1ca61874f631";
+        public const string PlayerVoiceChatFusionInstallationRoutine = "ca29a203-ad6d-4c65-ae37-ffab1dc8a165";
+
+        public const string IColocation = "f308c8f0-7a4b-4cd5-88be-c15b6399f823";
+        public const string ColocationNGOInstallationRoutine = "627c0498-c394-4708-824d-be6f2ba735a1";
+        public const string ColocationFusionInstallationRoutine = "7ea39360-e3ed-49ba-8b87-3a3427ae198c";
+
+        public const string INetworkedGrabbableObject = "e9b4b64f-1c7e-4dff-8f3c-ce409bdc3951";
+        public const string NetworkedGrabbableObjectNGOInstallationRoutine = "d5c83ff6-47e4-4c98-acdd-041d4686912f";
+        public const string NetworkedGrabbableObjectFusionInstallationRoutine = "54548176-30f4-4a4a-8057-340a383c6102";
     }
 }

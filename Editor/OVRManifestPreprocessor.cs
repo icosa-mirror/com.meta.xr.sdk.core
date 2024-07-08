@@ -425,7 +425,7 @@ public class OVRManifestPreprocessor
                 "meta-data",
                 "com.oculus.ossplash",
                 true,
-                modifyIfFound,
+                true /*modifyIfFound*/,
                 "value",
                 "true");
             AddOrRemoveTag(doc,
@@ -434,7 +434,7 @@ public class OVRManifestPreprocessor
                 "meta-data",
                 "com.oculus.ossplash.type",
                 true,
-                modifyIfFound,
+                true /*modifyIfFound*/,
                 "value",
                 projectConfig.systemSplashScreenType.ToManifestTag());
             AddOrRemoveTag(doc,
@@ -443,7 +443,7 @@ public class OVRManifestPreprocessor
                 "meta-data",
                 "com.oculus.ossplash.colorspace",
                 true,
-                modifyIfFound,
+                true /*modifyIfFound*/,
                 "value",
                 ColorSpaceToManifestTag(runtimeSettings.colorSpace));
         }
@@ -455,7 +455,7 @@ public class OVRManifestPreprocessor
             "meta-data",
             "com.oculus.ossplash.background",
             required: true,
-            modifyIfFound,
+            true /*modifyIfFound*/,
             "value",
             projectConfig.systemLoadingScreenBackground == OVRProjectConfig.SystemLoadingScreenBackground.ContextualPassthrough
                 ? "passthrough-contextual"

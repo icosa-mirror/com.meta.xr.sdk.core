@@ -110,7 +110,8 @@ namespace Meta.XR.GuidedSetups.Editor
 
         internal void AddGUIContent(GUIContent content)
         {
-            EditorGUILayout.LabelField(content, GuidedSetupStyles.GUIStyles.LabelTopPadding);
+            var style = new GUIStyle(GuidedSetupStyles.GUIStyles.LabelTopPadding) { wordWrap = true };
+            EditorGUILayout.LabelField(content, style);
         }
 
         internal void AddBulletedGUIContent(GUIContent content)

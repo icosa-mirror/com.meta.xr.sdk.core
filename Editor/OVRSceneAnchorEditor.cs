@@ -18,9 +18,11 @@
  * limitations under the License.
  */
 
+using System;
 using UnityEditor;
 
 [CustomEditor(typeof(OVRSceneAnchor))]
+[Obsolete(OVRSceneManager.DeprecationMessage)]
 public class OVRSceneAnchorEditor : Editor
 {
     OVRSceneAnchor _object;

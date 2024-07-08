@@ -29,7 +29,7 @@ public class OVRSkeletonEditor : Editor
     {
         var skeleton = (OVRSkeleton)target;
 
-        if (skeleton.GetSkeletonType() == OVRSkeleton.SkeletonType.None)
+        if ((OVRPlugin.SkeletonType)skeleton.GetSkeletonType() == OVRPlugin.SkeletonType.None)
         {
             EditorGUILayout.HelpBox("Please select a SkeletonType.", MessageType.Warning);
         }

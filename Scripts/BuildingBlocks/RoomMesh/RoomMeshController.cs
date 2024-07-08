@@ -18,6 +18,7 @@
  * limitations under the License.
  */
 
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
@@ -25,6 +26,7 @@ using UnityEngine.Rendering;
 
 namespace Meta.XR.BuildingBlocks
 {
+    [Obsolete(OVRSceneManager.DeprecationMessage)]
     public class RoomMeshController : MonoBehaviour
     {
         [SerializeField] private OVRSceneAnchor _volumePrefab;
@@ -107,7 +109,10 @@ namespace Meta.XR.BuildingBlocks
         {
             using (new OVRObjectPool.ListScope<OVRAnchor>(out var anchors))
             {
-                var task = OVRAnchor.FetchAnchorsAsync<OVRTriangleMesh>(anchors);
+                var task = OVRAnchor.FetchAnchorsAsync(anchors, new OVRAnchor.FetchOptions
+                {
+                    SingleComponentType = typeof(OVRTriangleMesh)
+                });
                 while (task.IsPending) yield return null;
 
                 if (anchors.Count == 0)
@@ -124,8 +129,8 @@ namespace Meta.XR.BuildingBlocks
                         continue;
                     }
 
-                    task = locatableComponent.SetEnabledAsync(true);
-                    while (task.IsPending) yield return null;
+                    var localizeTask = locatableComponent.SetEnabledAsync(true);
+                    while (localizeTask.IsPending) yield return null;
 
                     InstantiateRoomMesh(anchor, _volumePrefab);
                 }

@@ -37,11 +37,14 @@ public class OVRMesh : MonoBehaviour
         HandRight = OVRPlugin.MeshType.HandRight,
     }
 
+
     [SerializeField]
     private IOVRMeshDataProvider _dataProvider;
 
     [SerializeField]
     private MeshType _meshType = MeshType.None;
+
+    private MeshType _loadedMeshType = MeshType.None;
 
     private Mesh _mesh;
 
@@ -61,6 +64,7 @@ public class OVRMesh : MonoBehaviour
     {
         _meshType = type;
     }
+
 
     private void Awake()
     {
@@ -82,6 +86,11 @@ public class OVRMesh : MonoBehaviour
 
     private bool ShouldInitialize()
     {
+        if (_loadedMeshType != _meshType)
+        {
+            return true;
+        }
+
         if (IsInitialized)
         {
             return false;
@@ -113,6 +122,7 @@ public class OVRMesh : MonoBehaviour
             TransformOvrpMesh(ovrpMesh, _mesh);
             IsInitialized = true;
         }
+        _loadedMeshType = meshType;
     }
 
     private void TransformOvrpMesh(OVRPlugin.Mesh ovrpMesh, Mesh mesh)

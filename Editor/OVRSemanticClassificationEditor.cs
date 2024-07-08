@@ -18,9 +18,11 @@
  * limitations under the License.
  */
 
+using System;
 using UnityEditor;
 
 [CustomEditor(typeof(OVRSemanticClassification))]
+[Obsolete(OVRSceneManager.DeprecationMessage)]
 public class OVRSemanticClassificationEditor : Editor
 {
     OVRSemanticClassification _object;

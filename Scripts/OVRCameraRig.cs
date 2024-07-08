@@ -33,7 +33,7 @@ using Node = UnityEngine.XR.XRNode;
 /// A head-tracked stereoscopic virtual reality camera rig.
 /// </summary>
 [ExecuteInEditMode]
-[HelpURL("https://developer.oculus.com/reference/unity/latest/class_o_v_r_camera_rig")]
+[HelpURL("https://developer.oculus.com/documentation/unity/unity-add-camera-rig/")]
 public class OVRCameraRig : MonoBehaviour
 {
     /// <summary>
@@ -712,7 +712,9 @@ public class OVRCameraRig : MonoBehaviour
         while (parent)
         {
             Check<OVRSpatialAnchor>(parent);
+#pragma warning disable CS0618 // Type or member is obsolete
             Check<OVRSceneAnchor>(parent);
+#pragma warning restore CS0618 // Type or member is obsolete
             parent = parent.parent;
         }
     }

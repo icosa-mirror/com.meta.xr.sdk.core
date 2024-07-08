@@ -18,6 +18,7 @@
  * limitations under the License.
  */
 
+using System;
 using UnityEngine;
 
 /// <summary>
@@ -25,7 +26,8 @@ using UnityEngine;
 /// </summary>
 [DisallowMultipleComponent]
 [RequireComponent(typeof(OVRSceneAnchor))]
-[HelpURL("https://developer.oculus.com/reference/unity/latest/class_o_v_r_scene_volume")]
+[HelpURL("https://developer.oculus.com/documentation/unity/unity-scene-use-scene-anchors/#further-scene-model-unity-components")]
+[Obsolete(OVRSceneManager.DeprecationMessage)]
 public class OVRSceneVolume : MonoBehaviour, IOVRSceneComponent
 {
     /// <summary>

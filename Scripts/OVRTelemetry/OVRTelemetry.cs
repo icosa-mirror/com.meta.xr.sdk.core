@@ -23,9 +23,6 @@
 #endif
 
 using System;
-using System.Text;
-using Unity.Collections;
-using Unity.Collections.LowLevel.Unsafe;
 using UnityEngine;
 
 internal static partial class OVRTelemetry
@@ -34,12 +31,14 @@ internal static partial class OVRTelemetry
     {
         get
         {
+#pragma warning disable CS0162 // Unreachable code detected
 
 #if OVRPLUGIN_UNSUPPORTED_PLATFORM
             return false;
-#else
-            return true;
 #endif
+
+            return true;
+#pragma warning restore CS0162 // Unreachable code detected
         }
     }
 

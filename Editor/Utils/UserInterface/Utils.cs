@@ -27,6 +27,8 @@ namespace Meta.XR.Editor.UserInterface
 {
     internal static class Utils
     {
+        private static readonly HashSet<object> Foldouts = new HashSet<object>();
+
         public static bool IsMainEditor()
         {
             // Early Return when the process service is not the Editor itself
@@ -147,6 +149,30 @@ namespace Meta.XR.Editor.UserInterface
                         break;
                 }
             }
+        }
+
+        public static bool Foldout(object handle, string label, float offset = 0.0f, GUIStyle style = null)
+        {
+            var rect = GUILayoutUtility.GetRect(256, EditorGUIUtility.singleLineHeight + 4);
+
+            rect.x += offset;
+
+            var foldout = Foldouts.Contains(handle);
+            var newFoldout = EditorGUI.Foldout(rect, foldout, label, true, style ?? Styles.GUIStyles.FoldoutLeft);
+            if (foldout != newFoldout)
+            {
+                foldout = newFoldout;
+                if (newFoldout)
+                {
+                    Foldouts.Add(handle);
+                }
+                else
+                {
+                    Foldouts.Remove(handle);
+                }
+            }
+
+            return newFoldout;
         }
     }
 }

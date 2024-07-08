@@ -42,34 +42,26 @@ namespace Meta.XR.BuildingBlocks.Editor
             OVRProjectSetup.AddTask(
                 level: OVRProjectSetup.TaskLevel.Required,
                 group: OVRProjectSetup.TaskGroup.Compatibility,
-                isDone: buildTargetGroup => ValidateDuplicatedComponents(FindComponents<AudioListener>(false)),
+                isDone: _ => ValidateDuplicatedComponents(FindComponents<AudioListener>(false)),
                 message: "There can only be one active audio listener in this scene",
-                fix: buildTargetGroup => FixDuplicatedComponents(FindComponents<AudioListener>(false)),
+                fix: _ => FixDuplicatedComponents(FindComponents<AudioListener>(false)),
                 fixMessage: $"Disable the audio listeners outside of the camera rig"
             );
         }
 
-        private static bool BelongsToCameraRigBuildingBlock(GameObject gameObject)
-        {
-            return OVRProjectSetupUtils.HasComponentInParents<OVRCameraRig>(gameObject)
-                   && OVRProjectSetupUtils.HasComponentInParents<BuildingBlock>(gameObject);
-        }
+        private static bool BelongsToCameraRigBuildingBlock(GameObject gameObject) =>
+            OVRProjectSetupUtils.HasComponentInParents<OVRCameraRig>(gameObject)
+            && OVRProjectSetupUtils.HasComponentInParents<BuildingBlock>(gameObject);
 
-        private static bool CamerRigBuildingBlockExists<T>(IEnumerable<T> components) where T : Behaviour
-        {
-            return components.Any(component => BelongsToCameraRigBuildingBlock(component.gameObject));
-        }
+        private static bool CameraRigBuildingBlockExists<T>(IEnumerable<T> components) where T : Behaviour => components.Any(component => BelongsToCameraRigBuildingBlock(component.gameObject));
 
-        private static List<T> FindComponents<T>(bool findInMainCameraOnly) where T : Behaviour
-        {
-
-            return OVRProjectSetupUtils.FindComponentsInScene<T>()
+        private static List<T> FindComponents<T>(bool findInMainCameraOnly) where T : Behaviour =>
+            OVRProjectSetupUtils.FindComponentsInScene<T>()
                 .Where(component => component.enabled && (!findInMainCameraOnly || component.gameObject.CompareTag("MainCamera"))).ToList();
-        }
 
         private static bool ValidateDuplicatedComponents<T>(List<T> components) where T : Behaviour
         {
-            if (!CamerRigBuildingBlockExists(components))
+            if (!CameraRigBuildingBlockExists(components))
             {
                 return true;
             }

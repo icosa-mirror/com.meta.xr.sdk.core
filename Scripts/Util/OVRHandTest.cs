@@ -116,6 +116,7 @@ public class OVRHandTest : MonoBehaviour
             new BoolMonitor("One", () => OVRInput.Get(OVRInput.Button.One)),
         };
 
+        // TODO: Update to also test XRHandSkeletons.
         result_skel_LH = OVRPlugin.GetSkeleton(OVRPlugin.SkeletonType.HandLeft, out skel_LH);
         result_skel_RH = OVRPlugin.GetSkeleton(OVRPlugin.SkeletonType.HandRight, out skel_RH);
 

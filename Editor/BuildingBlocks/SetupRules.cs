@@ -70,34 +70,6 @@ namespace Meta.XR.BuildingBlocks.Editor
                 },
                 fixMessage: "Install the missing dependencies"
             );
-
-            // [Required] All block package dependencies must be present
-            OVRProjectSetup.AddTask(
-                level: OVRProjectSetup.TaskLevel.Required,
-                group: OVRProjectSetup.TaskGroup.Compatibility,
-                isDone: _ =>
-                {
-                    return GetSceneBlocks()
-                        .Select(block => block.GetBlockData())
-                        .SelectMany(blockData => blockData != null ? blockData.PackageDependencies : Enumerable.Empty<string>())
-                        .All(OVRProjectSetupUtils.IsPackageInstalled);
-                },
-                message: $"All {Utils.BlocksPublicName} package dependencies must be present in the scene",
-                fix: _ =>
-                {
-                    var missingPackageIds = GetSceneBlocks()
-                        .Select(block => block.GetBlockData())
-                        .SelectMany(blockData =>
-                            blockData != null ? blockData.PackageDependencies : Enumerable.Empty<string>())
-                        .Where(packageId => !OVRProjectSetupUtils.IsPackageInstalled(packageId));
-
-                    foreach (var packageId in missingPackageIds)
-                    {
-                        OVRProjectSetupUtils.InstallPackage(packageId);
-                    }
-                },
-                fixMessage: "Install the missing package dependencies"
-            );
         }
 
         private static IEnumerable<BuildingBlock> GetSceneBlocks()

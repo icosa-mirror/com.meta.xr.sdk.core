@@ -17,7 +17,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -35,7 +35,7 @@ using UnityEngine.Serialization;
 /// Simple script for running the HandTrackingWideMotionModeFusion Sample
 /// </summary>
 [DisallowMultipleComponent]
-[HelpURL("https://developer.oculus.com/reference/unity/latest/class_o_v_r_hand_tracking_wide_motion_mode_sample")]
+[HelpURL("https://developer.oculus.com/documentation/unity/unity-wide-motion-mode/")]
 public class OVRHandTrackingWideMotionModeSample : MonoBehaviour
 {
     [SerializeField]

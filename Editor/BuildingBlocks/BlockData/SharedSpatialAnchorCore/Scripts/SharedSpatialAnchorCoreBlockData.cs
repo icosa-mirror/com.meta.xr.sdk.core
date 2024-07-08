@@ -18,16 +18,12 @@
  * limitations under the License.
  */
 
-using System.Collections.Generic;
-using UnityEngine;
+using System;
 
 namespace Meta.XR.BuildingBlocks.Editor
 {
     public class SharedSpatialAnchorCoreBlockData : BlockData
     {
-        internal override List<GameObject> Install(GameObject selectedGameObject = null)
-        {
-            return InstallBlock<SharedSpatialAnchorCoreBuildingBlock>(selectedGameObject);
-        }
+        protected override Type ComponentType => typeof(SharedSpatialAnchorCoreBuildingBlock);
     }
 }

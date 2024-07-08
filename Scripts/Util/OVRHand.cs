@@ -31,6 +31,7 @@ public class OVRHand : MonoBehaviour,
     OVRMesh.IOVRMeshDataProvider,
     OVRMeshRenderer.IOVRMeshRendererDataProvider
 {
+
     public enum Hand
     {
         None = OVRPlugin.Hand.None,
@@ -56,6 +57,9 @@ public class OVRHand : MonoBehaviour,
 
     [SerializeField]
     internal Hand HandType = Hand.None;
+
+    // Track which hand skeleton version is loaded, changing which version is loaded requires reloading the mesh from the OVR Plugin.
+    private OVRHandSkeletonVersion _handSkeletonVersion;
 
     [SerializeField]
     private Transform _pointerPoseRoot = null;
@@ -112,6 +116,11 @@ public class OVRHand : MonoBehaviour,
         bool newPinching = GetFingerIsPinching(HandFinger.Index);
         _wasReleased = !newPinching && _wasIndexPinching;
         _wasIndexPinching = newPinching;
+
+        if (RayHelper && !IsActive() && RayHelper.isActiveAndEnabled)
+        {
+            RayHelper.gameObject.SetActive(false);
+        }
     }
 
     private void FixedUpdate()
@@ -308,7 +317,7 @@ public class OVRHand : MonoBehaviour,
     public void OnEnable()
     {
         OVRInputModule.TrackInputSource(this);
-        if (RayHelper)
+        if (RayHelper && ShouldShowHandUIRay())
         {
             RayHelper.gameObject.SetActive(true);
         }
@@ -329,7 +338,7 @@ public class OVRHand : MonoBehaviour,
         var skeleton = GetComponent<OVRSkeleton>();
         if (skeleton != null)
         {
-            if (skeleton.GetSkeletonType().AsHandType() != HandType)
+            if ((skeleton.GetSkeletonType()).AsHandType() != HandType)
             {
                 skeleton.SetSkeletonType(HandType.AsSkeletonType());
             }
@@ -357,7 +366,13 @@ public class OVRHand : MonoBehaviour,
 
     public Transform GetPointerRayTransform()
     {
+        PointerPose.name = name;
         return PointerPose;
+    }
+
+    private bool ShouldShowHandUIRay()
+    {
+        return m_showState != OVRInput.InputDeviceShowState.ControllerInHand || OVRPlugin.AreControllerDrivenHandPosesNatural();
     }
 
     public bool IsValid()
@@ -367,7 +382,12 @@ public class OVRHand : MonoBehaviour,
 
     public bool IsActive()
     {
-        return true;
+        return ShouldShowHandUIRay() && IsDataValid;
+    }
+
+    public OVRPlugin.Hand GetHand()
+    {
+        return (OVRPlugin.Hand)HandType;
     }
 
     public void UpdatePointerRay(OVRInputRayData rayData)

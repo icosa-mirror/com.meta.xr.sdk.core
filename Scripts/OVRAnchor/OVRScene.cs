@@ -38,24 +38,25 @@ public static class OVRScene
     /// Space Setup pauses the application and prompts the user to setup their Space. The app resumes when the user
     /// either cancels or completes Space Setup.
     ///
-    /// If not null, <parmaref name="labels"/> is a collection of comma-separated list of semantic labels that the user
+    /// <parmaref name="labels"/> is a collection of comma-separated list of semantic labels that the user
     /// must define during Space Setup. You may specify the same label multiple times. For example,
     /// <code><![CDATA[
     /// await RequestSpaceSetup("TABLE,TABLE");
     /// ]]></code>
     /// would prompt the user to define two tables.
     ///
-    /// See <see cref="OVRSceneManager.Classification"/> for the list of valid semantic labels.
+    /// See <see cref="OVRSemanticLabels"/> for creating the string.
     ///
     /// This method is asynchronous. The result of the task indicates whether the operation was successful. `False`
     /// usually indicates an unexpected failure; if the user cancels Space Setup, the operation still completes
     /// successfully.
     /// </remarks>
-    /// <param name="labels">(Optional) The types of anchors that the user should define.</param>
+    /// <param name="labels">The types of anchors that the user should define.</param>
     /// <returns>A task that can be used to track the asynchronous operation.</returns>
     /// <exception cref="ArgumentException">Thrown if <paramref name="labels"/> contains a label that is not one of
-    /// those provided by <see cref="OVRSceneManager.Classification"/></exception>
-    public static OVRTask<bool> RequestSpaceSetup(string labels = null)
+    /// those provided by <see cref="OVRSemanticLabels.Classification"/></exception>
+    [Obsolete(OVRSemanticLabels.DeprecationMessage)]
+    public static OVRTask<bool> RequestSpaceSetup(string labels)
     {
 #if DEVELOPMENT_BUILD || OVRPLUGIN_TESTING
         if (!string.IsNullOrEmpty(labels))
@@ -69,18 +70,47 @@ public static class OVRScene
             : OVRTask.FromResult(false);
     }
 
+    /// <summary>
+    /// Requests Space Setup using a list of classifications (may be null or empty)
+    /// </summary>
+    /// <remarks>
+    /// Requests [Space Setup](https://developer.oculus.com/documentation/unity/unity-scene-overview/#how-does-scene-work).
+    /// Space Setup pauses the application and prompts the user to setup their Space. The app resumes when the user
+    /// either cancels or completes Space Setup.
+    ///
+    /// If not null or empty, <parmaref name="classifications"/> is a list of semantic labels that the user
+    /// must define during Space Setup. You may specify the same label multiple times. For example,
+    /// <code><![CDATA[
+    /// await RequestSpaceSetup(new [] {Classification.Table, Classification.Table});
+    /// ]]></code>
+    /// would prompt the user to define two tables.
+    ///
+    /// See <see cref="OVRSemanticLabels.Classification"/> for a list of all labels.
+    ///
+    /// This method is asynchronous. The result of the task indicates whether the operation was successful. `False`
+    /// usually indicates an unexpected failure; if the user cancels Space Setup, the operation still completes
+    /// successfully.
+    /// </remarks>
+    /// <param name="classifications">(Optional) The types of anchors that the user should define.</param>
+    /// <returns>A task that can be used to track the asynchronous operation.</returns>
+    /// <exception cref="ArgumentException">Thrown if <paramref name="classifications"/> contains a label that is not
+    /// one of those provided by <see cref="OVRSemanticLabels.Classification"/></exception>
+    public static OVRTask<bool> RequestSpaceSetup(IReadOnlyList<OVRSemanticLabels.Classification> classifications = null) =>
+#pragma warning disable CS0618 // Type or member is obsolete
+        RequestSpaceSetup(OVRSemanticLabels.ToApiString(classifications));
+#pragma warning restore CS0618 // Type or member is obsolete
+
     static void ValidateRequestString(IEnumerable<string> labels, string paramName)
     {
         foreach (var label in labels.ToNonAlloc())
         {
-            if (label == null || !s_allowedClassifications.Contains(label))
+#pragma warning disable CS0618 // Type or member is obsolete
+            if (label == null || !OVRSceneManager.Classification.Set.Contains(label))
+#pragma warning restore CS0618 // Type or member is obsolete
             {
                 throw new ArgumentException($"'{label}' is not a valid label. See " +
-                                            $"{nameof(OVRSceneManager)}.{nameof(OVRSceneManager.Classification)}." +
-                                            $"{nameof(OVRSceneManager.Classification.List)}", paramName);
+                    $"{nameof(OVRSemanticLabels)}.{nameof(OVRSemanticLabels.Classification)}.", paramName);
             }
         }
     }
-
-    static readonly HashSet<string> s_allowedClassifications = new(OVRSceneManager.Classification.List);
 }
