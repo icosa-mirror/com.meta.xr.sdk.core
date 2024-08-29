@@ -34,6 +34,8 @@ using Unity.XR.Oculus;
 
 #if USING_XR_SDK_OPENXR
 using UnityEngine.XR.OpenXR;
+using UnityEngine.XR.OpenXR.Features;
+using UnityEngine.XR.OpenXR.Features.Interactions;
 #endif
 
 [InitializeOnLoad]
@@ -53,7 +55,15 @@ internal static class OVRProjectSetupXRTasks
             level: OVRProjectSetup.TaskLevel.Required,
             group: XRTaskGroup,
             isDone: _ => OVRProjectSetupUtils.IsPackageInstalled(OculusXRPackageName) || OVRProjectSetupUtils.IsPackageInstalled(UnityXRPackage),
-            message: $"Either the Oculus XR ({OculusXRPackageName}) or OpenXR Plugin ({UnityXRPackage}) package must be installed through the {UPMTitle}."
+            message: $"Either the Oculus XR ({OculusXRPackageName}) or OpenXR Plugin ({UnityXRPackage}) package must be installed through the {UPMTitle}. Please note that not all Meta XR SDK features are currently supported when using the OpenXR plugin."
+        );
+
+        OVRProjectSetup.AddTask(
+            conditionalValidity: _ => OVRProjectSetupUtils.PackageManagerListAvailable,
+            level: OVRProjectSetup.TaskLevel.Optional,
+            group: XRTaskGroup,
+            isDone: _ => !OVRProjectSetupUtils.IsPackageInstalled(UnityXRPackage),
+            message: $"Some features in the Meta XR SDK are not yet supported when using the OpenXR plugin ({UnityXRPackage}). Switch to the Oculus XR plugin ({OculusXRPackageName}) to enable support for these features."
         );
 
         OVRProjectSetup.AddTask(
@@ -88,7 +98,7 @@ internal static class OVRProjectSetupXRTasks
             isDone: buildTargetGroup =>
             {
                 var settings = GetXRGeneralSettingsForBuildTarget(buildTargetGroup, false);
-                return settings != null && settings.Manager.activeLoaders.Any(loader => loader is OculusLoader);
+                return settings != null && settings.Manager != null && settings.Manager.activeLoaders.Any(loader => loader is OculusLoader);
             },
             message: "Oculus must be added to the XR Plugin active loaders",
             fix: buildTargetGroup =>
@@ -172,6 +182,49 @@ internal static class OVRProjectSetupXRTasks
                 EditorUtility.SetDirty(settings);
             },
             fixMessage: "Add OpenXR to the XR Plugin active loaders"
+        );
+
+        OVRProjectSetup.AddTask(
+            conditionalValidity: BuildTargetGroup => OVRProjectSetupUtils.IsPackageInstalled(XRPluginManagementPackageName),
+            level: OVRProjectSetup.TaskLevel.Recommended,
+            group: XRTaskGroup,
+            isDone: buildTargetGroup =>
+            {
+                var settings = OpenXRSettings.GetSettingsForBuildTargetGroup(buildTargetGroup);
+                if (settings == null)
+                {
+                    return false;
+                }
+
+                bool touchFeatureEnabled = false;
+                foreach(var feature in settings.GetFeatures<OpenXRInteractionFeature>())
+                {
+                    if (feature.enabled)
+                    {
+                        if (feature is OculusTouchControllerProfile)
+                        {
+                            touchFeatureEnabled = true;
+                        }
+                    }
+                }
+                return touchFeatureEnabled;
+            },
+            message: "When using OpenXR Plugin, Oculus Touch Interaction Profile should be included for full OVRInput support.",
+            fix: buildTargetGroup =>
+            {
+                var settings = OpenXRSettings.GetSettingsForBuildTargetGroup(buildTargetGroup);
+                if (settings == null)
+                {
+                    throw new OVRConfigurationTaskException("Could not find OpenXR Plugin settings");
+                }
+
+                var touchFeature = settings.GetFeature<OculusTouchControllerProfile>();
+                if (touchFeature == null)
+                {
+                    throw new OVRConfigurationTaskException("Could not find Oculus Touch Interaction Profile in OpenXR settings");
+                }
+                touchFeature.enabled = true;
+            }
         );
 #endif
     }

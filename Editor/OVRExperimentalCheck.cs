@@ -37,7 +37,7 @@ class OVRExperimentalCheck : IPreprocessBuildWithReport
 
         const string experimentalEnabledProp = "debug.oculus.experimentalEnabled";
 
-        var config = OVRProjectConfig.GetProjectConfig(false);
+        var config = OVRProjectConfig.CachedProjectConfig;
         if (!config) return;
 
         var enabledInProject = config.experimentalFeaturesEnabled;

@@ -43,7 +43,13 @@ namespace Meta.XR.Editor.StatusMenu
         {
             foreach (var item in Items)
             {
-                var (_, color) = item.PillIcon?.Invoke() ?? default;
+                var (_, color, showNotification) = item.PillIcon?.Invoke() ?? default;
+
+                if (!showNotification)
+                {
+                    continue;
+                }
+
                 if (color.HasValue)
                 {
                     return item;

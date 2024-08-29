@@ -20,6 +20,9 @@
 
 using System;
 using UnityEngine;
+#if ENABLE_INPUT_SYSTEM && UNITY_NEW_INPUT_SYSTEM_INSTALLED
+using UnityEngine.InputSystem;
+#endif
 
 /// <summary>
 /// Controls the player's movement in virtual reality.
@@ -174,12 +177,40 @@ public class OVRPlayerController : MonoBehaviour
 
     private bool playerControllerEnabled = false;
 
+    // Input Actions for new input system
+#if ENABLE_INPUT_SYSTEM && UNITY_NEW_INPUT_SYSTEM_INSTALLED
+    private InputAction moveForwardAction;
+    private InputAction moveLeftAction;
+    private InputAction moveRightAction;
+    private InputAction moveBackAction;
+    private InputAction runAction;
+#endif
+
     void Start()
     {
         // Add eye-depth as a camera offset from the player controller
         var p = CameraRig.transform.localPosition;
         p.z = OVRManager.profile.eyeDepth;
         CameraRig.transform.localPosition = p;
+
+#if ENABLE_INPUT_SYSTEM && UNITY_NEW_INPUT_SYSTEM_INSTALLED
+        moveForwardAction = new InputAction(binding: "<Keyboard>/w");
+        moveForwardAction.AddBinding("<Keyboard>/upArrow");
+        moveLeftAction = new InputAction(binding: "<Keyboard>/a");
+        moveLeftAction.AddBinding("<Keyboard>/leftArrow");
+        moveRightAction = new InputAction(binding: "<Keyboard>/d");
+        moveRightAction.AddBinding("<Keyboard>/rightArrow");
+        moveBackAction = new InputAction(binding: "<Keyboard>/s");
+        moveBackAction.AddBinding("<Keyboard>/downArrow");
+        runAction = new InputAction(binding: "<Keyboard>/leftShift");
+        runAction.AddBinding("<Keyboard>/rightShift");
+
+        moveForwardAction.Enable();
+        moveLeftAction.Enable();
+        moveRightAction.Enable();
+        moveBackAction.Enable();
+        runAction.Enable();
+#endif
     }
 
     void Awake()
@@ -220,6 +251,14 @@ public class OVRPlayerController : MonoBehaviour
 
             playerControllerEnabled = false;
         }
+
+#if ENABLE_INPUT_SYSTEM && UNITY_NEW_INPUT_SYSTEM_INSTALLED
+        moveForwardAction.Disable();
+        moveLeftAction.Disable();
+        moveRightAction.Disable();
+        moveBackAction.Disable();
+        runAction.Disable();
+#endif
     }
 
     void Update()
@@ -344,16 +383,28 @@ public class OVRPlayerController : MonoBehaviour
     public virtual void UpdateMovement()
     {
         //todo: enable for Unity Input System
-#if ENABLE_LEGACY_INPUT_MANAGER
         if (HaltUpdateMovement)
             return;
 
         if (EnableLinearMovement)
         {
-            bool moveForward = Input.GetKey(KeyCode.W) || Input.GetKey(KeyCode.UpArrow);
-            bool moveLeft = Input.GetKey(KeyCode.A) || Input.GetKey(KeyCode.LeftArrow);
-            bool moveRight = Input.GetKey(KeyCode.D) || Input.GetKey(KeyCode.RightArrow);
-            bool moveBack = Input.GetKey(KeyCode.S) || Input.GetKey(KeyCode.DownArrow);
+            bool moveForward = false;
+            bool moveLeft = false;
+            bool moveRight = false;
+            bool moveBack = false;
+#if ENABLE_LEGACY_INPUT_MANAGER
+            moveForward = Input.GetKey(KeyCode.W) || Input.GetKey(KeyCode.UpArrow);
+            moveLeft = Input.GetKey(KeyCode.A) || Input.GetKey(KeyCode.LeftArrow);
+            moveRight = Input.GetKey(KeyCode.D) || Input.GetKey(KeyCode.RightArrow);
+            moveBack = Input.GetKey(KeyCode.S) || Input.GetKey(KeyCode.DownArrow);
+#else
+#if UNITY_NEW_INPUT_SYSTEM_INSTALLED
+            moveForward = moveForwardAction.phase == InputActionPhase.Started;
+            moveLeft = moveLeftAction.phase == InputActionPhase.Started;
+            moveRight = moveRightAction.phase == InputActionPhase.Started;
+            moveBack = moveBackAction.phase == InputActionPhase.Started;
+#endif
+#endif
 
             bool dpad_move = false;
 
@@ -385,8 +436,16 @@ public class OVRPlayerController : MonoBehaviour
             float moveInfluence = Acceleration * 0.1f * MoveScale * MoveScaleMultiplier;
 
             // Run!
+#if ENABLE_LEGACY_INPUT_MANAGER
             if (dpad_move || Input.GetKey(KeyCode.LeftShift) || Input.GetKey(KeyCode.RightShift))
                 moveInfluence *= 2.0f;
+#else
+#if UNITY_NEW_INPUT_SYSTEM_INSTALLED
+            if (dpad_move || runAction.phase == InputActionPhase.Started) {
+                moveInfluence *= 2.0f;
+            }
+#endif
+#endif
 
             Quaternion ort = transform.rotation;
             Vector3 ortEuler = ort.eulerAngles;
@@ -507,10 +566,9 @@ public class OVRPlayerController : MonoBehaviour
             }
             else
             {
-                transform.RotateAround(CameraRig.centerEyeAnchor.position, Vector3.up, euler.y);
+                transform.RotateAround(transform.position, Vector3.up, euler.y);
             }
         }
-#endif
     }
 
 

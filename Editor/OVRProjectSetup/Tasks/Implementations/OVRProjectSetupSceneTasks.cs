@@ -38,9 +38,10 @@ internal static class OVRProjectSetupSceneTasks
             message: "When using Scene in your project it's required to enable its capability in the project config",
             fix: buildTargetGroup =>
             {
-                // we also need anchorSupport, but it's automatically enabled when sceneSupport is
+                // we also need anchorSupport
                 var projectConfig = OVRProjectConfig.CachedProjectConfig;
-                projectConfig.sceneSupport = OVRProjectConfig.FeatureSupport.Supported;
+                projectConfig.sceneSupport = OVRProjectConfig.FeatureSupport.Required;
+                projectConfig.anchorSupport = OVRProjectConfig.AnchorSupport.Enabled;
                 OVRProjectConfig.CommitProjectConfig(projectConfig);
             },
             fixMessage: "Enable Scene Support in the project config"

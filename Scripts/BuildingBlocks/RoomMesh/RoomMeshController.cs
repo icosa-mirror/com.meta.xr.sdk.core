@@ -18,7 +18,6 @@
  * limitations under the License.
  */
 
-using System;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
@@ -26,17 +25,15 @@ using UnityEngine.Rendering;
 
 namespace Meta.XR.BuildingBlocks
 {
-    [Obsolete(OVRSceneManager.DeprecationMessage)]
     public class RoomMeshController : MonoBehaviour
     {
-        [SerializeField] private OVRSceneAnchor _volumePrefab;
-        private OVRSceneVolumeMeshFilter _volumeMeshFilter;
-        private Mesh _mesh;
+        [SerializeField] private GameObject _meshPrefab;
         private RoomMeshEvent _roomMeshEvent;
+        private RoomMeshAnchor _roomMeshAnchor;
 
         private void Awake()
         {
-            _volumeMeshFilter = GetComponent<OVRSceneVolumeMeshFilter>();
+            _roomMeshAnchor = GetComponent<RoomMeshAnchor>();
             _roomMeshEvent = FindObjectOfType<RoomMeshEvent>();
         }
 
@@ -56,20 +53,33 @@ namespace Meta.XR.BuildingBlocks
 
             yield return LoadRoomMesh();
             yield return UpdateVolume();
-            if (_volumeMeshFilter == null) yield break;
-            _roomMeshEvent.OnRoomMeshLoadCompleted?.Invoke(_volumeMeshFilter.GetComponent<MeshFilter>());
+            if (_roomMeshAnchor == null) yield break;
+
+            timeout = 3f;
+            startTime = Time.time;
+            while (!_roomMeshAnchor.IsCompleted)
+            {
+                if (Time.time - startTime > timeout)
+                {
+                    Debug.LogWarning($"[{nameof(RoomMeshController)}] Failed to create Room Mesh.");
+                    yield break;
+                }
+                yield return null;
+            }
+
+            _roomMeshEvent.OnRoomMeshLoadCompleted?.Invoke(_roomMeshAnchor.GetComponent<MeshFilter>());
         }
 
         private IEnumerator UpdateVolume()
         {
-            if (_volumeMeshFilter == null)
+            if (_roomMeshAnchor == null)
             {
                 yield break;
             }
 
-            while (!_volumeMeshFilter.IsCompleted) yield return null;
+            while (!_roomMeshAnchor.IsCompleted) yield return null;
 
-            var parentMeshFilter = _volumeMeshFilter.GetComponent<MeshFilter>();
+            var parentMeshFilter = _roomMeshAnchor.GetComponent<MeshFilter>();
 
             var parentMesh = parentMeshFilter.sharedMesh;
 
@@ -92,17 +102,17 @@ namespace Meta.XR.BuildingBlocks
                 idx[i] = i;
             }
 
-            _mesh = new Mesh
+            var mesh = new Mesh
             {
                 indexFormat = IndexFormat.UInt32
             };
-            _mesh.SetVertices(v);
-            _mesh.SetColors(c);
-            _mesh.SetIndices(idx, MeshTopology.Triangles, 0, true, 0);
-            _mesh.RecalculateBounds();
-            _mesh.RecalculateNormals();
+            mesh.SetVertices(v);
+            mesh.SetColors(c);
+            mesh.SetIndices(idx, MeshTopology.Triangles, 0, true, 0);
+            mesh.RecalculateBounds();
+            mesh.RecalculateNormals();
 
-            parentMeshFilter.sharedMesh = _mesh;
+            parentMeshFilter.sharedMesh = mesh;
         }
 
         private IEnumerator LoadRoomMesh()
@@ -132,24 +142,17 @@ namespace Meta.XR.BuildingBlocks
                     var localizeTask = locatableComponent.SetEnabledAsync(true);
                     while (localizeTask.IsPending) yield return null;
 
-                    InstantiateRoomMesh(anchor, _volumePrefab);
+                    InstantiateRoomMesh(anchor, _meshPrefab);
                 }
             }
         }
 
-        private void InstantiateRoomMesh(OVRAnchor anchor, OVRSceneAnchor prefab)
+        private void InstantiateRoomMesh(OVRAnchor anchor, GameObject prefab)
         {
-            var sceneAnchor = Instantiate(prefab, Vector3.zero, Quaternion.identity);
-            sceneAnchor.gameObject.name = _volumePrefab.name;
-            sceneAnchor.gameObject.SetActive(true);
-            sceneAnchor.Initialize(anchor);
-
-            _volumeMeshFilter = sceneAnchor.gameObject.AddComponent<OVRSceneVolumeMeshFilter>();
-        }
-
-        private void OnDestroy()
-        {
-            Destroy(_mesh);
+            _roomMeshAnchor = Instantiate(prefab, Vector3.zero, Quaternion.identity).GetComponent<RoomMeshAnchor>();
+            _roomMeshAnchor.gameObject.name = _meshPrefab.name;
+            _roomMeshAnchor.gameObject.SetActive(true);
+            _roomMeshAnchor.Initialize(anchor);
         }
     }
 }

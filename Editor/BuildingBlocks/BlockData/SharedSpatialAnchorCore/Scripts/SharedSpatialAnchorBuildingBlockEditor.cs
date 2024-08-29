@@ -24,6 +24,7 @@ using Meta.XR.Editor.UserInterface;
 using UnityEditor;
 using UnityEngine;
 using Meta.XR.Guides.Editor;
+using Meta.XR.Guides.Editor.Items;
 
 #if USING_META_XR_PLATFORM_SDK
 using Oculus.Platform;
@@ -37,7 +38,7 @@ namespace Meta.XR.BuildingBlocks.Editor
         protected override void ShowAdditionals()
         {
             EditorGUILayout.BeginVertical(Styles.GUIStyles.ErrorHelpBox);
-            DrawMessageWithIcon(Styles.Contents.InfoIcon, "A Meta Quest AppID is required to use Shared Spatial Anchor.");
+            new Icon(Styles.Contents.InfoIcon, Color.white, "<b>A Meta Quest AppID is required to use Shared Spatial Anchor.</b>").Draw();
 #if USING_META_XR_PLATFORM_SDK
             if (HasAppId())
             {
@@ -47,17 +48,17 @@ namespace Meta.XR.BuildingBlocks.Editor
 #else // UNITY_ANDROID
                 appId = PlatformSettings.AppID;
 #endif // UNITY_ANDROID
-                DrawMessageWithIcon(Styles.Contents.SuccessIcon, $"AppID found in Platform Settings: {appId}");
+                new Icon(Styles.Contents.SuccessIcon, Color.white, $"<b>AppID found in Platform Settings: {appId}</b>").Draw();
             }
             else
             {
-                DrawMessageWithIcon(Styles.Contents.ErrorIcon, "AppID is missing. Use <color=#66aaff>Meta Account Setup Guide</color> to configure your project");
+                new Icon(Styles.Contents.ErrorIcon, Color.white, "<b>AppID is missing. Use <color=#66aaff>Meta Account Setup Guide</color> to configure your project.</b>").Draw();
             }
 
             EditorGUILayout.Space();
             DrawButtons();
 #else // USING_META_XR_PLATFORM_SDK
-            DrawMessageWithIcon(Styles.Contents.ErrorIcon, "Meta Platform SDK is missing.");
+            new Icon(Styles.Contents.ErrorIcon, Color.white, "<b>Meta Platform SDK is missing.</b>").Draw();
             EditorGUILayout.Space();
 
 #endif // USING_META_XR_PLATFORM_SDK
@@ -75,7 +76,7 @@ namespace Meta.XR.BuildingBlocks.Editor
 
             if (GUILayout.Button("Open Platform Settings"))
             {
-                EditorApplication.ExecuteMenuItem("Meta/Platform/Edit Settings");
+                Selection.activeObject = PlatformSettings.Instance;
             }
             EditorGUILayout.EndVertical();
         }

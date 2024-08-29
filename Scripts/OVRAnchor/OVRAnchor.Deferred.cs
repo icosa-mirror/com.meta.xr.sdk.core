@@ -51,7 +51,8 @@ partial struct OVRAnchor
 
     static readonly Dictionary<DeferredKey, List<DeferredValue>> _deferredTasks = new();
 
-    internal static OVRTask<bool> CreateDeferredSpaceComponentStatusTask(ulong space, SpaceComponentType componentType, bool enabledDesired, double timeout)
+    internal static OVRTask<bool> CreateDeferredSpaceComponentStatusTask(ulong space, SpaceComponentType componentType, bool enabledDesired, double timeout
+    )
     {
         var key = new DeferredKey
         {
@@ -124,8 +125,10 @@ partial struct OVRAnchor
 
                     if (result == null)
                     {
+                        ulong requestId;
                         if (SetSpaceComponentStatus(eventData.Space, eventData.ComponentType, value.EnabledDesired,
-                                timeout, out var requestId))
+                                timeout, out requestId
+                                ))
                         {
                             value.RequestId = requestId;
                             list[i] = value;

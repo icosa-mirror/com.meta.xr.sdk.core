@@ -32,7 +32,8 @@ public class OVROverlayCanvas : OVRRayTransformer
         Opaque,
         OpaqueWithClip,
         TransparentDefaultAlpha,
-        TransparentCorrectAlpha
+        TransparentCorrectAlpha,
+        AlphaToMask,
     }
 
     public enum CanvasShape
@@ -40,17 +41,6 @@ public class OVROverlayCanvas : OVRRayTransformer
         Flat,
         Curved
     }
-
-    [SerializeField, HideInInspector]
-    private Shader _overrideCanvasShader = null;
-
-    [FormerlySerializedAs("_transparentShader")]
-    [SerializeField, HideInInspector]
-    private Shader _transparentImposterShader = null;
-
-    [FormerlySerializedAs("_opaqueShader")]
-    [SerializeField, HideInInspector]
-    private Shader _opaqueImposterShader = null;
 
     private RectTransform _rectTransform;
     private Canvas _canvas;
@@ -66,31 +56,32 @@ public class OVROverlayCanvas : OVRRayTransformer
     private float _optimalResolutionWidth;
     private float _optimalResolutionHeight;
 
-    private float _lastPixelWidth;
-    private float _lastPixelHeight;
+    private int _lastPixelWidth;
+    private int _lastPixelHeight;
 
     private Vector2 _imposterTextureOffset;
     private Vector2 _imposterTextureScale;
 
     private bool _hasRenderedFirstFrame;
+    private bool _useTempRT;
 
     private readonly bool _scaleViewport = Application.isMobilePlatform;
 
-    [FormerlySerializedAs("MaxTextureSize")] public int maxTextureSize = 4096;
+    [FormerlySerializedAs("MaxTextureSize")] public int maxTextureSize = 2048;
     [FormerlySerializedAs("DrawRate")] public int renderInterval = 1;
     [FormerlySerializedAs("DrawFrameOffset")] public int renderIntervalFrameOffset = 0;
     [FormerlySerializedAs("Expensive")] public bool expensive = false;
     [FormerlySerializedAs("Layer")] public int layer = 5;
     [FormerlySerializedAs("Opacity")] public DrawMode opacity = DrawMode.TransparentDefaultAlpha;
-    public bool overrideDefaultCanvasMaterial = false;
     public CanvasShape shape = CanvasShape.Flat;
     public float curveRadius = 1.0f;
+    public bool overlapMask = false;
 
     [SerializeField]
     private bool _overlayEnabled = true;
 
     private static readonly Plane[] _FrustumPlanes = new Plane[6];
-    private static readonly Vector3[] _WorldCorners = new Vector3[4];
+    private static readonly Vector3[] _Corners = new Vector3[4];
 
     public bool overlayEnabled
     {
@@ -155,6 +146,10 @@ public class OVROverlayCanvas : OVRRayTransformer
         _overlay.isAlphaPremultiplied = true;
         _overlay.currentOverlayType = OVROverlay.OverlayType.Underlay;
 
+        // On mobile we need to use a temporary copy texture for best performance
+        // on versions without the viewport flag
+        _useTempRT = Application.isMobilePlatform;
+
         InitializeRenderTexture();
     }
 
@@ -199,9 +194,7 @@ public class OVROverlayCanvas : OVRRayTransformer
         _camera.targetTexture = _renderTexture;
         _camera.cullingMask = 1 << gameObject.layer;
 
-        Shader shader = opacity == DrawMode.Opaque || opacity == DrawMode.OpaqueWithClip
-            ? _opaqueImposterShader
-            : _transparentImposterShader;
+        Shader shader = OVROverlayCanvasSettings.Instance.GetShader(opacity);
 
         if (_imposterMaterial == null)
         {
@@ -239,6 +232,26 @@ public class OVROverlayCanvas : OVRRayTransformer
             _imposterMaterial.DisableKeyword("EXPENSIVE");
         }
 
+        if (opacity == DrawMode.AlphaToMask)
+        {
+            _imposterMaterial.EnableKeyword("ALPHA_TO_MASK");
+            _imposterMaterial.SetInt("_AlphaToMask", 1);
+        }
+        else
+        {
+            _imposterMaterial.DisableKeyword("ALPHA_TO_MASK");
+            _imposterMaterial.SetInt("_AlphaToMask", 0);
+        }
+
+        if (overlapMask)
+        {
+            _imposterMaterial.EnableKeyword("OVERLAP_MASK");
+        }
+        else
+        {
+            _imposterMaterial.DisableKeyword("OVERLAP_MASK");
+        }
+
         _imposterMaterial.mainTexture = _renderTexture;
         _imposterMaterial.color = Color.black;
         _imposterMaterial.mainTextureOffset = _imposterTextureOffset;
@@ -270,10 +283,7 @@ public class OVROverlayCanvas : OVRRayTransformer
 
         _meshGenerator.SetOverlay(_overlay);
 
-        if (overrideDefaultCanvasMaterial)
-        {
-            Canvas.GetDefaultCanvasMaterial().shader = _overrideCanvasShader;
-        }
+        OVROverlayCanvasSettings.Instance.ApplyGlobalSettings();
     }
 
     private void OnDestroy()
@@ -364,7 +374,8 @@ public class OVROverlayCanvas : OVRRayTransformer
 
         ApplyViewportScale();
         _hasRenderedFirstFrame = true;
-        _camera.Render();
+
+        RenderCamera();
     }
 
     private void LateUpdate()
@@ -385,24 +396,35 @@ public class OVROverlayCanvas : OVRRayTransformer
         if (mainCamera == null)
             return;
 
-        _rectTransform.GetWorldCorners(_WorldCorners);
+        _rectTransform.GetLocalCorners(_Corners);
 
+        var localToWorldMatrix = _rectTransform.localToWorldMatrix;
+        if (shape == CanvasShape.Curved)
+        {
+            // for curve, the world corners aren't a great way to determine texture scale.
+            // To get more accurate results, apply billboard rotation to the rect based on the curve
+            // so that our corners better approximate the resolution needed.
+            localToWorldMatrix *= CalculateCurveViewBillboardMatrix(mainCamera);
+        }
+
+        var worldToViewport = mainCamera.projectionMatrix * mainCamera.worldToCameraMatrix;
+        var viewportToTexture =
+            Matrix4x4.Scale(new Vector3(0.5f * _optimalResolutionWidth, 0.5f * _optimalResolutionHeight, 0.0f));
+
+        var rectToTexture = viewportToTexture * worldToViewport * localToWorldMatrix;
         // Calculate Clip Pos for our quad
         for (int i = 0; i < 4; i++)
         {
-            var corner = mainCamera.WorldToScreenPoint(_WorldCorners[i]);
-            corner.x *= _optimalResolutionWidth / mainCamera.pixelWidth;
-            corner.y *= _optimalResolutionHeight / mainCamera.pixelHeight;
-            _WorldCorners[i] = corner;
+            _Corners[i] = rectToTexture.MultiplyPoint(_Corners[i]);
         }
 
         // Because our quad might be rotated, we find the raw max pixel length of each quad side
-        float height = Mathf.Max((_WorldCorners[1] - _WorldCorners[0]).magnitude, (_WorldCorners[3] - _WorldCorners[2]).magnitude);
-        float width = Mathf.Max((_WorldCorners[2] - _WorldCorners[1]).magnitude, (_WorldCorners[3] - _WorldCorners[0]).magnitude);
+        int height = Mathf.RoundToInt(Mathf.Max((_Corners[1] - _Corners[0]).magnitude, (_Corners[3] - _Corners[2]).magnitude));
+        int width = Mathf.RoundToInt(Mathf.Max((_Corners[2] - _Corners[1]).magnitude, (_Corners[3] - _Corners[0]).magnitude));
 
-        // round to the nearest even pixel size
-        float pixelHeight = Mathf.Ceil(height / 2 + 1) * 2 * (expensive ? 2 : 1);
-        float pixelWidth = Mathf.Ceil(width / 2 + 1) * 2 * (expensive ? 2 : 1);
+        // round to the nearest even pixel size, with 2 pixels of padding on all sides
+        int pixelHeight = ((height + 1) / 2) * 2 * (expensive ? 2 : 1) + 4;
+        int pixelWidth = ((width + 1) / 2) * 2 * (expensive ? 2 : 1) + 4;
 
         // clamp our viewport to the texture size
         pixelHeight = Mathf.Min(pixelHeight, _renderTexture.height);
@@ -420,22 +442,23 @@ public class OVROverlayCanvas : OVRRayTransformer
             _lastPixelWidth = pixelWidth;
         }
 
-        float innerPixelHeight = pixelHeight - 2;
-        float innerPixelWidth = pixelWidth - 2;
+        // subtract the two pixels from all sides
+        int innerPixelHeight = pixelHeight - 4;
+        int innerPixelWidth = pixelWidth - 4;
 
         float orthoHeight = _rectTransform.rect.height * _rectTransform.localScale.y *
-            pixelHeight / innerPixelHeight;
+            pixelHeight / (float)innerPixelHeight;
         float orthoWidth = _rectTransform.rect.width * _rectTransform.localScale.x *
-            pixelWidth / innerPixelWidth;
+            pixelWidth / (float)innerPixelWidth;
 
         _camera.orthographicSize = (0.5f * orthoHeight);
         _camera.aspect = (orthoWidth / orthoHeight);
 
-        float sizeX = pixelWidth / _renderTexture.width;
-        float sizeY = pixelHeight / _renderTexture.height;
+        float sizeX = pixelWidth / (float)_renderTexture.width;
+        float sizeY = pixelHeight / (float)_renderTexture.height;
 
-        float innerSizeX = innerPixelWidth / _renderTexture.width;
-        float innerSizeY = innerPixelHeight / _renderTexture.height;
+        float innerSizeX = innerPixelWidth / (float)_renderTexture.width;
+        float innerSizeY = innerPixelHeight / (float)_renderTexture.height;
 
         // scale the camera rect
         _camera.rect = new Rect((1 - sizeX) / 2, ((1 - sizeY) / 2), sizeX, sizeY);
@@ -450,6 +473,66 @@ public class OVROverlayCanvas : OVRRayTransformer
         // Update our material offset and scale
         _imposterTextureOffset = src.min;
         _imposterTextureScale = src.size;
+    }
+
+    private void RenderCamera()
+    {
+        var rect = _camera.rect;
+        int pixWidth = (int)(rect.width * _renderTexture.width);
+        int pixHeight = (int)(rect.height * _renderTexture.height);
+
+        if (_useTempRT && (pixWidth < _renderTexture.width || pixHeight < _renderTexture.height))
+        {
+            RenderTexture tempRT = RenderTexture.GetTemporary(pixWidth, pixHeight, 0, RenderTextureFormat.ARGB32, RenderTextureReadWrite.sRGB);
+
+            // override render texture with the temporary one
+            _camera.targetTexture = tempRT;
+            _camera.rect = new Rect(0, 0, 1, 1);
+            _camera.Render();
+
+            // Copy to our original render texture, then release the temporary texture
+            Graphics.CopyTexture(tempRT, 0, 0, 0, 0, pixWidth, pixHeight, _renderTexture, 0, 0, (int)(rect.x * _renderTexture.width), (int)(rect.y * _renderTexture.height));
+            RenderTexture.ReleaseTemporary(tempRT);
+
+            // restore original target rect and texture
+            _camera.rect = rect;
+            _camera.targetTexture = _renderTexture;
+        }
+        else
+        {
+            _camera.Render();
+        }
+
+    }
+
+    // Calculate a billboard rotation of our rect based on the curve parameters and the current camera position
+    private Matrix4x4 CalculateCurveViewBillboardMatrix(Camera mainCamera)
+    {
+        var relativeViewPos = Quaternion.Inverse(_rectTransform.rotation) *
+                              (mainCamera.transform.position - _rectTransform.position);
+
+        // calculate the billboard angle based on the x and z positions
+        float angle = Mathf.Atan2(-relativeViewPos.x, -relativeViewPos.z);
+
+        Vector3 lossyScale = _rectTransform.lossyScale;
+        float fullAngleWidth = _rectTransform.rect.width * lossyScale.x / curveRadius;
+
+        // clamp angle to the maximum curvature
+        angle = Mathf.Clamp(angle, -0.5f * fullAngleWidth, 0.5f * fullAngleWidth);
+
+        // calculate the tangent point to keep our billboard touching the curve surface
+        var tangentPoint = new Vector3(angle * curveRadius, 0, 0);
+        // Set the pivot point to the curve center
+        var pivotPoint = new Vector3(0, 0, curveRadius);
+
+        // calculate our offset rotation matrix, which consists of first applying x and y scale,
+        // offsetting to the pivot location minus the tangent point, rotating, reversing the pivot offset, then
+        // reversing the scale multiplication. Note that z scale is removed entirely.
+        return Matrix4x4.Scale(new Vector3(1.0f / lossyScale.x, 1.0f / lossyScale.y, 1.0f / lossyScale.z)) *
+               Matrix4x4.Translate(-pivotPoint) *
+               Matrix4x4.Rotate(Quaternion.AngleAxis(Mathf.Rad2Deg * angle, Vector3.up)) *
+               Matrix4x4.Translate(pivotPoint - tangentPoint) *
+               Matrix4x4.Scale(new Vector3(lossyScale.x, lossyScale.y, 1.0f));
     }
 
 

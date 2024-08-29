@@ -126,7 +126,15 @@ namespace Meta.XR.BuildingBlocks
                     }
                 }
 
-                var spatialAnchorGo = Instantiate(prefab, unboundAnchor.Pose.position, unboundAnchor.Pose.rotation);
+                var isPoseValid = unboundAnchor.TryGetPose(out var pose);
+                if (!isPoseValid)
+                {
+                    Debug.LogWarning("Unable to acquire initial anchor pose. Instantiating prefab at the origin.");
+                }
+
+                var spatialAnchorGo = isPoseValid
+                    ? Instantiate(prefab, pose.position, pose.rotation)
+                    : Instantiate(prefab);
                 var anchor = spatialAnchorGo.AddComponent<OVRSpatialAnchor>();
                 unboundAnchor.BindTo(anchor);
                 loadedAnchors.Add(anchor);

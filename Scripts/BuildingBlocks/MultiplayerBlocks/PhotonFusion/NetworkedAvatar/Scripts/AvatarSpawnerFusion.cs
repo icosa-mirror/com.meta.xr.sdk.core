@@ -23,9 +23,10 @@ using UnityEngine;
 #if META_AVATAR_SDK_DEFINED
 using Fusion;
 using Oculus.Avatar2;
+#endif // META_AVATAR_SDK_DEFINED
+
 using Meta.XR.MultiplayerBlocks.Shared;
 using System.Collections;
-#endif // META_AVATAR_SDK_DEFINED
 
 namespace Meta.XR.MultiplayerBlocks.Fusion
 {
@@ -42,8 +43,11 @@ namespace Meta.XR.MultiplayerBlocks.Fusion
         // e.g. the game has a maximum player count, they won't need more unique sample avatars
         [SerializeField] private int preloadedSampleAvatarSize = 32;
 
-        [Tooltip("Reduce quality automatically to improve performance when many avatars are spawned.")]
-        [SerializeField] private bool dynamicLOD = true;
+        [Tooltip("Adjust the level of detail used when streaming the avatars.")]
+        [SerializeField] private AvatarStreamLOD avatarStreamLOD = AvatarStreamLOD.Medium;
+
+        [Tooltip("Adjust the update interval used when streaming the avatars.")]
+        [SerializeField] private float avatarUpdateIntervalInSec = 0.08f;
 #pragma warning restore CS0414
 
 #if META_AVATAR_SDK_DEFINED
@@ -51,6 +55,12 @@ namespace Meta.XR.MultiplayerBlocks.Fusion
         private bool _sceneLoaded;
         private bool _entitlementCompleted;
         private PlatformInfo _platformInfo;
+
+        private void HandleAvatarSpawned(IAvatarStreamConfig streamConfig)
+        {
+            streamConfig.SetAvatarStreamLOD(avatarStreamLOD);
+            streamConfig.SetAvatarUpdateIntervalInS(avatarUpdateIntervalInSec);
+        }
 
         private void Awake()
         {
@@ -68,11 +78,13 @@ namespace Meta.XR.MultiplayerBlocks.Fusion
         private void OnEnable()
         {
             FusionBBEvents.OnSceneLoadDone += OnLoaded;
+            AvatarEntity.OnSpawned += HandleAvatarSpawned;
         }
 
         private void OnDisable()
         {
             FusionBBEvents.OnSceneLoadDone -= OnLoaded;
+            AvatarEntity.OnSpawned -= HandleAvatarSpawned;
         }
 
         private void OnLoaded(NetworkRunner networkRunner)
@@ -121,7 +133,7 @@ namespace Meta.XR.MultiplayerBlocks.Fusion
                 Vector3.zero,
                 Quaternion.identity,
                 _networkRunner.LocalPlayer,
-                (runner, obj) => // onBeforeSpawned
+                (_, obj) => // onBeforeSpawned
                 {
                     var avatarBehaviourFusion = obj.GetComponent<AvatarBehaviourFusion>();
                     avatarBehaviourFusion.LocalAvatarIndex = Random.Range(0, preloadedSampleAvatarSize - 1);
@@ -129,8 +141,6 @@ namespace Meta.XR.MultiplayerBlocks.Fusion
                     {
                         avatarBehaviourFusion.OculusId = _platformInfo.OculusUser?.ID ?? 0;
                     }
-
-                    obj.GetComponent<AvatarBehaviourFusion>().DynamicLOD = dynamicLOD;
                 }
             );
         }

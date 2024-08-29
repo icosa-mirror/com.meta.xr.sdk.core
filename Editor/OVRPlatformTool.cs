@@ -507,7 +507,7 @@ namespace Assets.Oculus.VR.Editor
 
             if (targetDeviceTypes.Count != 0)
             {
-                OVRProjectConfig projectConfig = OVRProjectConfig.GetProjectConfig();
+                OVRProjectConfig projectConfig = OVRProjectConfig.CachedProjectConfig;
                 projectConfig.targetDeviceTypes = targetDeviceTypes;
                 OVRProjectConfig.CommitProjectConfig(projectConfig);
             }

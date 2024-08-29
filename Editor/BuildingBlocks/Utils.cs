@@ -196,7 +196,7 @@ namespace Meta.XR.BuildingBlocks.Editor
         {
             Behavior =
             {
-                CanFilterBy = true
+                CanFilterBy = false
             }
         };
 
@@ -305,14 +305,14 @@ namespace Meta.XR.BuildingBlocks.Editor
                 null);
         }
 
-        private static (TextureContent, Color?) GetPillIcon()
+        private static (TextureContent, Color?, bool) GetPillIcon()
         {
             if (ComputeNumberOfNewBlocks() > 0)
             {
-                return (NewTag.Behavior.Icon, NewColor);
+                return (NewTag.Behavior.Icon, NewColor, true);
             }
 
-            return (null, null);
+            return (null, null, false);
         }
 
         private static void OnStatusMenuClick(Item.Origins origin)
@@ -477,7 +477,7 @@ namespace Meta.XR.BuildingBlocks.Editor
 
         internal static void UpdateBlockUsageFrequency(BlockData blockData)
         {
-            var freqTable = GetUsageFreqTable();
+            var freqTable = BlocksUsageFrequencyTable();
             if (freqTable == null)
             {
                 freqTable = new();
@@ -494,7 +494,7 @@ namespace Meta.XR.BuildingBlocks.Editor
             SaveUsageFreqTable(freqTable);
         }
 
-        internal static SerializableDictionary<string, int> GetUsageFreqTable()
+        internal static SerializableDictionary<string, int> BlocksUsageFrequencyTable()
         {
             var value = EditorPrefs.GetString(UsageFreqUniqueKey);
             return string.IsNullOrEmpty(value)
@@ -561,6 +561,35 @@ namespace Meta.XR.BuildingBlocks.Editor
                 targetVersionParts.Length > 2 ? targetVersionParts[2] : 0);
 
             return currentVersion.CompareTo(targetVersion);
+        }
+
+        public static readonly Func<bool> IsApplicationPlaying = () => Application.isPlaying;
+        internal static class Sort
+        {
+            public static IEnumerable<BlockBaseData> Alphabetical(IEnumerable<BlockBaseData> blocks) => blocks.OrderByDescending(b => b);
+
+            public static IEnumerable<BlockBaseData> MostUsed(IEnumerable<BlockBaseData> blocks) => MostUsed(blocks, BlocksUsageFrequencyTable());
+
+            internal static IEnumerable<BlockBaseData> MostUsed(IEnumerable<BlockBaseData> blocks, SerializableDictionary<string, int> frequencyTable)
+            {
+                if (frequencyTable == null) return blocks;
+
+                var unusedBlocks = blocks.Where(b => !frequencyTable.ContainsKey(b.Id));
+                var frequentlyUsedBlocks = frequencyTable
+                    .OrderByDescending(kvp => kvp.Value)
+                    .SelectMany(kvp => blocks.Where(block => block.Id == kvp.Key))
+                    .ToList();
+                frequentlyUsedBlocks.AddRange(unusedBlocks);
+
+                return frequentlyUsedBlocks;
+            }
+
+            public static IEnumerable<BlockBaseData> MostPopular(IEnumerable<BlockBaseData> blocks)
+            {
+                return blocks.Where(obj => !string.IsNullOrEmpty(obj.name))
+                    .OrderBy(block => block.Order)
+                    .ThenBy(block => block.BlockName.Value);
+            }
         }
     }
 }

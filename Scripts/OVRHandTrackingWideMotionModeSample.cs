@@ -110,14 +110,15 @@ public class OVRHandTrackingWideMotionModeSample : MonoBehaviour
         }
         else
         {
-            if(handRight != null && handRight.IsPointerPoseValid)
+            if (handRight != null && handRight.IsPointerPoseValid)
             {
                 inputTransform = handRight.PointerPose;
                 if (handRight.GetFingerIsPinching(OVRHand.HandFinger.Index))
                 {
                     inputModule.rayTransform = inputTransform;
                 }
-            } else
+            }
+            else
             {
                 inputTransform = null;
             }

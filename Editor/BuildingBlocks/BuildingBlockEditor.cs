@@ -310,14 +310,6 @@ namespace Meta.XR.BuildingBlocks.Editor
             EditorGUI.indentLevel = previousIndent;
         }
 
-        internal static void DrawMessageWithIcon(TextureContent icon, string msg)
-        {
-            EditorGUILayout.BeginHorizontal();
-            EditorGUILayout.LabelField(icon, Styles.GUIStyles.IconStyle, GUILayout.Width(16), GUILayout.Height(16));
-            EditorGUILayout.LabelField(msg, Styles.GUIStyles.LabelStyleWrapped);
-            EditorGUILayout.EndHorizontal();
-        }
-
         private static void AddBlockHighlightListeners(BuildingBlock buildingBlock)
         {
             var rect = GUILayoutUtility.GetLastRect();

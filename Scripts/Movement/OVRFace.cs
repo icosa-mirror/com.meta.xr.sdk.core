@@ -76,6 +76,16 @@ public class OVRFace : MonoBehaviour
         }
     }
 
+    private void OnEnable()
+    {
+        var manager = FindObjectOfType<OVRManager>();
+        if (manager != null && manager.SimultaneousHandsAndControllersEnabled)
+        {
+            Debug.LogWarning("Please note that currently, face tracking and simultaneous hands and controllers cannot be enabled at the same time on Quest 2", this);
+            return;
+        }
+    }
+
     internal OVRFaceExpressions SearchFaceExpressions() => gameObject.GetComponentInParent<OVRFaceExpressions>();
 
     protected virtual void Start()

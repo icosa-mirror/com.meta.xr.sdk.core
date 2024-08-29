@@ -18,8 +18,6 @@
  * limitations under the License.
  */
 
-using System;
-using System.Threading.Tasks;
 using Unity.Collections;
 using UnityEngine;
 
@@ -29,20 +27,21 @@ using UnityEngine;
 public class SceneManagerHelper
 {
     public GameObject AnchorGameObject { get; }
+    private readonly Transform _trackingSpace;
 
-    public SceneManagerHelper(GameObject gameObject)
+    public SceneManagerHelper(GameObject gameObject, Transform trackingSpace)
     {
         AnchorGameObject = gameObject;
+        _trackingSpace = trackingSpace;
     }
 
-    public void SetLocation(OVRLocatable locatable, Camera camera = null)
+    public void SetLocation(OVRLocatable locatable)
     {
         if (!locatable.TryGetSceneAnchorPose(out var pose))
             return;
 
-        var projectionCamera = camera == null ? Camera.main : camera;
-        var position = pose.ComputeWorldPosition(projectionCamera);
-        var rotation = pose.ComputeWorldRotation(projectionCamera);
+        var position = pose.ComputeWorldPosition(_trackingSpace);
+        var rotation = pose.ComputeWorldRotation(_trackingSpace);
 
         if (position != null && rotation != null)
             AnchorGameObject.transform.SetPositionAndRotation(

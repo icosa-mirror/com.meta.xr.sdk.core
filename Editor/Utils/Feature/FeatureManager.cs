@@ -150,6 +150,29 @@ namespace Meta.XR.Editor.Features
             builder.Append("SystemLoadingScreenBackground:");
             builder.Append(projectConfig.systemLoadingScreenBackground);
 
+            OVRRuntimeSettings runtimeSettings = OVRRuntimeSettings.Instance;
+            if (runtimeSettings == null)
+            {
+                return builder.ToString();
+            }
+
+            builder.Append(",");
+
+            builder.Append("BodyTrackingFidelity:");
+            builder.Append(runtimeSettings.BodyTrackingFidelity);
+            builder.Append(",");
+
+            builder.Append("BodyTrackingJointSet:");
+            builder.Append(runtimeSettings.BodyTrackingJointSet);
+            builder.Append(",");
+
+
+            builder.Append("VisualFaceTracking:");
+            builder.Append(runtimeSettings.RequestsVisualFaceTracking);
+            builder.Append(",");
+
+            builder.Append("AudioFaceTracking:");
+            builder.Append(runtimeSettings.RequestsAudioFaceTracking);
             return builder.ToString();
         }
     }

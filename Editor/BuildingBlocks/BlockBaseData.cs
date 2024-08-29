@@ -150,7 +150,7 @@ namespace Meta.XR.BuildingBlocks.Editor
 
 
 
-        internal abstract bool CanBeAdded { get; }
+        internal virtual bool CanBeAdded => !Utils.IsApplicationPlaying.Invoke();
 
         internal abstract Task AddToProject(GameObject selectedGameObject = null, Action onInstall = null);
 

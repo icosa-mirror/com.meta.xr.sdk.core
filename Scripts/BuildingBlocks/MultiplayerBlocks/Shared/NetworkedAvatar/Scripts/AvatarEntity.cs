@@ -20,9 +20,9 @@
 
 using System;
 using System.Collections;
-using System.Collections.Generic;
 using Meta.XR.BuildingBlocks;
 using UnityEngine;
+
 #if META_AVATAR_SDK_DEFINED
 using Oculus.Avatar2;
 #endif // META_AVATAR_SDK_DEFINED
@@ -38,7 +38,19 @@ namespace Meta.XR.MultiplayerBlocks.Shared
         public int LocalAvatarIndex { get; }
         public bool HasInputAuthority { get; }
         public void ReceiveStreamData(byte[] bytes);
-        public bool ShouldReduceLOD(int nAvatars);
+    }
+
+    public enum AvatarStreamLOD
+    {
+        Low,
+        Medium,
+        High
+    }
+
+    public interface IAvatarStreamConfig
+    {
+        public void SetAvatarStreamLOD(AvatarStreamLOD lod);
+        public void SetAvatarUpdateIntervalInS(float interval);
     }
 
 #if META_AVATAR_SDK_DEFINED
@@ -47,21 +59,17 @@ namespace Meta.XR.MultiplayerBlocks.Shared
     /// and also provide fallback solution to local zip avatar with a randomized preloaded avatar from sample assets
     /// when the user is not entitled (no Oculus Id) or has no avatar setup
     /// </summary>
-    public class AvatarEntity : OvrAvatarEntity
+    public class AvatarEntity : OvrAvatarEntity, IAvatarStreamConfig
     {
-        [SerializeField] private StreamLOD streamLOD = StreamLOD.Medium;
-        [SerializeField] private float intervalToSendDataInSec = 0.08f;
+        public static event Action<AvatarEntity> OnSpawned;
 
-        private static int _avatarCount;
-
-        private readonly List<byte[]> _streamedDataArray = new();
-        private const int MaxBytesToLog = 5;
+        private byte[] _streamedData;
         private float _cycleStartTime;
         private bool _skeletonLoaded;
         private bool _initialAvatarLoaded;
         private IAvatarBehaviour _avatarBehaviour;
-
-        private float IntervalToSendDataInSec => _avatarBehaviour.ShouldReduceLOD(_avatarCount) ? intervalToSendDataInSec * 2 : intervalToSendDataInSec;
+        private StreamLOD _streamLevel = StreamLOD.Medium;
+        private float _intervalToSendDataInSec = 0.08f;
 
         /// <summary>
         /// Could be triggered by any changes like oculus id, local avatar index, network connection etc.
@@ -87,16 +95,8 @@ namespace Meta.XR.MultiplayerBlocks.Shared
             {
                 throw new InvalidOperationException("Using AvatarEntity without an IAvatarBehaviour");
             }
-        }
 
-        private void OnEnable()
-        {
-            _avatarCount++;
-        }
-
-        private void OnDisable()
-        {
-            _avatarCount--;
+            OnSpawned?.Invoke(this);
         }
 
         private void Start()
@@ -197,15 +197,20 @@ namespace Meta.XR.MultiplayerBlocks.Shared
 
         private void Update()
         {
-            if (!_skeletonLoaded || _streamedDataArray.Count <= 0 || IsLocal) return;
-            var firstBytesInList = _streamedDataArray[0];
-            if (firstBytesInList != null)
+            if (!_skeletonLoaded || _streamedData == null || IsLocal)
             {
-                //Apply the remote avatar state and smooth the animation
-                ApplyStreamData(firstBytesInList);
-                SetPlaybackTimeDelay(IntervalToSendDataInSec / 2);
+                return;
             }
-            _streamedDataArray.RemoveAt(0);
+
+            if (_streamedData == null)
+            {
+                return;
+            }
+
+            //Apply the remote avatar state and smooth the animation
+            ApplyStreamData(_streamedData);
+            SetPlaybackTimeDelay(_intervalToSendDataInSec / 2);
+            _streamedData = null;
         }
 
         private void LateUpdate()
@@ -216,11 +221,13 @@ namespace Meta.XR.MultiplayerBlocks.Shared
             }
 
             var elapsedTime = Time.time - _cycleStartTime;
-            if (elapsedTime > IntervalToSendDataInSec)
+            if (elapsedTime < _intervalToSendDataInSec)
             {
-                RecordAndSendStreamDataIfHasAuthority();
-                _cycleStartTime = Time.time;
+                return;
             }
+
+            RecordAndSendStreamDataIfHasAuthority();
+            _cycleStartTime = Time.time;
         }
 
         private void RecordAndSendStreamDataIfHasAuthority()
@@ -230,19 +237,34 @@ namespace Meta.XR.MultiplayerBlocks.Shared
                 return;
             }
 
-            var bytes = RecordStreamData(_avatarBehaviour.ShouldReduceLOD(_avatarCount) ? StreamLOD.Low : streamLOD);
+            var bytes = RecordStreamData(_streamLevel);
             _avatarBehaviour.ReceiveStreamData(bytes);
         }
 
-        public void AddToStreamDataList(byte[] bytes)
+        public void SetStreamData(byte[] bytes)
         {
-            if (_streamedDataArray.Count == MaxBytesToLog)
-            {
-                _streamedDataArray.RemoveAt(_streamedDataArray.Count - 1);
-            }
-
-            _streamedDataArray.Add(bytes);
+            _streamedData = bytes;
         }
+
+#region IAvatarStreamLOD
+
+        public void SetAvatarStreamLOD(AvatarStreamLOD lod)
+        {
+            _streamLevel = lod switch
+            {
+                AvatarStreamLOD.Low => StreamLOD.Low,
+                AvatarStreamLOD.Medium => StreamLOD.Medium,
+                AvatarStreamLOD.High => StreamLOD.High,
+                _ => StreamLOD.Medium
+            };
+        }
+
+        public void SetAvatarUpdateIntervalInS(float interval)
+        {
+            _intervalToSendDataInSec = interval;
+        }
+
+#endregion
     }
 #endif // META_AVATAR_SDK_DEFINED
 }

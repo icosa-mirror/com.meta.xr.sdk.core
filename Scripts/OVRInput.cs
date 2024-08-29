@@ -595,27 +595,27 @@ public static class OVRInput
         }
     }
 
-	/// <summary>
-	/// Returns a flag indicating whether or not the hand poses are controlled by controller data
-	/// </summary>
-	public static bool AreHandPosesGeneratedByControllerData(OVRPlugin.Step stepId, OVRInput.Hand hand)
-	{
+    /// <summary>
+    /// Returns a flag indicating whether or not the hand poses are controlled by controller data
+    /// </summary>
+    public static bool AreHandPosesGeneratedByControllerData(OVRPlugin.Step stepId, OVRInput.Hand hand)
+    {
         switch (hand)
         {
             case Hand.HandLeft:
                 return OVRPlugin.AreHandPosesGeneratedByControllerData(stepId, OVRPlugin.Node.HandLeft);
-			case Hand.HandRight:
+            case Hand.HandRight:
                 return OVRPlugin.AreHandPosesGeneratedByControllerData(stepId, OVRPlugin.Node.HandRight);
-			default:
-				return false;
-		}
-	}
+            default:
+                return false;
+        }
+    }
 
     /// <summary>
     /// Switch to simultaneous hands and controllers mode on device
     /// </summary>
     public static bool EnableSimultaneousHandsAndControllers()
-	{
+    {
         return OVRPlugin.SetSimultaneousHandsAndControllersEnabled(true);
     }
 
@@ -623,15 +623,15 @@ public static class OVRInput
     /// Switch back from simultaneous hands and controllers mode to the app config-specified mono-modality mode on device
     /// </summary>
     public static bool DisableSimultaneousHandsAndControllers()
-	{
+    {
         return OVRPlugin.SetSimultaneousHandsAndControllersEnabled(false);
     }
 
-	/// <summary>
-	/// Returns a flag indicating whether or not the controller is held.
-	/// </summary>
-	public static ControllerInHandState GetControllerIsInHandState(OVRInput.Hand hand)
-	{
+    /// <summary>
+    /// Returns a flag indicating whether or not the controller is held.
+    /// </summary>
+    public static ControllerInHandState GetControllerIsInHandState(OVRInput.Hand hand)
+    {
         switch (hand)
         {
             case Hand.HandLeft:

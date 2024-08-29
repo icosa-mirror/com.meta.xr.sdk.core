@@ -20,11 +20,11 @@
 
 using Unity.Netcode;
 using UnityEngine;
+using Meta.XR.MultiplayerBlocks.Shared;
 using Random = UnityEngine.Random;
 
 #if META_AVATAR_SDK_DEFINED
 using Oculus.Avatar2;
-using Meta.XR.MultiplayerBlocks.Shared;
 #endif // META_AVATAR_SDK_DEFINED
 
 namespace Meta.XR.MultiplayerBlocks.NGO
@@ -41,12 +41,32 @@ namespace Meta.XR.MultiplayerBlocks.NGO
         // developer might want to delete some avatars from the sample asset zip
         // e.g. the game has a maximum player count, they won't need more unique sample avatars
         [SerializeField] private int preloadedSampleAvatarSize = 32;
-        [Tooltip("Reduce quality automatically to improve performance when many avatars are spawned.")]
-        [SerializeField] private bool dynamicLOD = true;
+
+        [Tooltip("Adjust the level of detail used when streaming the avatars.")]
+        [SerializeField] private AvatarStreamLOD avatarStreamLOD = AvatarStreamLOD.Medium;
+
+        [Tooltip("Adjust the update interval used when streaming the avatars.")]
+        [SerializeField] private float avatarUpdateIntervalInSec = 0.08f;
 #pragma warning restore CS0414
 
 #if META_AVATAR_SDK_DEFINED
         private PlatformInfo? _platformInfo;
+
+        private void OnEnable()
+        {
+            AvatarEntity.OnSpawned += HandleAvatarSpawned;
+        }
+
+        private void OnDisable()
+        {
+            AvatarEntity.OnSpawned -= HandleAvatarSpawned;
+        }
+
+        private void HandleAvatarSpawned(IAvatarStreamConfig streamConfig)
+        {
+            streamConfig.SetAvatarStreamLOD(avatarStreamLOD);
+            streamConfig.SetAvatarUpdateIntervalInS(avatarUpdateIntervalInSec);
+        }
 
         private void Awake()
         {
@@ -107,7 +127,6 @@ namespace Meta.XR.MultiplayerBlocks.NGO
             go.GetComponent<NetworkObject>().SpawnWithOwnership(serverRpcParams.Receive.SenderClientId);
             go.GetComponent<AvatarBehaviourNGO>().LocalAvatarIndex = Random.Range(0, preloadedSampleAvatarSize - 1);
             go.GetComponent<AvatarBehaviourNGO>().OculusId = oculusId;
-            go.GetComponent<AvatarBehaviourNGO>().DynamicLOD = dynamicLOD;
         }
 #endif // META_AVATAR_SDK_DEFINED
     }

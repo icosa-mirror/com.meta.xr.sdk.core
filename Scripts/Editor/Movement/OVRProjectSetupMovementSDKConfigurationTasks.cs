@@ -88,7 +88,21 @@ internal static class OVRProjectSetupMovementSDKConfigurationTasks
                     OVRCustomFaceEditor.FixFaceExpressions(face);
                 }
             },
-            fixMessage: $"Crete OVRFaceExpressions components where they are required"
+            fixMessage: $"Create OVRFaceExpressions components where they are required"
+        );
+
+        OVRProjectSetup.AddTask(
+            level: OVRProjectSetup.TaskLevel.Required,
+            group: Group,
+            isDone: buildTargetGroup => GameObject.FindObjectOfType<OVRManager>() == null ||
+                GameObject.FindObjectOfType<OVRManager>().SimultaneousHandsAndControllersEnabled == false ||
+                GameObject.FindObjectOfType<OVRManager>().requestFaceTrackingPermissionOnStartup == false,
+            message: "Warning: Face tracking is not compatible with simultaneous hands and controllers on Quest 2 devices",
+            fix: buildTargetGroup =>
+            {
+                // Take no action; developers should take heed of the warning message and account for the compatibility issue if necessary
+            },
+            fixMessage: $"Ensure Quest 2 app design accounts for this if enabling both features concurrently"
         );
     }
 

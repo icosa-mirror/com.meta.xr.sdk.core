@@ -20,8 +20,8 @@
 
 using System;
 using System.Runtime.InteropServices;
+using Unity.Collections;
 using Unity.Collections.LowLevel.Unsafe;
-using UnityEngine;
 using static OVRPlugin;
 
 //-------------------------------------------------------------------------------------
@@ -44,6 +44,23 @@ internal static class OVRDeserialize
         }
 
         return stuff;
+    }
+
+    public static unsafe T MarshalEntireStructAs<T>(this EventDataBuffer eventDataBuffer, Allocator allocator = Allocator.Temp)
+    {
+        using var buffer = new NativeArray<byte>(eventDataBuffer.EventData.Length + sizeof(OVRPlugin.EventType), allocator);
+        var dst = (byte*)buffer.GetUnsafePtr();
+
+        fixed (byte* src = eventDataBuffer.EventData)
+        {
+            *(OVRPlugin.EventType*)dst = eventDataBuffer.EventType;
+            UnsafeUtility.MemCpy(
+                destination: dst + sizeof(OVRPlugin.EventType),
+                source: src,
+                eventDataBuffer.EventData.Length);
+
+            return Marshal.PtrToStructure<T>(new IntPtr(dst));
+        }
     }
 
     public struct DisplayRefreshRateChangedData
@@ -154,6 +171,8 @@ internal static class OVRDeserialize
     {
         public BoundaryVisibility BoundaryVisibility;
     }
+
+
 
 
 }

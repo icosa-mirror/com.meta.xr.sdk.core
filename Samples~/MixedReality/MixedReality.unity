@@ -402,8 +402,8 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 555725d48e9051a4bb6b8d45178c2fdd, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
+  m_Name:
+  m_EditorClassIdentifier:
   projectionSurfaceType: 0
   overlayType: 1
   compositionDepth: 0
@@ -513,10 +513,11 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: a68165f9d192d3049b05d2b5deb45d47, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
+  m_Name:
+  m_EditorClassIdentifier:
   SceneObjectPrefab: {fileID: 9119011351379941881, guid: a9406a8759ec0e54fa2b3219ef686fd1,
     type: 3}
+  _trackingSpace: {fileID: 899182581}
 --- !u!4 &1587096899
 Transform:
   m_ObjectHideFlags: 0

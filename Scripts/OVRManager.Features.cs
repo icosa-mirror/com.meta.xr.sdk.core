@@ -45,7 +45,7 @@ public partial class OVRManager
         }
         else
 #endif
-            return OVRPlugin.fixedFoveatedRenderingSupported;
+        return OVRPlugin.fixedFoveatedRenderingSupported;
     }
     public static FoveatedRenderingLevel GetFoveatedRenderingLevel()
     {
@@ -54,7 +54,7 @@ public partial class OVRManager
             return MetaXRFoveationFeature.foveatedRenderingLevel;
         else
 #endif
-            return (FoveatedRenderingLevel)OVRPlugin.foveatedRenderingLevel;
+        return (FoveatedRenderingLevel)OVRPlugin.foveatedRenderingLevel;
     }
 
     public static void SetFoveatedRenderingLevel(FoveatedRenderingLevel level)
@@ -64,7 +64,7 @@ public partial class OVRManager
             MetaXRFoveationFeature.foveatedRenderingLevel = level;
         else
 #endif
-            OVRPlugin.foveatedRenderingLevel = (OVRPlugin.FoveatedRenderingLevel)level;
+        OVRPlugin.foveatedRenderingLevel = (OVRPlugin.FoveatedRenderingLevel)level;
     }
 
     public static bool GetDynamicFoveatedRenderingEnabled()
@@ -74,7 +74,7 @@ public partial class OVRManager
             return MetaXRFoveationFeature.useDynamicFoveatedRendering;
         else
 #endif
-            return OVRPlugin.useDynamicFoveatedRendering;
+        return OVRPlugin.useDynamicFoveatedRendering;
     }
 
     public static void SetDynamicFoveatedRenderingEnabled(bool enabled)
@@ -84,7 +84,7 @@ public partial class OVRManager
             MetaXRFoveationFeature.useDynamicFoveatedRendering = enabled;
         else
 #endif
-            OVRPlugin.useDynamicFoveatedRendering = enabled;
+        OVRPlugin.useDynamicFoveatedRendering = enabled;
     }
 
     public static bool GetEyeTrackedFoveatedRenderingSupported()
@@ -94,7 +94,7 @@ public partial class OVRManager
             return MetaXREyeTrackedFoveationFeature.eyeTrackedFoveatedRenderingSupported;
         else
 #endif
-            return OVRPlugin.eyeTrackedFoveatedRenderingSupported;
+        return OVRPlugin.eyeTrackedFoveatedRenderingSupported;
     }
 
     public static bool GetEyeTrackedFoveatedRenderingEnabled()
@@ -104,7 +104,7 @@ public partial class OVRManager
             return MetaXREyeTrackedFoveationFeature.eyeTrackedFoveatedRenderingEnabled;
         else
 #endif
-            return OVRPlugin.eyeTrackedFoveatedRenderingEnabled;
+        return OVRPlugin.eyeTrackedFoveatedRenderingEnabled;
     }
 
     public static void SetEyeTrackedFoveatedRenderingEnabled(bool enabled)
@@ -127,7 +127,7 @@ public partial class OVRManager
 #if USING_XR_SDK_OCULUS
             OculusXRPlugin.SetSpaceWarp(enabled ? OVRPlugin.Bool.True : OVRPlugin.Bool.False);
 #else
-            Debug.Log("Failed to set Space Warp. Current XR Loader does not support this feature.");
+        Debug.Log("Failed to set Space Warp. Current XR Loader does not support this feature.");
 #endif
     }
 
@@ -141,7 +141,7 @@ public partial class OVRManager
 #if USING_XR_SDK_OCULUS
             OculusXRPlugin.SetAppSpacePosition(x, y, z);
 #else
-            Debug.Log("Failed to set Space Warp App Position. Current XR Loader does not support this feature.");
+        Debug.Log("Failed to set Space Warp App Position. Current XR Loader does not support this feature.");
 #endif
     }
 
@@ -155,7 +155,7 @@ public partial class OVRManager
 #if USING_XR_SDK_OCULUS
             OculusXRPlugin.SetAppSpaceRotation(x, y, z, w);
 #else
-            Debug.Log("Failed to set Space Warp App Rotation. Current XR Loader does not support this feature.");
+        Debug.Log("Failed to set Space Warp App Rotation. Current XR Loader does not support this feature.");
 #endif
     }
 

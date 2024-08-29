@@ -257,23 +257,16 @@ public class OVRProjectConfigEditor : Editor
                     hasModified = true;
                 }
 
+
                 // Passthrough support
                 OVREditorUtil.SetupEnumField(projectConfig, new GUIContent("Passthrough Support",
                         "Allows the application to use passthrough functionality. This option must be enabled at build time, otherwise initializing passthrough and creating passthrough layers in application scenes will fail."),
                     ref projectConfig._insightPassthroughSupport, ref hasModified);
-                if (hasModified)
+                if (hasModified && projectConfig._insightPassthroughSupport != OVRProjectConfig.FeatureSupport.None)
                 {
-                    var newSystemLoadingScreenBackground =
-                        projectConfig._insightPassthroughSupport == OVRProjectConfig.FeatureSupport.None
-                            ? OVRProjectConfig.SystemLoadingScreenBackground.Black
-                            : OVRProjectConfig.SystemLoadingScreenBackground.ContextualPassthrough;
-                    if (projectConfig._systemLoadingScreenBackground != newSystemLoadingScreenBackground)
-                    {
-                        projectConfig._systemLoadingScreenBackground = newSystemLoadingScreenBackground;
-                        Debug.LogFormat(LogType.Log, LogOption.NoStacktrace, context: null,
-                            $"System Splash Screen Background automatically changed to {newSystemLoadingScreenBackground} " +
-                            $"due to Passthrough Support change in OVRManager Quest Features");
-                    }
+                    // Enable contextual passthrough for MR apps
+                    projectConfig._systemLoadingScreenBackground =
+                        OVRProjectConfig.SystemLoadingScreenBackground.ContextualPassthrough;
                 }
 
                 // Boundary Visibility Support
@@ -374,7 +367,7 @@ public class OVRProjectConfigEditor : Editor
 
                 // System Splash Screen Background: Black vs ContextualPassthrough
                 bool systemSplashScreenBackgroundCustomizable =
-                    projectConfig.insightPassthroughSupport != OVRProjectConfig.FeatureSupport.None;
+                    projectConfig.insightPassthroughSupport == OVRProjectConfig.FeatureSupport.None;
                 using (new EditorGUI.DisabledGroupScope(!systemSplashScreenBackgroundCustomizable))
                 {
                     OVREditorUtil.SetupEnumField(
@@ -388,14 +381,6 @@ public class OVRProjectConfigEditor : Editor
                         ref projectConfig._systemLoadingScreenBackground,
                         ref hasModified
                     );
-                }
-
-                if (projectConfig.insightPassthroughSupport != OVRProjectConfig.FeatureSupport.None &&
-                    projectConfig._systemLoadingScreenBackground == OVRProjectConfig.SystemLoadingScreenBackground.Black)
-                {
-                    EditorGUILayout.HelpBox(
-                        "Soon Black background will be prohibited for MR apps. Consider using Passthrough (Contextual).",
-                        MessageType.Warning);
                 }
 
                 if (projectConfig.systemLoadingScreenBackground == OVRProjectConfig.SystemLoadingScreenBackground.ContextualPassthrough)
@@ -428,10 +413,19 @@ public class OVRProjectConfigEditor : Editor
 
             case eProjectConfigTab.BuildSettings:
 
-                OVREditorUtil.SetupBoolField(projectConfig, new GUIContent("Skip Unneeded Shaders",
-                        "If checked, prevent building shaders that are not used by default to reduce time spent when building."),
-                    ref projectConfig.skipUnneededShaders, ref hasModified,
-                    "https://developer.oculus.com/documentation/unity/unity-strip-shaders/");
+                var usingSRP = UnityEngine.Rendering.GraphicsSettings.currentRenderPipeline != null;
+                if (usingSRP && projectConfig.skipUnneededShaders)
+                {
+                    projectConfig.skipUnneededShaders = false;
+                }
+
+                using (new EditorGUI.DisabledScope(usingSRP))
+                {
+                    OVREditorUtil.SetupBoolField(projectConfig, new GUIContent("Skip Unneeded Shaders",
+                        "If checked, prevent building shaders (BiRP only) that are not used by default to reduce time spent when building."),
+                        ref projectConfig.skipUnneededShaders, ref hasModified,
+                        "https://developer.oculus.com/documentation/unity/unity-strip-shaders/");
+                }
 
                 OVREditorUtil.SetupBoolField(projectConfig, new GUIContent("IL2CPP Link Time Optimization",
                         "If checked, IL2CPP will compile code with link time optimization in release build."),

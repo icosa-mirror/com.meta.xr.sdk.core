@@ -65,7 +65,7 @@ namespace Meta.XR.Editor.StatusMenu
 
         public delegate (string, Color?) TextDelegate();
 
-        public delegate (TextureContent, Color?) PillIconDelegate();
+        public delegate (TextureContent, Color?, bool) PillIconDelegate();
 
         public string Name;
         public Color Color;
@@ -152,7 +152,7 @@ namespace Meta.XR.Editor.StatusMenu
         {
             if (PillIcon == null) return;
 
-            var (content, color) = PillIcon();
+            var (content, color, _) = PillIcon();
 
             if (content == null) return;
 

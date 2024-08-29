@@ -31,6 +31,9 @@ Shader "Oculus/VirtualKeyboard/OVRVirtualKeyboardMMBias"
                 float4 vertex : POSITION;
                 float4 color : COLOR0;
                 float2 uv : TEXCOORD0;
+
+                // Single-pass instanced rendering
+                UNITY_VERTEX_INPUT_INSTANCE_ID
             };
 
             struct v2f
@@ -38,6 +41,9 @@ Shader "Oculus/VirtualKeyboard/OVRVirtualKeyboardMMBias"
                 float4 color : COLOR0;
                 float2 uv : TEXCOORD0;
                 float4 vertex : SV_POSITION;
+
+                // Single-pass instanced rendering
+                UNITY_VERTEX_OUTPUT_STEREO
             };
 
             sampler2D _MainTex;
@@ -64,6 +70,12 @@ Shader "Oculus/VirtualKeyboard/OVRVirtualKeyboardMMBias"
             v2f vert (appdata v)
             {
                 v2f o;
+
+                // Single-pass instanced rendering
+                UNITY_SETUP_INSTANCE_ID(v);
+                UNITY_INITIALIZE_OUTPUT(v2f, o);
+                UNITY_INITIALIZE_VERTEX_OUTPUT_STEREO(o);
+
                 o.vertex = UnityObjectToClipPos(v.vertex);
                 o.color = v.color * _Color * _RendererColor;
                 o.uv = TRANSFORM_TEX(v.uv, _MainTex);

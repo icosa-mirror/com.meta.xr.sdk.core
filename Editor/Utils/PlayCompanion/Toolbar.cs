@@ -233,7 +233,7 @@ namespace Meta.XR.Editor.PlayCompanion
 
         private static void CreateButton(Item item)
         {
-            var button =  new EditorToolbarButton()
+            var button = new EditorToolbarButton()
             {
                 icon = item.Icon.Image as Texture2D,
                 style =

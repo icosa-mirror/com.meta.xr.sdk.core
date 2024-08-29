@@ -89,13 +89,19 @@ internal class OVRConfigurationTaskSourceCode
     {
         if (FindPathAndLine(out var path, out var line))
         {
-            path = path.Replace("\\", "/");
 
-            if (path.StartsWith(Application.dataPath))
+            path = path.Replace("\\", "/");
+            path = Path.GetFileNameWithoutExtension(path);
+            var assets = AssetDatabase.FindAssets(path);
+            foreach (var asset in assets)
             {
-                FilePath = Path.Combine("Assets/", path.Substring(Application.dataPath.Length + 1));
+                FilePath = AssetDatabase.GUIDToAssetPath(asset);
                 Line = line;
                 _object = AssetDatabase.LoadAssetAtPath(FilePath, typeof(Object));
+                if (_object != null)
+                {
+                    break;
+                }
             }
         }
 

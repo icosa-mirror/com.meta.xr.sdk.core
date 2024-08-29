@@ -61,6 +61,7 @@ public class OVRRuntimeSettings : OVRRuntimeAssetsBase
         set => requestsAudioFaceTracking = value;
     }
 
+
     [SerializeField] private string telemetryProjectGuid;
     internal string TelemetryProjectGuid
     {

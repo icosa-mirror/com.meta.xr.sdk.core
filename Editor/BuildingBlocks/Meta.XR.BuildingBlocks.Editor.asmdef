@@ -11,7 +11,8 @@
         "Meta.XR.Editor.UserInterface",
         "Meta.XR.Editor.StatusMenu",
         "Meta.XR.Editor.Callbacks",
-        "Meta.XR.Guides.Editor"
+        "Meta.XR.Guides.Editor",
+        "Meta.XR.Audio"
     ],
     "includePlatforms": [
         "Editor"
@@ -27,6 +28,11 @@
             "name": "com.meta.xr.sdk.platform",
             "expression": "",
             "define": "USING_META_XR_PLATFORM_SDK"
+        },
+        {
+            "name": "com.meta.xr.sdk.audio",
+            "expression": "",
+            "define": "USING_META_XR_AUDIO_SDK"
         },
         {
             "define": "OVR_UNITY_PACKAGE_MANAGER",

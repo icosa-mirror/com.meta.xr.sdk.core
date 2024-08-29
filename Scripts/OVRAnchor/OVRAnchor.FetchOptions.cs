@@ -21,6 +21,7 @@
 using System;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
+using Unity.Collections;
 using static OVRPlugin;
 
 public partial struct OVRAnchor
@@ -84,21 +85,6 @@ public partial struct OVRAnchor
 
         internal unsafe Result DiscoverSpaces(out ulong requestId)
         {
-            var telemetryMarker = OVRTelemetry.Start((int)Telemetry.MarkerId.DiscoverSpaces);
-
-            int Count<T>(T? value) where T : struct => value.HasValue ? 1 : 0;
-            int CountRef<T>(T value) where T : class => value != null ? 1 : 0;
-
-            var componentTypesCollection = ComponentTypes.ToNonAlloc();
-            var uuidsCollection = Uuids.ToNonAlloc();
-            var uuidCount = uuidsCollection.GetCount();
-            var totalComponentTypeCount = CountRef(SingleComponentType) + componentTypesCollection.GetCount();
-
-            var filterCount =
-                Count(SingleUuid) +
-                CountRef(Uuids) +
-                totalComponentTypeCount;
-
             SpaceComponentType GetSpaceComponentType(Type type)
             {
                 if (type == null)
@@ -106,90 +92,89 @@ public partial struct OVRAnchor
 
                 if (!_typeMap.TryGetValue(type, out var componentType))
                     throw new ArgumentException(
-                    $"{type.FullName} is not a supported anchor component type (IOVRAnchorComponent).", nameof(type));
+                        $"{type.FullName} is not a supported anchor component type (IOVRAnchorComponent).", nameof(type));
 
                 return componentType;
             }
 
-            var filters = stackalloc FilterUnion*[filterCount];
-            var filterStorage = stackalloc FilterUnion[filterCount];
-            var spaceComponentTypes = stackalloc long[totalComponentTypeCount];
-            var spaceComponentTypeIndex = 0;
+            var telemetryMarker = OVRTelemetry.Start((int)Telemetry.MarkerId.DiscoverSpaces);
 
-            for (var i = 0; i < filterCount; i++)
-            {
-                filters[i] = filterStorage + i;
-            }
+            // Stores the filters
+            using var filterStorage = new OVRNativeList<FilterUnion>(Allocator.Temp);
 
-            var filterIndex = 0;
+            // Pointers to the filters in filterStorage
+            using var filters = new OVRNativeList<IntPtr>(Allocator.Temp);
 
+            using var spaceComponentTypes = OVRNativeList.WithSuggestedCapacityFrom(ComponentTypes).AllocateEmpty<long>(Allocator.Temp);
             if (SingleComponentType != null)
             {
                 var spaceComponentType = GetSpaceComponentType(SingleComponentType);
-                spaceComponentTypes[spaceComponentTypeIndex++] = (long)spaceComponentType;
+                spaceComponentTypes.Add((long)spaceComponentType);
 
-                *(SpaceDiscoveryFilterInfoComponents*)(filterStorage + filterIndex++) = new SpaceDiscoveryFilterInfoComponents
+                filterStorage.Add(new FilterUnion
                 {
-                    Type = SpaceDiscoveryFilterType.Component,
-                    Component = spaceComponentType,
-                };
-            }
-
-            if (ComponentTypes != null)
-            {
-                foreach (var componentType in componentTypesCollection)
-                {
-                    var spaceComponentType = GetSpaceComponentType(componentType);
-                    spaceComponentTypes[spaceComponentTypeIndex++] = (long)spaceComponentType;
-
-                    *(SpaceDiscoveryFilterInfoComponents*)(filterStorage + filterIndex++) = new SpaceDiscoveryFilterInfoComponents
+                    ComponentFilter = new SpaceDiscoveryFilterInfoComponents
                     {
                         Type = SpaceDiscoveryFilterType.Component,
                         Component = spaceComponentType,
-                    };
-                }
+                    }
+                });
             }
 
-            telemetryMarker.AddAnnotation(Telemetry.Annotation.ComponentTypes, spaceComponentTypes, spaceComponentTypeIndex);
-
-            var totalUuidCount = uuidCount;
-            Guid singleUuid;
-            if (SingleUuid != null)
+            foreach (var componentType in ComponentTypes.ToNonAlloc())
             {
-                totalUuidCount++;
-                singleUuid = SingleUuid.Value;
-                *(SpaceDiscoveryFilterInfoIds*)(filterStorage + filterIndex++) = new SpaceDiscoveryFilterInfoIds
+                var spaceComponentType = GetSpaceComponentType(componentType);
+                spaceComponentTypes.Add((long)spaceComponentType);
+
+                filterStorage.Add(new FilterUnion
                 {
-                    Type = SpaceDiscoveryFilterType.Ids,
-                    Ids = &singleUuid,
-                    NumIds = 1,
-                };
+                    ComponentFilter = new SpaceDiscoveryFilterInfoComponents
+                    {
+                        Type = SpaceDiscoveryFilterType.Component,
+                        Component = spaceComponentType,
+                    }
+                });
             }
 
-            telemetryMarker.AddAnnotation(Telemetry.Annotation.UuidCount, totalUuidCount);
+            telemetryMarker.AddAnnotation(Telemetry.Annotation.ComponentTypes, spaceComponentTypes.Data,
+                spaceComponentTypes.Count);
 
-            var uuids = stackalloc Guid[uuidCount];
-            uuidsCollection.CopyTo(uuids);
-            if (Uuids != null)
+            using var uuids = Uuids.ToNativeList(Allocator.Temp);
+            if (SingleUuid.HasValue)
             {
-                *(SpaceDiscoveryFilterInfoIds*)(filterStorage + filterIndex++) = new SpaceDiscoveryFilterInfoIds
+                uuids.Add(SingleUuid.Value);
+            }
+
+            if (SingleUuid != null || Uuids != null)
+            {
+                filterStorage.Add(new FilterUnion
                 {
-                    Type = SpaceDiscoveryFilterType.Ids,
-                    Ids = uuids,
-                    NumIds = uuidCount,
-                };
+                    IdFilter = new SpaceDiscoveryFilterInfoIds
+                    {
+                        Type = SpaceDiscoveryFilterType.Ids,
+                        Ids = uuids.Data,
+                        NumIds = uuids.Count,
+                    }
+                });
             }
 
+            telemetryMarker.AddAnnotation(Telemetry.Annotation.UuidCount, uuids.Count);
 
-            var discoveryInfo = new SpaceDiscoveryInfo
+
+            // Gather pointers to each filter
+            for (var i = 0; i < filterStorage.Count; i++)
             {
-                NumFilters = (uint)filterCount,
-                Filters = (SpaceDiscoveryFilterInfoHeader**)filters,
-            };
+                filters.Add(new IntPtr(filterStorage.PtrToElementAt(i)));
+            }
 
-            telemetryMarker.AddAnnotation(Telemetry.Annotation.TotalFilterCount, (long)filterCount);
+            telemetryMarker.AddAnnotation(Telemetry.Annotation.TotalFilterCount, filters.Count);
 
-            var result = OVRPlugin.DiscoverSpaces(in discoveryInfo, out requestId);
+            var result = OVRPlugin.DiscoverSpaces(new SpaceDiscoveryInfo
+            {
+                NumFilters = (uint)filters.Count,
+                Filters = (SpaceDiscoveryFilterInfoHeader**)filters.Data,
+            }, out requestId);
+
             Telemetry.SetSyncResult(telemetryMarker, requestId, result);
             return result;
         }

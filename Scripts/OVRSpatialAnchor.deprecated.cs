@@ -22,6 +22,7 @@ using System;
 using System.Collections.Generic;
 using Unity.Collections;
 using Unity.Collections.LowLevel.Unsafe;
+using UnityEngine;
 
 partial class OVRSpatialAnchor
 {
@@ -394,6 +395,26 @@ partial class OVRSpatialAnchor
                 InvertedCapture<bool, UnboundAnchor>.ContinueTaskWith(task, onComplete, this);
             }
         }
+
+        /// <summary>
+        /// (Obsolete) The world space pose of the spatial anchor.
+        /// </summary>
+        /// <remarks>
+        /// \deprecated This method is obsolete. Acquiring the pose can fail; consider <see cref="TryGetPose"/> instead.
+        /// </remarks>
+        /// <seealso cref="TryGetPose"/>
+        [Obsolete("Use TryGetPose instead.")]
+        public Pose Pose
+        {
+            get
+            {
+                if (!TryGetPose(out var pose))
+                    throw new InvalidOperationException(
+                        $"[{Uuid}] Anchor must be localized before obtaining its pose.");
+
+                return pose;
+            }
+        }
     }
 
     /// <summary>
@@ -649,22 +670,19 @@ partial class OVRSpatialAnchor
         if (anchors == null)
             throw new ArgumentNullException(nameof(anchors));
 
-        var anchorCollection = anchors.ToNonAlloc();
         unsafe
         {
-            var spaces = stackalloc ulong[anchorCollection.GetCount()];
-            uint spaceCount = 0;
-
-            foreach (var anchor in anchorCollection)
+            using var spaces = new OVRNativeList<ulong>(anchors.ToNonAlloc().Count, Allocator.Temp);
+            foreach (var anchor in anchors.ToNonAlloc())
             {
-                spaces[spaceCount++] = anchor._anchor.Handle;
+                spaces.Add(anchor._anchor.Handle);
             }
 
-            var result = OVRAnchor.SaveSpaceList(spaces, spaceCount, saveOptions.Storage.ToSpaceStorageLocation(),
-                out var requestId);
+            var result = OVRAnchor.SaveSpaceList(spaces, (uint)spaces.Count,
+                saveOptions.Storage.ToSpaceStorageLocation(), out var requestId);
 
             Development.LogRequestOrError(requestId, result,
-                $"Saving {spaceCount} spatial anchors.",
+                $"Saving {spaces.Count} spatial anchors.",
                 $"xrSaveSpaceListFB failed with error {result}.");
 
             return result.IsSuccess()

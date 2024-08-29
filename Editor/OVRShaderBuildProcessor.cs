@@ -35,13 +35,19 @@ public class OVRShaderBuildProcessor : IPreprocessShaders
     public void OnProcessShader(
         Shader shader, ShaderSnippetData snippet, IList<ShaderCompilerData> shaderCompilerData)
     {
-        var projectConfig = OVRProjectConfig.GetProjectConfig();
+        var projectConfig = OVRProjectConfig.CachedProjectConfig;
         if (projectConfig == null)
         {
             return;
         }
 
         if (!projectConfig.skipUnneededShaders)
+        {
+            return;
+        }
+
+        // Don't strip if we are using SRP, only BiRP
+        if (GraphicsSettings.currentRenderPipeline != null)
         {
             return;
         }
@@ -54,9 +60,7 @@ public class OVRShaderBuildProcessor : IPreprocessShaders
         var strippedGraphicsTiers = new HashSet<GraphicsTier>();
 
         // Unity only uses shader Tier2 on Quest and Go (regardless of graphics API)
-        if (projectConfig.targetDeviceTypes.Contains(OVRProjectConfig.DeviceType.Quest) ||
-            projectConfig.targetDeviceTypes.Contains(OVRProjectConfig.DeviceType.Quest2) ||
-            projectConfig.targetDeviceTypes.Contains(OVRProjectConfig.DeviceType.QuestPro))
+        if (projectConfig.targetDeviceTypes.Count != 0)
         {
             strippedGraphicsTiers.Add(GraphicsTier.Tier1);
             strippedGraphicsTiers.Add(GraphicsTier.Tier3);

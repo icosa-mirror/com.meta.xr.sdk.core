@@ -134,9 +134,9 @@ namespace Meta.XR.Editor.StatusMenu
 
             if (item == null || item.PillIcon == null) return;
 
-            var (_, color) = item.PillIcon();
+            var (_, color, showNotification) = item.PillIcon();
 
-            if (color == null) return;
+            if (color == null || !showNotification) return;
 
             rect.x = 12;
             rect.width = Styles.GUIStyles.StatusPillIconStyle.fixedWidth;

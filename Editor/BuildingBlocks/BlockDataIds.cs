@@ -37,6 +37,7 @@ namespace Meta.XR.BuildingBlocks.Editor
         public const string SharedSpatialAnchorCore = "975428dc-db04-4e43-be4a-232f192cd3eb";
         public const string ControllerButtonsMapper = "80aa2eb2-af2f-40a9-ad9e-18044ce65bee";
         public const string RoomMesh = "6b8a377d-05de-449b-a9c4-8ed22606f71c";
+        public const string Occlusion = "c1dbe32c-fed2-4835-8e6a-3fbb4f4f4315";
 
         // Utilities
         public const string Cube = "7358e191-33b7-43ca-b066-b2f00531ac66";
@@ -50,7 +51,8 @@ namespace Meta.XR.BuildingBlocks.Editor
         public const string SyntheticHands = "6b67162c-2460-4766-a931-980388647573";
         public const string ThrowableItem = "803f3803-bb5e-464a-ac45-dad44c840fb6";
 
-        public const string MyNewBlock = "c26697aa-66c2-4ac9-97ee-00ca2e13ad10";
+        // Audio SDK
+        public const string SpatialAudio = "6737262b-4fab-4779-a38b-fe74012fa505";
 
 
         // Multiplayer Blocks

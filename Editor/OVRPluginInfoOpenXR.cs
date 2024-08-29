@@ -107,7 +107,7 @@ namespace Oculus.VR.Editor
                 md5AndroidActual = GetFileChecksum(androidFullPath);
             }
 
-            var projectConfig = OVRProjectConfig.GetProjectConfig();
+            var projectConfig = OVRProjectConfig.CachedProjectConfig;
             if (!forceUpdate && projectConfig.ovrPluginMd5Win64 == md5Win64Actual &&
                 projectConfig.ovrPluginMd5Android == md5AndroidActual)
             {

@@ -52,7 +52,7 @@ public class OVRManagerEditor : Editor
     {
         serializedObject.ApplyModifiedProperties();
         OVRRuntimeSettings runtimeSettings = OVRRuntimeSettings.GetRuntimeSettings();
-        OVRProjectConfig projectConfig = OVRProjectConfig.GetProjectConfig();
+        OVRProjectConfig projectConfig = OVRProjectConfig.CachedProjectConfig;
 
 #if UNITY_ANDROID
         OVRProjectConfigEditor.DrawTargetDeviceInspector(projectConfig);
@@ -279,7 +279,13 @@ public class OVRManagerEditor : Editor
             EditorGUILayout.HelpBox("Please specify at least one face tracking data source. If you don't choose, all available data sources will be chosen.", MessageType.Warning, true);
         }
 
-        // Warn when simultaneous hands and controllers is enabled
+        // Warn about face tracking when simultaneous hands and controllers is enabled as an incompatibility exists
+        // for Quest 2 headsets
+        if (projectConfig.faceTrackingSupport != OVRProjectConfig.FeatureSupport.None && manager.SimultaneousHandsAndControllersEnabled == true) {
+            EditorGUILayout.HelpBox("For Quest 2, simultaneous hands and controllers are not supported together with face tracking. Please select only one of these features if shipping on Quest 2", MessageType.Warning, true);
+        }
+
+        // Also warn about Body API when simultaneous hands and controllers is enabled
         bool bodyEnabled =
             (GameObject.FindObjectOfType<OVRBody>() != null || manager.wideMotionModeHandPosesEnabled == true);
         if (bodyEnabled && manager.SimultaneousHandsAndControllersEnabled)
@@ -302,6 +308,7 @@ public class OVRManagerEditor : Editor
                 ref modified);
             EditorGUI.indentLevel--;
         }
+
 
         if (modified)
         {

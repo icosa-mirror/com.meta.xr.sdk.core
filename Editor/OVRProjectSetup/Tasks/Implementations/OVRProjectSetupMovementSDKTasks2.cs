@@ -81,6 +81,11 @@ internal static class OVRProjectSetupMovementSDKTasks2
                     return true;
                 }
 
+                if (OVRProjectSetupUtils.FindComponentInScene<T>() == null)
+                {
+                    return true;
+                }
+
                 var ovrManager = OVRProjectSetupUtils.FindComponentInScene<OVRManager>();
                 return !ovrManager || permissionRequested(ovrManager);
             },

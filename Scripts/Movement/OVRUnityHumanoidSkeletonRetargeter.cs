@@ -455,18 +455,41 @@ public partial class OVRUnityHumanoidSkeletonRetargeter : OVRSkeleton
 
     protected void RecomputeSkeletalOffsetsIfNecessary()
     {
-        bool scaleChanged =
-           (transform.lossyScale - _lastTrackedScale).sqrMagnitude
-           > Mathf.Epsilon;
-
-        if (_lastSkelChangeCount != SkeletonChangedCount ||
-            scaleChanged)
+        if (OffsetComputationNeededThisFrame())
         {
             ComputeOffsetsUsingSkeletonComponent();
         }
     }
 
-    private void ComputeOffsetsUsingSkeletonComponent()
+    /// <summary>
+    /// Indicates if skeletal offsets will be computed during this
+    /// frame. This usually happens if there is a change in the
+    /// input skeletal data, a change in the target skeletal scale,
+    /// et cetera.
+    /// </summary>
+    /// <returns>True if computation is required; false if not.</returns>
+    protected bool OffsetComputationNeededThisFrame()
+    {
+        bool skeletonIsNotReady = !IsInitialized ||
+            BindPoses == null || BindPoses.Count == 0;
+        if (skeletonIsNotReady)
+        {
+            return false;
+        }
+
+        bool skeletalCountChange = _lastSkelChangeCount != SkeletonChangedCount;
+        bool scaleChanged =
+          (transform.lossyScale - _lastTrackedScale).sqrMagnitude
+          > Mathf.Epsilon;
+
+        return skeletalCountChange || scaleChanged;
+    }
+
+    /// <summary>
+    /// Compute skeletal offsets using the current input skeletal data
+    /// and the target skeletal data.
+    /// </summary>
+    protected void ComputeOffsetsUsingSkeletonComponent()
     {
         if (!IsInitialized ||
             BindPoses == null || BindPoses.Count == 0)

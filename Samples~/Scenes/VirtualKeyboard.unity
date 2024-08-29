@@ -3990,6 +3990,8 @@ MonoBehaviour:
   MoveFarButton: {fileID: 1578500677}
   DestroyKeyboardButton: {fileID: 680937109}
   keyboard: {fileID: 362724993}
+  keyboardPrefab: {fileID: 3631170893708523032, guid: 325510b4b085edf48876b864e4744ec6,
+    type: 3}
 --- !u!114 &1888419385
 MonoBehaviour:
   m_ObjectHideFlags: 0

@@ -21,11 +21,12 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Runtime.CompilerServices;
 
 /// <summary>
 /// Helper class to handle generic class object pools and avoid allocations in the SDK that would lead to garbage collection.
 /// </summary>
-internal static class OVRObjectPool
+static class OVRObjectPool
 {
     public interface IPoolObject
     {
@@ -33,10 +34,39 @@ internal static class OVRObjectPool
         void OnReturn();
     }
 
-    private static class Storage<T> where T : class, new()
+    static class Storage<T> where T : class, new()
     {
-        public static readonly HashSet<T> HashSet = new HashSet<T>();
+        static readonly HashSet<T> s_hashSet = new();
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static bool Remove(T item)
+        {
+            return s_hashSet.Remove(item);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static bool Add(T item)
+        {
+            return s_hashSet.Add(item);
+        }
+
+        public static readonly Action Clear = () => s_hashSet.Clear();
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static T GetOrCreate()
+        {
+            using var enumerator = s_hashSet.GetEnumerator();
+            if (enumerator.MoveNext())
+            {
+                var item = enumerator.Current;
+                Remove(item);
+                return item;
+            }
+
+            return new T();
+        }
     }
+
 
     /// <summary>
     /// Gets an object of type T from it's respective pool. If none is available a new one is created.
@@ -44,9 +74,7 @@ internal static class OVRObjectPool
     /// <returns>Object of type T</returns>
     public static T Get<T>() where T : class, new()
     {
-        using var enumerator = Storage<T>.HashSet.GetEnumerator();
-        var item = enumerator.MoveNext() ? enumerator.Current : new T();
-        Storage<T>.HashSet.Remove(item);
+        var item = Storage<T>.GetOrCreate();
 
         if (item is IList list) list.Clear();
         else if (item is IDictionary dict) dict.Clear();
@@ -114,7 +142,7 @@ internal static class OVRObjectPool
                 break;
         }
 
-        Storage<T>.HashSet.Add(obj);
+        Storage<T>.Add(obj);
     }
 
     public static void Return<T>(HashSet<T> set)

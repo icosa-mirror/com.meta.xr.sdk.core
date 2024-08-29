@@ -166,5 +166,4 @@ internal static class OVRTelemetryConstants
             public const string EnabledSettings = "FeaturesSupportInSettings";
         }
     }
-
 }

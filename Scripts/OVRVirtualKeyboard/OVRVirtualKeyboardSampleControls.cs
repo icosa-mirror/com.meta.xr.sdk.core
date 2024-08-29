@@ -94,11 +94,15 @@ public class OVRVirtualKeyboardSampleControls : MonoBehaviour
             keyboard.handDirectInteraction = _handDirectInteraction;
             keyboard.handRaycaster = _handRaycaster;
 
-            if (_textHandlerField != null)
+            if (keyboard.TextHandler == null)
             {
-                var handler = keyboard.gameObject.AddComponent<OVRVirtualKeyboardInputFieldTextHandler>();
+                keyboard.TextHandler = keyboard.gameObject.AddComponent<OVRVirtualKeyboardInputFieldTextHandler>();
+            }
+
+            var handler = keyboard.TextHandler as OVRVirtualKeyboardInputFieldTextHandler;
+            if (handler)
+            {
                 handler.InputField = _textHandlerField;
-                keyboard.TextHandler = handler;
             }
         }
     }
@@ -125,6 +129,9 @@ public class OVRVirtualKeyboardSampleControls : MonoBehaviour
 
     [SerializeField]
     private OVRVirtualKeyboard keyboard;
+
+    [SerializeField]
+    private OVRVirtualKeyboard keyboardPrefab;
 
     private OVRVirtualKeyboardSampleInputHandler inputHandler;
 
@@ -204,8 +211,16 @@ public class OVRVirtualKeyboardSampleControls : MonoBehaviour
 
         if (keyboard == null)
         {
-            var go = new GameObject();
-            keyboard = go.AddComponent<OVRVirtualKeyboard>();
+            if (keyboardPrefab)
+            {
+                keyboard = Instantiate(keyboardPrefab);
+            }
+            if (!keyboard)
+            {
+                GameObject go = new GameObject();
+                keyboard = go.AddComponent<OVRVirtualKeyboard>();
+            }
+
             keyboardBackup.RestoreTo(keyboard);
             inputHandler.OVRVirtualKeyboard = keyboard;
         }

@@ -50,7 +50,7 @@ public class OVRDeviceSelector
             return settings.TargetQuest;
 #endif
 #else
-            OVRProjectConfig projectConfig = OVRProjectConfig.GetProjectConfig();
+            OVRProjectConfig projectConfig = OVRProjectConfig.CachedProjectConfig;
             return projectConfig.targetDeviceTypes.Contains(OVRProjectConfig.DeviceType.Quest);
 #endif
         }
@@ -65,7 +65,7 @@ public class OVRDeviceSelector
             UnityEditor.EditorBuildSettings.TryGetConfigObject<OculusSettings>("Unity.XR.Oculus.Settings", out settings);
             return settings.TargetQuest2;
 #else
-            OVRProjectConfig projectConfig = OVRProjectConfig.GetProjectConfig();
+            OVRProjectConfig projectConfig = OVRProjectConfig.CachedProjectConfig;
             return projectConfig.targetDeviceTypes.Contains(OVRProjectConfig.DeviceType.Quest2);
 #endif
         }
@@ -84,7 +84,7 @@ public class OVRDeviceSelector
             return false;
 #endif
 #else
-            OVRProjectConfig projectConfig = OVRProjectConfig.GetProjectConfig();
+            OVRProjectConfig projectConfig = OVRProjectConfig.CachedProjectConfig;
             return projectConfig.targetDeviceTypes.Contains(OVRProjectConfig.DeviceType.QuestPro);
 #endif
         }
@@ -97,7 +97,7 @@ public class OVRDeviceSelector
 #if PRIORITIZE_OCULUS_XR_SETTINGS
             return false;
 #else
-            OVRProjectConfig projectConfig = OVRProjectConfig.GetProjectConfig();
+            OVRProjectConfig projectConfig = OVRProjectConfig.CachedProjectConfig;
             return projectConfig.targetDeviceTypes.Contains(OVRProjectConfig.DeviceType.Quest3);
 #endif
         }

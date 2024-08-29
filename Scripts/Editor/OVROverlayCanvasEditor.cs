@@ -21,10 +21,19 @@
 using System.Reflection;
 using UnityEngine;
 using UnityEditor;
+using UnityEngine.Rendering;
 
 [CustomEditor(typeof(OVROverlayCanvas))]
 public class OVROverlayCanvasEditor : Editor
 {
+    private static string kOverrideUiShaderName = "UI/Default Correct";
+
+    private static string kBuiltInOpaqueShaderName = "UI/Prerendered Opaque";
+    private static string kUrpOpaqueShaderName = "URP/UI/Prerendered Opaque";
+    private static string kBuiltInTransparentShaderName = "UI/Prerendered";
+    private static string kUrpTransparentShaderName = "URP/UI/Prerendered";
+
+
     GUIStyle mWarningBoxStyle;
 
     private bool mShowControlObjects;
@@ -37,6 +46,10 @@ public class OVROverlayCanvasEditor : Editor
         Both = 3
     }
 
+    private static bool UseUrp()
+    {
+        return GraphicsSettings.currentRenderPipeline != default;
+    }
 
     void OnEnable()
     {
@@ -51,30 +64,24 @@ public class OVROverlayCanvasEditor : Editor
 
     public override void OnInspectorGUI()
     {
-        bool updatedMaterials = false;
-        var prop = serializedObject.FindProperty("_overrideCanvasShader");
+        var settingsObject = new SerializedObject(OVROverlayCanvasSettings.Instance);
+        var prop = settingsObject.FindProperty("_overrideCanvasShader");
         if (prop.objectReferenceValue == null)
         {
-            prop.objectReferenceValue = Shader.Find("UI/Default Correct");
-            updatedMaterials = true;
+            prop.objectReferenceValue = Shader.Find(kOverrideUiShaderName);
         }
 
-        prop = serializedObject.FindProperty("_opaqueImposterShader");
-        if (prop.objectReferenceValue == null)
+        prop = settingsObject.FindProperty("_opaqueImposterShader");
+        string opaqueShaderName = UseUrp() ? kUrpOpaqueShaderName : kBuiltInOpaqueShaderName;
+        if (!(prop.objectReferenceValue is Shader os) || os == null || os.name != opaqueShaderName)
         {
-            prop.objectReferenceValue = Shader.Find("UI/Prerendered Opaque");
-            updatedMaterials = true;
+            prop.objectReferenceValue = Shader.Find(opaqueShaderName);
         }
-        prop = serializedObject.FindProperty("_transparentImposterShader");
-        if (prop.objectReferenceValue == null)
+        string transparentShaderName = UseUrp() ? kUrpTransparentShaderName : kBuiltInTransparentShaderName;
+        prop = settingsObject.FindProperty("_transparentImposterShader");
+        if (!(prop.objectReferenceValue is Shader ts) || ts == null || ts.name != transparentShaderName)
         {
-            prop.objectReferenceValue = Shader.Find("UI/Prerendered");
-            updatedMaterials = true;
-        }
-
-        if (updatedMaterials)
-        {
-            serializedObject.ApplyModifiedProperties();
+            prop.objectReferenceValue = Shader.Find(transparentShaderName);
         }
 
         OVROverlayCanvas canvas = target as OVROverlayCanvas;
@@ -234,13 +241,14 @@ public class OVROverlayCanvasEditor : Editor
 
             if (usingDefaultMaterial)
             {
-                canvas.overrideDefaultCanvasMaterial = EditorGUILayout.Toggle(new GUIContent("Override Default Canvas Material",
+                var overrideDefaultCanvasProp = settingsObject.FindProperty("_overrideDefaultCanvasMaterial");
+                overrideDefaultCanvasProp.boolValue = EditorGUILayout.Toggle(new GUIContent("Override Default Canvas Material",
                         "Globally overrides the default canvas material with a version that correctly populates the alpha channel " +
                         "for overlay usage. In most cases this will not cause any noticeable changes to other Canvases, " +
                         "unless the previous alpha behavior was being relied on."),
-                    canvas.overrideDefaultCanvasMaterial);
+                    overrideDefaultCanvasProp.boolValue);
 
-                if (!canvas.overrideDefaultCanvasMaterial)
+                if (!overrideDefaultCanvasProp.boolValue)
                 {
                     DisplayMessage(MessageType.Warning,
                         "Some graphics in this canvas are using the default UI material.\nWould you like to replace all of them with the corrected UI Material?");
@@ -294,7 +302,7 @@ public class OVROverlayCanvasEditor : Editor
 
             var rt = canvas.GetComponent<RectTransform>();
             float scaleX = rt.rect.width * rt.lossyScale.x;
-            float minRadius = 180 * Mathf.Deg2Rad / scaleX;
+            float minRadius = scaleX / (180 * Mathf.Deg2Rad);
 
             canvas.curveRadius = Mathf.Max(minRadius, canvas.curveRadius);
         }
@@ -312,6 +320,11 @@ public class OVROverlayCanvasEditor : Editor
                 new GUIContent("Expensive", "Improve the visual appearance at the cost of additional GPU time"),
                 canvas.expensive);
 
+        canvas.overlapMask =
+            EditorGUILayout.Toggle(
+                new GUIContent("Overlap Mask", "Reduce edge artifacts between foreground and layer by shrinking the mask to overlap the canvas. Requires additional GPU time."),
+                canvas.overlapMask);
+
         canvas.renderInterval = EditorGUILayout.IntField(
             new GUIContent("Render Interval",
                 "How often we should re-render this canvas to a texture. The canvas' transform can be changed every frame, regardless of Draw Rate. A value of 1 means every frame, 2 means every other, etc."),
@@ -327,7 +340,14 @@ public class OVROverlayCanvasEditor : Editor
 
         canvas.overlayEnabled = EditorGUILayout.Toggle("Overlay Enabled", canvas.overlayEnabled);
 
-        if (EditorGUI.EndChangeCheck())
+        bool updatedMaterials = false;
+        if (settingsObject.ApplyModifiedProperties())
+        {
+            OVROverlayCanvasSettings.CommitOverlayCanvasSettings(OVROverlayCanvasSettings.Instance);
+            updatedMaterials = true;
+        }
+
+        if (EditorGUI.EndChangeCheck() || updatedMaterials)
         {
             EditorUtility.SetDirty(target);
             // Call the initialize render texture method to update the content

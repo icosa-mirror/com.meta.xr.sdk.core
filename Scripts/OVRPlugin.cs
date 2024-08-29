@@ -59,7 +59,7 @@ public static partial class OVRPlugin
 #if OVRPLUGIN_UNSUPPORTED_PLATFORM && OVRPLUGIN_QPL_UNSUPPORTED_PLATFORM
     public static readonly System.Version wrapperVersion = _versionZero;
 #else
-    public static readonly System.Version wrapperVersion = OVRP_1_98_0.version;
+    public static readonly System.Version wrapperVersion = OVRP_1_100_0.version;
 #endif
 
 #if !(OVRPLUGIN_UNSUPPORTED_PLATFORM && OVRPLUGIN_QPL_UNSUPPORTED_PLATFORM)
@@ -320,6 +320,15 @@ public static partial class OVRPlugin
         ControllerLeft = 12,
         ControllerRight = 13,
         Count,
+    }
+
+    public enum ActionTypes
+    {
+        Boolean = 1,
+        Float = 2,
+        Vector2 = 3,
+        Pose = 4,
+        Vibration = 100,
     }
 
     public enum Controller
@@ -4332,8 +4341,8 @@ public static partial class OVRPlugin
         return true;
 #else
         Bool enabled = Bool.True;
-        if (version >= OVRP_1_98_0.version)
-            OVRP_1_98_0.ovrp_GetTrackingPoseEnabledForInvisibleSession(out enabled);
+        if (version >= OVRP_1_99_0.version)
+            OVRP_1_99_0.ovrp_GetTrackingPoseEnabledForInvisibleSession(out enabled);
         return enabled == Bool.True;
 #endif
     }
@@ -4343,8 +4352,8 @@ public static partial class OVRPlugin
 #if OVRPLUGIN_UNSUPPORTED_PLATFORM
         return;
 #else
-        if (version >= OVRP_1_98_0.version)
-            OVRP_1_98_0.ovrp_SetTrackingPoseEnabledForInvisibleSession(enabled ? Bool.True : Bool.False);
+        if (version >= OVRP_1_99_0.version)
+            OVRP_1_99_0.ovrp_SetTrackingPoseEnabledForInvisibleSession(enabled ? Bool.True : Bool.False);
 #endif
     }
 #endif
@@ -4843,6 +4852,35 @@ public static partial class OVRPlugin
 #endif
     }
 
+    public static string GetCurrentInteractionProfileName(Hand hand)
+    {
+#if OVRPLUGIN_UNSUPPORTED_PLATFORM
+        return string.Empty;
+#else
+        string interactionProfile = string.Empty;
+
+        if (version >= OVRP_1_100_0.version)
+        {
+            IntPtr pathPtr = IntPtr.Zero;
+            try
+            {
+                pathPtr = Marshal.AllocHGlobal(sizeof(byte) * OVRP_1_68_0.OVRP_RENDER_MODEL_MAX_PATH_LENGTH);
+
+                if (OVRP_1_100_0.ovrp_GetCurrentInteractionProfileName(hand, pathPtr) == Result.Success)
+                {
+                    interactionProfile = Marshal.PtrToStringAnsi(pathPtr);
+                }
+            }
+            finally
+            {
+                Marshal.FreeHGlobal(pathPtr);
+            }
+        }
+
+        return interactionProfile;
+#endif
+    }
+
     public static bool SetControllerVibration(uint controllerMask, float frequency, float amplitude)
     {
 #if OVRPLUGIN_UNSUPPORTED_PLATFORM
@@ -5289,6 +5327,138 @@ public static partial class OVRPlugin
     }
 
 
+    public static bool GetActionStateBoolean(string actionName, out bool result)
+    {
+#if OVRPLUGIN_UNSUPPORTED_PLATFORM
+        result = false;
+        return false;
+#else
+        Bool ovrResult = Bool.False;
+        result = false;
+
+        if (version >= OVRP_1_95_0.version)
+        {
+            var outcome = OVRP_1_95_0.ovrp_GetActionStateBoolean(actionName, ref ovrResult);
+            if (outcome == Result.Success)
+            {
+                result = ovrResult == Bool.True;
+                return true;
+            }
+            else
+            {
+                Debug.LogError($"Error calling GetActionStateBoolean: {outcome}");
+                return false;
+            }
+        } else
+        {
+            return false;
+        }
+#endif
+    }
+
+    public static bool GetActionStateFloat(string actionName, out float result)
+    {
+#if OVRPLUGIN_UNSUPPORTED_PLATFORM
+        result = 0;
+        return false;
+#else
+        result = 0f;
+
+        if (version >= OVRP_1_95_0.version)
+        {
+            var outcome = OVRP_1_95_0.ovrp_GetActionStateFloat(actionName, ref result);
+            if (outcome == Result.Success)
+            {
+                return true;
+            }
+            else
+            {
+                Debug.LogError($"Error calling GetActionStateFloat: {outcome}");
+                return false;
+            }
+        } else
+        {
+            return false;
+        }
+#endif
+    }
+
+    public static bool GetActionStatePose(string actionName, out Posef result)
+    {
+#if OVRPLUGIN_UNSUPPORTED_PLATFORM
+        pose = default(Posef);
+        return false;
+#else
+        result = new Posef();
+        if (version >= OVRP_1_95_0.version)
+        {
+            var outcome = OVRP_1_95_0.ovrp_GetActionStatePose(actionName, ref result);
+            if (outcome == Result.Success)
+            {
+                return true;
+            }
+            else
+            {
+                Debug.LogError($"Error calling GetActionStatePose: {outcome}");
+                return false;
+            }
+        } else
+        {
+            return false;
+        }
+#endif
+    }
+
+    public static bool GetActionStatePose(string actionName, Hand hand, out Posef result)
+    {
+#if OVRPLUGIN_UNSUPPORTED_PLATFORM
+        result = default(Posef);
+        return false;
+#else
+        result = new Posef();
+
+        if (version >= OVRP_1_100_0.version)
+        {
+            var outcome = OVRP_1_100_0.ovrp_GetActionStatePose2(actionName, hand, ref result);
+            if (outcome == Result.Success)
+            {
+                return true;
+            }
+            else
+            {
+                Debug.LogError($"Error calling GetActionStatePose2: {outcome}");
+                return false;
+            }
+        } else
+        {
+            return false;
+        }
+#endif
+    }
+
+    public static bool TriggerVibrationAction(string actionName, Hand hand, float duration, float amplitude)
+    {
+#if OVRPLUGIN_UNSUPPORTED_PLATFORM
+        return false;
+#else
+        if (version >= OVRP_1_100_0.version)
+        {
+            var outcome = OVRP_1_100_0.ovrp_TriggerVibrationAction(actionName, hand, duration, amplitude);
+            if (outcome == Result.Success)
+            {
+                return true;
+            }
+            else
+            {
+                Debug.LogError($"Error calling TriggerVibrationAction: {outcome}");
+                return false;
+            }
+        } else
+        {
+            return false;
+        }
+#endif
+    }
 
     public static bool SetWideMotionModeHandPoses(bool wideMotionModeFusionHandPoses)
     {
@@ -9959,18 +10129,17 @@ public static partial class OVRPlugin
     }
 
     public static bool SetSpaceComponentStatus(UInt64 space, SpaceComponentType componentType, bool enable,
-        double timeout, out UInt64 requestId)
+        double timeout, out UInt64 requestId
+        )
     {
         requestId = 0;
 #if OVRPLUGIN_UNSUPPORTED_PLATFORM
         return false;
 #else
 
-        var spaceSet = version >= OVRP_1_72_0.version
-                       && OVRP_1_72_0.ovrp_SetSpaceComponentStatus(ref space, componentType, ToBool(enable), timeout,
-                           out requestId) == Result.Success;
-
-        return spaceSet;
+        return version >= OVRP_1_72_0.version
+               && OVRP_1_72_0.ovrp_SetSpaceComponentStatus(ref space, componentType, ToBool(enable), timeout,
+                   out requestId) == Result.Success;
 #endif
     }
 
@@ -10367,7 +10536,7 @@ public static partial class OVRPlugin
     }
 
     [StructLayout(LayoutKind.Sequential)]
-    private struct RoomLayoutInternal
+    internal struct RoomLayoutInternal
     {
         public Guid floorUuid;
         public Guid ceilingUuid;
@@ -11183,6 +11352,8 @@ public static partial class OVRPlugin
     }
 
 
+
+
     public class UnityOpenXR
     {
         public static bool Enabled = false; // OculusXRFeature will set it to true when being used
@@ -11362,6 +11533,9 @@ public static partial class OVRPlugin
         }
 #endif // OVRPLUGIN_UNSUPPORTED_PLATFORM
     }
+
+
+
 
 
     public static Result SetDeveloperTelemetryConsent(Bool consent)
@@ -13441,6 +13615,14 @@ public static partial class OVRPlugin
         public static readonly System.Version version = new System.Version(1, 95, 0);
 
 
+        [DllImport(pluginName, CallingConvention = CallingConvention.Cdecl)]
+        public static extern Result ovrp_GetActionStateBoolean(string path, ref Bool value);
+
+        [DllImport(pluginName, CallingConvention = CallingConvention.Cdecl)]
+        public static extern Result ovrp_GetActionStateFloat(string path, ref float value);
+
+        [DllImport(pluginName, CallingConvention = CallingConvention.Cdecl)]
+        public static extern Result ovrp_GetActionStatePose(string path, ref Posef value);
 
         [DllImport(pluginName, CallingConvention = CallingConvention.Cdecl)]
         public static extern Result ovrp_SetDeveloperTelemetryConsent(Bool consent);
@@ -13491,12 +13673,181 @@ public static partial class OVRPlugin
         [DllImport(pluginName, CallingConvention = CallingConvention.Cdecl)]
         public static extern Result ovrp_GetBoundaryVisibility(out BoundaryVisibility boundaryVisibility);
 
+    }
+
+    private static class OVRP_1_99_0
+    {
+        public static readonly System.Version version = new System.Version(1, 99, 0);
+
         [DllImport(pluginName, CallingConvention = CallingConvention.Cdecl)]
         public static extern Result ovrp_GetTrackingPoseEnabledForInvisibleSession(out Bool trackingPoseEnabled);
 
         [DllImport(pluginName, CallingConvention = CallingConvention.Cdecl)]
         public static extern Result ovrp_SetTrackingPoseEnabledForInvisibleSession(Bool trackingPoseEnabled);
+    }
 
+    private static class OVRP_1_100_0
+    {
+        public static readonly System.Version version = new System.Version(1, 100, 0);
+
+
+
+
+
+
+        [DllImport(pluginName, CallingConvention = CallingConvention.Cdecl)]
+        public static extern Result ovrp_GetCurrentInteractionProfileName(Hand hand, IntPtr interactionProfile);
+
+        [DllImport(pluginName, CallingConvention = CallingConvention.Cdecl)]
+        public static extern Result ovrp_GetActionStatePose2(string path, Hand hand, ref Posef value);
+
+        [DllImport(pluginName, CallingConvention = CallingConvention.Cdecl)]
+        public static extern Result ovrp_TriggerVibrationAction(string actionName, Hand hand, float duration, float amplitude);
+    }
+
+    private static class OVRP_1_101_0
+    {
+        public static readonly System.Version version = new System.Version(1, 101, 0);
+    }
+
+    private static class OVRP_1_102_0
+    {
+        public static readonly System.Version version = new System.Version(1, 102, 0);
+    }
+
+    private static class OVRP_1_103_0
+    {
+        public static readonly System.Version version = new System.Version(1, 103, 0);
+    }
+
+    private static class OVRP_1_104_0
+    {
+        public static readonly System.Version version = new System.Version(1, 104, 0);
+    }
+
+    private static class OVRP_1_105_0
+    {
+        public static readonly System.Version version = new System.Version(1, 105, 0);
+    }
+
+    private static class OVRP_1_106_0
+    {
+        public static readonly System.Version version = new System.Version(1, 106, 0);
+    }
+
+    private static class OVRP_1_107_0
+    {
+        public static readonly System.Version version = new System.Version(1, 107, 0);
+    }
+
+    private static class OVRP_1_108_0
+    {
+        public static readonly System.Version version = new System.Version(1, 108, 0);
+    }
+
+    private static class OVRP_1_109_0
+    {
+        public static readonly System.Version version = new System.Version(1, 109, 0);
+    }
+
+    private static class OVRP_1_110_0
+    {
+        public static readonly System.Version version = new System.Version(1, 110, 0);
+    }
+
+    private static class OVRP_1_111_0
+    {
+        public static readonly System.Version version = new System.Version(1, 111, 0);
+    }
+
+    private static class OVRP_1_112_0
+    {
+        public static readonly System.Version version = new System.Version(1, 112, 0);
+    }
+
+    private static class OVRP_1_113_0
+    {
+        public static readonly System.Version version = new System.Version(1, 113, 0);
+    }
+
+    private static class OVRP_1_114_0
+    {
+        public static readonly System.Version version = new System.Version(1, 114, 0);
+    }
+
+    private static class OVRP_1_115_0
+    {
+        public static readonly System.Version version = new System.Version(1, 115, 0);
+    }
+
+    private static class OVRP_1_116_0
+    {
+        public static readonly System.Version version = new System.Version(1, 116, 0);
+    }
+
+    private static class OVRP_1_117_0
+    {
+        public static readonly System.Version version = new System.Version(1, 117, 0);
+    }
+
+    private static class OVRP_1_118_0
+    {
+        public static readonly System.Version version = new System.Version(1, 118, 0);
+    }
+
+    private static class OVRP_1_119_0
+    {
+        public static readonly System.Version version = new System.Version(1, 119, 0);
+    }
+
+    private static class OVRP_1_120_0
+    {
+        public static readonly System.Version version = new System.Version(1, 120, 0);
+    }
+
+    private static class OVRP_1_121_0
+    {
+        public static readonly System.Version version = new System.Version(1, 121, 0);
+    }
+
+    private static class OVRP_1_122_0
+    {
+        public static readonly System.Version version = new System.Version(1, 122, 0);
+    }
+
+    private static class OVRP_1_123_0
+    {
+        public static readonly System.Version version = new System.Version(1, 123, 0);
+    }
+
+    private static class OVRP_1_124_0
+    {
+        public static readonly System.Version version = new System.Version(1, 124, 0);
+    }
+
+    private static class OVRP_1_125_0
+    {
+        public static readonly System.Version version = new System.Version(1, 125, 0);
+    }
+
+    private static class OVRP_1_126_0
+    {
+        public static readonly System.Version version = new System.Version(1, 126, 0);
+    }
+
+    private static class OVRP_1_127_0
+    {
+        public static readonly System.Version version = new System.Version(1, 127, 0);
+    }
+
+    private static class OVRP_1_128_0
+    {
+        public static readonly System.Version version = new System.Version(1, 128, 0);
+    }
+
+    private static class OVRP_1_129_0
+    {
+        public static readonly System.Version version = new System.Version(1, 129, 0);
     }
 
 }

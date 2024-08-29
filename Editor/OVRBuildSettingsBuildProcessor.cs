@@ -62,7 +62,7 @@ public class OVRBuildSettingsBuildProcessor : IPreprocessBuildWithReport
 
     public void OnPreprocessBuild(BuildReport report)
     {
-        var projectConfig = OVRProjectConfig.GetProjectConfig();
+        var projectConfig = OVRProjectConfig.CachedProjectConfig;
         if (projectConfig == null)
         {
             return;

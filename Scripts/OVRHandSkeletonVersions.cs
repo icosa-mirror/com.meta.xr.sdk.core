@@ -18,13 +18,17 @@
  * limitations under the License.
  */
 
+using UnityEngine;
 /// <summary>
 /// An enum representing the different formats of hands / skeletons which are supported.
 /// </summary>
 public enum OVRHandSkeletonVersion
 {
+    [InspectorName(null)]
     Uninitialized = -1,
+    [InspectorName("V1 (Legacy Skeleton)")]
     V1 = 0, // The skeleton configuration used up to January 2023. Changed to V2 because it wasn't compliant with OVRSpecification for several reasons.
+    [InspectorName("V2 (OpenXR Skeleton)")]
     V2 = 1, // An updated skeleton standard used after January 2023. Matches the OVR Specification for hands. Differs from Default in that it supports some
             // extra bones and the data arrives from OVRPlugin with bone rotations in global space, not local space.
 }

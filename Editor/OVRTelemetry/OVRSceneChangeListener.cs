@@ -82,7 +82,7 @@ public class OVRSceneChangeListener
 
         var type = component.GetType();
         var assemblyName = type.Assembly.GetName().Name;
-        if(!TrackedAssemblies.Any(trackedAssemblyName =>
+        if (!TrackedAssemblies.Any(trackedAssemblyName =>
                assemblyName.Contains(trackedAssemblyName, StringComparison.InvariantCultureIgnoreCase)))
         {
             return;

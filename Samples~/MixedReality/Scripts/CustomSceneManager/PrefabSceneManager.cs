@@ -47,6 +47,7 @@ public class PrefabSceneManager : MonoBehaviour
     public GameObject FloorPrefab;
     public GameObject FallbackPrefab;
     public float UpdateFrequencySeconds = 5;
+    [SerializeField] private Transform _trackingSpace;
 
     List<(GameObject, OVRLocatable)> _locatableObjects = new List<(GameObject, OVRLocatable)>();
 
@@ -121,7 +122,7 @@ public class PrefabSceneManager : MonoBehaviour
             // create container object
             var gameObject = new GameObject(string.Join(',', classifications));
             gameObject.transform.SetParent(roomGameObject.transform);
-            var helper = new SceneManagerHelper(gameObject);
+            var helper = new SceneManagerHelper(gameObject, _trackingSpace);
             helper.SetLocation(locatable);
 
             // instantiate prefab & set 2D dimensions
@@ -160,7 +161,7 @@ public class PrefabSceneManager : MonoBehaviour
         {
             foreach (var (gameObject, locatable) in _locatableObjects)
             {
-                var helper = new SceneManagerHelper(gameObject);
+                var helper = new SceneManagerHelper(gameObject, _trackingSpace);
                 helper.SetLocation(locatable);
             }
 

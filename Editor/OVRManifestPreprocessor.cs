@@ -300,7 +300,7 @@ public class OVRManifestPreprocessor
     private static void ApplyRequiredManifestTags(XmlDocument doc, string androidNamespaceURI, bool modifyIfFound,
         bool enableSecurity)
     {
-        OVRProjectConfig projectConfig = OVRProjectConfig.GetProjectConfig();
+        OVRProjectConfig projectConfig = OVRProjectConfig.CachedProjectConfig;
 
         AddOrRemoveTag(doc,
             androidNamespaceURI,
@@ -319,7 +319,7 @@ public class OVRManifestPreprocessor
             OVRDeviceSelector.isTargetDeviceQuestFamily,
             true,
             "version", "1",
-            "required", OVRProjectConfig.GetProjectConfig().allowOptional3DofHeadTracking ? "false" : "true");
+            "required", OVRProjectConfig.CachedProjectConfig.allowOptional3DofHeadTracking ? "false" : "true");
 
         // make sure android label and icon are set in the manifest
         AddOrRemoveTag(doc,
@@ -339,7 +339,7 @@ public class OVRManifestPreprocessor
 
     private static void ApplyFeatureManifestTags(XmlDocument doc, string androidNamespaceURI, bool modifyIfFound)
     {
-        OVRProjectConfig projectConfig = OVRProjectConfig.GetProjectConfig();
+        OVRProjectConfig projectConfig = OVRProjectConfig.CachedProjectConfig;
         OVRRuntimeSettings runtimeSettings = OVRRuntimeSettings.GetRuntimeSettings();
 
         //============================================================================
@@ -350,9 +350,9 @@ public class OVRManifestPreprocessor
         // OVRProjectConfig.HandTrackingSupport.ControllersAndHands => manifest entry present and required=false
         // OVRProjectConfig.HandTrackingSupport.HandsOnly => manifest entry present and required=true
         OVRProjectConfig.HandTrackingSupport targetHandTrackingSupport =
-            OVRProjectConfig.GetProjectConfig().handTrackingSupport;
+            OVRProjectConfig.CachedProjectConfig.handTrackingSupport;
         OVRProjectConfig.HandTrackingVersion targetHandTrackingVersion =
-            OVRProjectConfig.GetProjectConfig().handTrackingVersion;
+            OVRProjectConfig.CachedProjectConfig.handTrackingVersion;
         bool handTrackingEntryNeeded = OVRDeviceSelector.isTargetDeviceQuestFamily &&
                                        (targetHandTrackingSupport !=
                                         OVRProjectConfig.HandTrackingSupport.ControllersOnly);
@@ -421,8 +421,8 @@ public class OVRManifestPreprocessor
 
         //============================================================================
         // Anchor
-        OVRProjectConfig.AnchorSupport targetAnchorSupport = OVRProjectConfig.GetProjectConfig().anchorSupport;
-        var sceneSupport = OVRProjectConfig.GetProjectConfig().sceneSupport;
+        OVRProjectConfig.AnchorSupport targetAnchorSupport = OVRProjectConfig.CachedProjectConfig.anchorSupport;
+        var sceneSupport = OVRProjectConfig.CachedProjectConfig.sceneSupport;
         bool anchorEntryNeeded = OVRDeviceSelector.isTargetDeviceQuestFamily &&
                                  (targetAnchorSupport == OVRProjectConfig.AnchorSupport.Enabled ||
                                   sceneSupport != OVRProjectConfig.FeatureSupport.None);
@@ -435,7 +435,7 @@ public class OVRManifestPreprocessor
             anchorEntryNeeded,
             modifyIfFound);
 
-        var targetSharedAnchorSupport = OVRProjectConfig.GetProjectConfig().sharedAnchorSupport;
+        var targetSharedAnchorSupport = OVRProjectConfig.CachedProjectConfig.sharedAnchorSupport;
         bool sharedAnchorEntryNeeded = OVRDeviceSelector.isTargetDeviceQuestFamily &&
                                        targetSharedAnchorSupport != OVRProjectConfig.FeatureSupport.None;
 
@@ -446,6 +446,7 @@ public class OVRManifestPreprocessor
             "com.oculus.permission.IMPORT_EXPORT_IOT_MAP_DATA",
             sharedAnchorEntryNeeded,
             modifyIfFound);
+
 
 
         //============================================================================
@@ -507,7 +508,7 @@ public class OVRManifestPreprocessor
 
         //============================================================================
         // Render Model
-        OVRProjectConfig.RenderModelSupport renderModelSupport = OVRProjectConfig.GetProjectConfig().renderModelSupport;
+        OVRProjectConfig.RenderModelSupport renderModelSupport = OVRProjectConfig.CachedProjectConfig.renderModelSupport;
         bool renderModelEntryNeeded = OVRDeviceSelector.isTargetDeviceQuestFamily &&
                                       (renderModelSupport == OVRProjectConfig.RenderModelSupport.Enabled);
 
@@ -534,7 +535,7 @@ public class OVRManifestPreprocessor
         // OVRProjectConfig.TrackedKeyboardSupport.Supported => manifest entry present and required=false
         // OVRProjectConfig.TrackedKeyboardSupport.Required => manifest entry present and required=true
         OVRProjectConfig.TrackedKeyboardSupport targetTrackedKeyboardSupport =
-            OVRProjectConfig.GetProjectConfig().trackedKeyboardSupport;
+            OVRProjectConfig.CachedProjectConfig.trackedKeyboardSupport;
         bool trackedKeyboardEntryNeeded = OVRDeviceSelector.isTargetDeviceQuestFamily &&
                                           (targetTrackedKeyboardSupport !=
                                            OVRProjectConfig.TrackedKeyboardSupport.None);
@@ -559,7 +560,7 @@ public class OVRManifestPreprocessor
         //============================================================================
         // Body Tracking
         // If Quest is the target device, add the bodytracking manifest tags if needed
-        var targetBodyTrackingSupport = OVRProjectConfig.GetProjectConfig().bodyTrackingSupport;
+        var targetBodyTrackingSupport = OVRProjectConfig.CachedProjectConfig.bodyTrackingSupport;
         bool bodyTrackingEntryNeeded = OVRDeviceSelector.isTargetDeviceQuestFamily &&
                                        (targetBodyTrackingSupport != OVRProjectConfig.FeatureSupport.None);
 
@@ -583,7 +584,7 @@ public class OVRManifestPreprocessor
 
         //============================================================================
         // Face Tracking
-        var targetFaceTrackingSupport = OVRProjectConfig.GetProjectConfig().faceTrackingSupport;
+        var targetFaceTrackingSupport = OVRProjectConfig.CachedProjectConfig.faceTrackingSupport;
         bool faceTrackingEntryNeeded = OVRDeviceSelector.isTargetDeviceQuestFamily &&
                                        (targetFaceTrackingSupport != OVRProjectConfig.FeatureSupport.None);
 
@@ -614,7 +615,7 @@ public class OVRManifestPreprocessor
 
         //============================================================================
         // Eye Tracking
-        var targetEyeTrackingSupport = OVRProjectConfig.GetProjectConfig().eyeTrackingSupport;
+        var targetEyeTrackingSupport = OVRProjectConfig.CachedProjectConfig.eyeTrackingSupport;
 #if USING_XR_SDK_OPENXR
         if (IsOpenXRLoaderActive())
         {
@@ -652,7 +653,7 @@ public class OVRManifestPreprocessor
 
         //============================================================================
         // Virtual Keyboard
-        var virtualKeyboardSupport = OVRProjectConfig.GetProjectConfig().virtualKeyboardSupport;
+        var virtualKeyboardSupport = OVRProjectConfig.CachedProjectConfig.virtualKeyboardSupport;
         bool virtualKeyboardEntryNeeded = OVRDeviceSelector.isTargetDeviceQuestFamily &&
                                           (virtualKeyboardSupport != OVRProjectConfig.FeatureSupport.None);
 
@@ -682,7 +683,7 @@ public class OVRManifestPreprocessor
 
         //============================================================================
         // Boundary Visibility
-        var boundaryVisibilitySupport = OVRProjectConfig.GetProjectConfig().boundaryVisibilitySupport;
+        var boundaryVisibilitySupport = OVRProjectConfig.CachedProjectConfig.boundaryVisibilitySupport;
         bool boundaryVisibilityEntryNeeded = OVRDeviceSelector.isTargetDeviceQuestFamily &&
                                 (boundaryVisibilitySupport != OVRProjectConfig.FeatureSupport.None);
 
@@ -696,7 +697,7 @@ public class OVRManifestPreprocessor
 
         //============================================================================
         // Processor Favor
-        var processorFavor = OVRProjectConfig.GetProjectConfig().processorFavor;
+        var processorFavor = OVRProjectConfig.CachedProjectConfig.processorFavor;
         bool tradeCpuForGpuAmountNeeded = processorFavor != OVRProjectConfig.ProcessorFavor.FavorEqually;
 
         AddOrRemoveTag(doc,

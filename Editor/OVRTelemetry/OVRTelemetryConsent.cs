@@ -21,6 +21,7 @@
 using System;
 using UnityEditor;
 using UnityEngine;
+using static OVRPlugin;
 
 internal static class OVRTelemetryConsent
 {
@@ -48,13 +49,21 @@ internal static class OVRTelemetryConsent
 
     public static bool HasSetTelemetryEnabled => EditorPrefs.HasKey(TelemetryEnabledKey);
 
-    public static void SetTelemetryEnabled(bool enabled, OVRTelemetryConstants.OVRManager.ConsentOrigins origin)
+    public static bool SetTelemetryEnabled(bool enabled, OVRTelemetryConstants.OVRManager.ConsentOrigins origin)
     {
-        TelemetryEnabled = enabled;
-        OVRPlugin.SetDeveloperTelemetryConsent(enabled ? OVRPlugin.Bool.True : OVRPlugin.Bool.False);
-        OVRPlugin.Qpl.SetConsent(enabled ? OVRPlugin.Bool.True : OVRPlugin.Bool.False);
-        SendConsentEvent(origin);
-        OnTelemetrySet?.Invoke(enabled);
+        Result result = OVRPlugin.SetDeveloperTelemetryConsent(enabled ? OVRPlugin.Bool.True : OVRPlugin.Bool.False);
+        if (result == Result.Success)
+        {
+            TelemetryEnabled = enabled;
+            OVRPlugin.Qpl.SetConsent(enabled ? OVRPlugin.Bool.True : OVRPlugin.Bool.False);
+            SendConsentEvent(origin);
+            OnTelemetrySet?.Invoke(enabled);
+            return true;
+        }
+        else
+        {
+            return false;
+        }
     }
 
     public static void SendConsentEvent(OVRTelemetryConstants.OVRManager.ConsentOrigins origin)

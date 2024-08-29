@@ -3,9 +3,12 @@
     Properties
     {
         _Color("Color", Color) = (0,0,0,0)
-        [Enum(UnityEngine.Rendering.BlendMode)]_BlendSrc ("Blend Source", Float) = 1
-        [Enum(UnityEngine.Rendering.BlendMode)]_BlendDst ("Blend Destination", Float) = 0
-        _ZWrite ("Z Write", Float) = 0
+        [Enum(UnityEngine.Rendering.BlendMode)]_BlendSrc ("Blend Source", Int) = 1
+        [Enum(UnityEngine.Rendering.BlendMode)]_BlendDst ("Blend Destination", Int) = 0
+        [Toggle]_ZWrite ("Z Write", Int) = 0
+        _StencilRef ("Stencil Ref", Int) = 0
+        [Enum(UnityEngine.Rendering.StencilOp)]_StencilOp ("Stencil Op", Int) = 0
+        _ColorMask ("Color Mask", Int) = 15
     }
     SubShader
     {
@@ -17,6 +20,13 @@
             ZTest Always
             ZWrite [_ZWrite]
             Cull Off
+            ColorMask [_ColorMask]
+
+            Stencil
+            {
+                Ref [_StencilRef]
+                Pass [_StencilOp]
+            }
 
             CGPROGRAM
             #pragma vertex vert
@@ -47,7 +57,7 @@
 
                 float4 scaleAndOffset = lerp(_ScaleAndOffset0[unity_StereoEyeIndex], _ScaleAndOffset1[unity_StereoEyeIndex], v.uv.x);
 
-                o.vertex = float4(scaleAndOffset.zw + v.vertex.xy * scaleAndOffset.xy, _ProjectionParams.y, 1);
+                o.vertex = float4(scaleAndOffset.zw + v.vertex.xy * scaleAndOffset.xy, UNITY_NEAR_CLIP_VALUE, 1);
 
                 o.color.rgb = _Color.rgb;
                 o.color.a = v.uv.y;

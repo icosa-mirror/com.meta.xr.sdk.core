@@ -6,7 +6,8 @@
         "Unity.XR.OpenXR",
         "Unity.XR.OpenXR.Editor",
         "Unity.XR.Management",
-        "Meta.XR.Editor.Callbacks"
+        "Meta.XR.Editor.Callbacks",
+        "Unity.InputSystem"
     ],
     "includePlatforms": [],
     "excludePlatforms": [],
@@ -70,6 +71,11 @@
             "name": "com.unity.xr.openxr",
             "expression": "1.9.0",
             "define": "UNITY_OPENXR_1_9_0"
+        },
+        {
+            "name": "com.unity.inputsystem",
+            "expression": "",
+            "define": "UNITY_NEW_INPUT_SYSTEM_INSTALLED"
         },
         {
             "define": "OVR_UNITY_PACKAGE_MANAGER",

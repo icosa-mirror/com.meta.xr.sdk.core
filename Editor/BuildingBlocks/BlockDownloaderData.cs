@@ -25,7 +25,7 @@ namespace Meta.XR.BuildingBlocks.Editor
     internal abstract class BlockDownloaderData : BlockBaseData
     {
         public override bool Hidden => IsInstalled() || base.Hidden;
-        internal override bool CanBeAdded => !IsInstalled();
+        internal override bool CanBeAdded => base.CanBeAdded && !IsInstalled();
         internal override bool RequireListRefreshAfterInstall => true;
 
         protected abstract bool IsInstalled();

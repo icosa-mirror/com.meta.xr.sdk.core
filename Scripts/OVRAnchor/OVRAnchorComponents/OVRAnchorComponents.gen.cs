@@ -48,6 +48,9 @@ public readonly partial struct OVRLocatable : IOVRAnchorComponent<OVRLocatable>,
     /// </summary>
     public bool IsEnabled => !IsNull && GetSpaceComponentStatus(Handle, Type, out var enabled, out var pending) && enabled && !pending;
 
+
+
+
     /// <summary>
     /// Sets the enabled status of this component.
     /// </summary>
@@ -168,6 +171,9 @@ public readonly partial struct OVRStorable : IOVRAnchorComponent<OVRStorable>, I
     /// True if this component is enabled and no change to its enabled status is pending.
     /// </summary>
     public bool IsEnabled => !IsNull && GetSpaceComponentStatus(Handle, Type, out var enabled, out var pending) && enabled && !pending;
+
+
+
 
     /// <summary>
     /// Sets the enabled status of this component.
@@ -290,6 +296,9 @@ public readonly partial struct OVRSharable : IOVRAnchorComponent<OVRSharable>, I
     /// </summary>
     public bool IsEnabled => !IsNull && GetSpaceComponentStatus(Handle, Type, out var enabled, out var pending) && enabled && !pending;
 
+
+
+
     /// <summary>
     /// Sets the enabled status of this component.
     /// </summary>
@@ -411,6 +420,9 @@ public readonly partial struct OVRBounded2D : IOVRAnchorComponent<OVRBounded2D>,
     /// </summary>
     public bool IsEnabled => !IsNull && GetSpaceComponentStatus(Handle, Type, out var enabled, out var pending) && enabled && !pending;
 
+
+
+
     OVRTask<bool> IOVRAnchorComponent<OVRBounded2D>.SetEnabledAsync(bool enabled, double timeout)
         => throw new NotSupportedException("The Bounded2D component cannot be enabled or disabled.");
 
@@ -488,6 +500,9 @@ public readonly partial struct OVRBounded3D : IOVRAnchorComponent<OVRBounded3D>,
     /// True if this component is enabled and no change to its enabled status is pending.
     /// </summary>
     public bool IsEnabled => !IsNull && GetSpaceComponentStatus(Handle, Type, out var enabled, out var pending) && enabled && !pending;
+
+
+
 
     OVRTask<bool> IOVRAnchorComponent<OVRBounded3D>.SetEnabledAsync(bool enabled, double timeout)
         => throw new NotSupportedException("The Bounded3D component cannot be enabled or disabled.");
@@ -567,6 +582,9 @@ public readonly partial struct OVRSemanticLabels : IOVRAnchorComponent<OVRSemant
     /// </summary>
     public bool IsEnabled => !IsNull && GetSpaceComponentStatus(Handle, Type, out var enabled, out var pending) && enabled && !pending;
 
+
+
+
     OVRTask<bool> IOVRAnchorComponent<OVRSemanticLabels>.SetEnabledAsync(bool enabled, double timeout)
         => throw new NotSupportedException("The SemanticLabels component cannot be enabled or disabled.");
 
@@ -644,6 +662,9 @@ public readonly partial struct OVRRoomLayout : IOVRAnchorComponent<OVRRoomLayout
     /// True if this component is enabled and no change to its enabled status is pending.
     /// </summary>
     public bool IsEnabled => !IsNull && GetSpaceComponentStatus(Handle, Type, out var enabled, out var pending) && enabled && !pending;
+
+
+
 
     OVRTask<bool> IOVRAnchorComponent<OVRRoomLayout>.SetEnabledAsync(bool enabled, double timeout)
         => throw new NotSupportedException("The RoomLayout component cannot be enabled or disabled.");
@@ -723,6 +744,9 @@ public readonly partial struct OVRAnchorContainer : IOVRAnchorComponent<OVRAncho
     /// </summary>
     public bool IsEnabled => !IsNull && GetSpaceComponentStatus(Handle, Type, out var enabled, out var pending) && enabled && !pending;
 
+
+
+
     OVRTask<bool> IOVRAnchorComponent<OVRAnchorContainer>.SetEnabledAsync(bool enabled, double timeout)
         => throw new NotSupportedException("The AnchorContainer component cannot be enabled or disabled.");
 
@@ -801,6 +825,9 @@ public readonly partial struct OVRTriangleMesh : IOVRAnchorComponent<OVRTriangle
     /// </summary>
     public bool IsEnabled => !IsNull && GetSpaceComponentStatus(Handle, Type, out var enabled, out var pending) && enabled && !pending;
 
+
+
+
     OVRTask<bool> IOVRAnchorComponent<OVRTriangleMesh>.SetEnabledAsync(bool enabled, double timeout)
         => throw new NotSupportedException("The TriangleMesh component cannot be enabled or disabled.");
 
@@ -852,5 +879,6 @@ public readonly partial struct OVRTriangleMesh : IOVRAnchorComponent<OVRTriangle
 
     private OVRTriangleMesh(OVRAnchor anchor) => Handle = anchor.Handle;
 }
+
 
 

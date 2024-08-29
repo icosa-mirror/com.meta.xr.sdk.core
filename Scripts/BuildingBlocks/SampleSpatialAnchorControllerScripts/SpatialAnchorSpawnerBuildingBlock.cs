@@ -92,7 +92,7 @@ namespace Meta.XR.BuildingBlocks
 
         internal void SpawnSpatialAnchor()
         {
-            if(!FollowHand)
+            if (!FollowHand)
                 SpawnSpatialAnchor(AnchorPrefab.transform.position, AnchorPrefab.transform.rotation);
             else
                 SpawnSpatialAnchor(_anchorPrefabTransform.position, _anchorPrefabTransform.rotation);

@@ -94,7 +94,7 @@ namespace Meta.XR.Editor.Tags
             return OVREditorUtils.HoverHelper.Button(id, rect, Content, Style, out hover);
         }
 
-        public bool ShouldDraw( Tag.TagListType listType)
+        public bool ShouldDraw(Tag.TagListType listType)
         {
             if (!Show)
             {

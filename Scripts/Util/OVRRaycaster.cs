@@ -86,7 +86,10 @@ public class OVRRaycaster : GraphicRaycaster, IPointerEnterHandler
             Debug.Log("Canvas does not have an event camera attached. " +
                       "Attaching OVRCameraRig.centerEyeAnchor as default.");
             OVRCameraRig rig = FindAnyObjectByType<OVRCameraRig>();
-            canvas.worldCamera = rig.centerEyeAnchor.gameObject.GetComponent<Camera>();
+            if (rig)
+            {
+                canvas.worldCamera = rig.centerEyeAnchor.gameObject.GetComponent<Camera>();
+            }
         }
     }
 

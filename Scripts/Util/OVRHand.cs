@@ -90,7 +90,9 @@ public class OVRHand : MonoBehaviour,
     public bool IsTracked { get; private set; }
     public bool IsSystemGestureInProgress { get; private set; }
     public bool IsPointerPoseValid { get; private set; }
-    public Transform PointerPose { get
+    public Transform PointerPose
+    {
+        get
         {
             if (_pointerPoseGO == null)
             {
@@ -110,7 +112,8 @@ public class OVRHand : MonoBehaviour,
         if (_pointerPoseRoot != null)
         {
             PointerPose.SetParent(_pointerPoseRoot, false);
-        } else
+        }
+        else
         {
             PointerPose.SetParent(transform, false);
         }
@@ -118,7 +121,7 @@ public class OVRHand : MonoBehaviour,
 
     private void Awake()
     {
-        if( _pointerPoseGO == null )
+        if (_pointerPoseGO == null)
         {
             InitializePointerPose();
         }

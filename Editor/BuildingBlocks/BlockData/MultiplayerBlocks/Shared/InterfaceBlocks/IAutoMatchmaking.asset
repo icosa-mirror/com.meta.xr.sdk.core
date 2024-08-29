@@ -11,7 +11,7 @@ MonoBehaviour:
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 81d5758cfb47823489080981979f33be, type: 3}
   m_Name: IAutoMatchmaking
-  m_EditorClassIdentifier:
+  m_EditorClassIdentifier: 
   id: d45b4309-f823-42e4-b871-0f58e8e647d8
   version: 1
   blockName: Auto Matchmaking
@@ -20,7 +20,7 @@ MonoBehaviour:
     array:
     - name: Multiplayer
     - name: Prototyping
-  thumbnail: {fileID: 2800000, guid: 90ad9cc1b602b4e469c9c261b6323292, type: 3}
+  thumbnail: {fileID: 2800000, guid: 7cb8b47d1a3124681980f3ca0ae6daec, type: 3}
   order: 0
   prefab: {fileID: 0}
   externalBlockDependencies: []

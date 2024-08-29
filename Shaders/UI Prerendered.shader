@@ -20,6 +20,7 @@
             #pragma fragment frag
             #pragma multi_compile _ ALPHA_SQUARED
             #pragma multi_compile _ EXPENSIVE
+            #pragma multi_compile _ OVERLAP_MASK
 
             #include "UnityCG.cginc"
 
@@ -45,10 +46,23 @@
             }
 
             fixed4 frag(v2f i) : SV_Target {
-                #if EXPENSIVE
+                #if OVERLAP_MASK
+                // perform 4x multitap sample, selecting min value
+                float2 dx = 0.5 * ddx(i.texcoord);
+                float2 dy = 0.5 * ddy(i.texcoord);
+                // sample the corners of the pixel
+                fixed4 col = min(
+                    min(
+                        tex2D(_MainTex, i.texcoord + dx + dy),
+                        tex2D(_MainTex, i.texcoord - dx + dy)),
+                    min(
+                        tex2D(_MainTex, i.texcoord + dx - dy),
+                        tex2D(_MainTex, i.texcoord - dx - dy)));
+                #elif EXPENSIVE
                 // perform 4x multitap sample
                 float2 dx = 0.25 * ddx(i.texcoord);
                 float2 dy = 0.25 * ddy(i.texcoord);
+                // sample four points inside the pixel
                 fixed4 col = 0.25 * (
                     tex2D(_MainTex, i.texcoord + dx + dy) +
                     tex2D(_MainTex, i.texcoord - dx + dy) +

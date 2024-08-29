@@ -91,6 +91,10 @@ public readonly partial struct OVRLocatable : IOVRAnchorComponent<OVRLocatable>,
             Rotation = _flags.IsOrientationValid() ? rotation : default(Quaternion?);
         }
 
+        private const string localToWorldPoseDeprecationMessage = "Using this method after 'await locatable.SetEnabledAsync(true);' is error-prone. OVRTask finishes the execution before OVRCameraRig.Update(), " +
+                                                                  "so camera will still use a pose from the previous frame. This results in descrepancy when localizing anchors against the stale camera pose.\n" +
+                                                                  "Use an overload with the 'trackingSpaceToWorldSpaceTransform' parameter instead.";
+
         /// <summary>
         /// Computes the world space position of the anchor
         /// </summary>
@@ -103,6 +107,7 @@ public readonly partial struct OVRLocatable : IOVRAnchorComponent<OVRLocatable>,
         /// <seealso cref="Rotation"/>
         /// <seealso cref="ComputeWorldRotation"/>
         /// <exception cref="ArgumentNullException">If <paramref name="camera"/> is null</exception>
+        [Obsolete(localToWorldPoseDeprecationMessage)]
         public Vector3? ComputeWorldPosition(Camera camera)
         {
             if (camera == null) throw new ArgumentNullException(nameof(camera));
@@ -136,6 +141,7 @@ public readonly partial struct OVRLocatable : IOVRAnchorComponent<OVRLocatable>,
         /// <seealso cref="Rotation"/>
         /// <seealso cref="ComputeWorldPosition"/>
         /// <exception cref="ArgumentNullException">If <paramref name="camera"/> is null</exception>
+        [Obsolete(localToWorldPoseDeprecationMessage)]
         public Quaternion? ComputeWorldRotation(Camera camera)
         {
             if (camera == null) throw new ArgumentNullException(nameof(camera));
@@ -150,6 +156,40 @@ public readonly partial struct OVRLocatable : IOVRAnchorComponent<OVRLocatable>,
 
             var headTrackingOrientation = headPoseRotation * Rotation.Value;
             return camera.transform.rotation * headTrackingOrientation;
+        }
+
+        /// <summary>
+        /// Returns world-space position of the anchor.
+        /// </summary>
+        /// <param name="trackingSpaceToWorldSpaceTransform">Uses this transform to convert position from tracking-space to world-space.</param>
+        public Vector3? ComputeWorldPosition(Transform trackingSpaceToWorldSpaceTransform)
+        {
+            if (trackingSpaceToWorldSpaceTransform == null)
+            {
+                throw new ArgumentNullException(nameof(trackingSpaceToWorldSpaceTransform));
+            }
+            if (!Position.HasValue)
+            {
+                return null;
+            }
+            return trackingSpaceToWorldSpaceTransform.TransformPoint(Position.Value);
+        }
+
+        /// <summary>
+        /// Returns world-space rotation of the anchor.
+        /// </summary>
+        /// <param name="trackingSpaceToWorldSpaceTransform">Uses this transform to convert rotation from tracking-space to world-space.</param>
+        public Quaternion? ComputeWorldRotation(Transform trackingSpaceToWorldSpaceTransform)
+        {
+            if (trackingSpaceToWorldSpaceTransform == null)
+            {
+                throw new ArgumentNullException(nameof(trackingSpaceToWorldSpaceTransform));
+            }
+            if (!Rotation.HasValue)
+            {
+                return null;
+            }
+            return trackingSpaceToWorldSpaceTransform.rotation * Rotation.Value;
         }
     }
 

@@ -11,10 +11,10 @@ MonoBehaviour:
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 79f9521b347da874593f66d95e2ce5c6, type: 3}
   m_Name: RoomMesh
-  m_EditorClassIdentifier: 
+  m_EditorClassIdentifier:
   id: 6b8a377d-05de-449b-a9c4-8ed22606f71c
   version: 1
-  blockName: Room Mesh
+  blockName: Scene Mesh
   description: Load the recorded Scene Mesh with collider.
   tags:
     array:

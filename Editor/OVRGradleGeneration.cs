@@ -246,7 +246,7 @@ public class OVRGradleGeneration
         }
 #endif
 #else
-        OVRProjectConfig projectConfig = OVRProjectConfig.GetProjectConfig();
+        OVRProjectConfig projectConfig = OVRProjectConfig.CachedProjectConfig;
         if (projectConfig.targetDeviceTypes.Contains(OVRProjectConfig.DeviceType.Quest))
         {
             projectConfig.targetDeviceTypes.Remove(OVRProjectConfig.DeviceType.Quest);
@@ -272,7 +272,7 @@ public class OVRGradleGeneration
             OVRDeviceSelector.isTargetDeviceQuest,
             OVRDeviceSelector.isTargetDeviceQuest2);
 
-        OVRProjectConfig projectConfig = OVRProjectConfig.GetProjectConfig();
+        OVRProjectConfig projectConfig = OVRProjectConfig.CachedProjectConfig;
 
         // Toggle & generate system splash screen
         if (projectConfig != null && projectConfig.systemSplashScreen != null)
@@ -315,7 +315,7 @@ public class OVRGradleGeneration
 
         bool patchedSecurityConfig = false;
         // If Enable NSC Config, copy XML file into gradle project
-        OVRProjectConfig projectConfig = OVRProjectConfig.GetProjectConfig();
+        OVRProjectConfig projectConfig = OVRProjectConfig.CachedProjectConfig;
         if (projectConfig != null)
         {
             if (projectConfig.enableNSCConfig)

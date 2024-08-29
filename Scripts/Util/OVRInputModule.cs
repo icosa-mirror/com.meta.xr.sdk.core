@@ -719,6 +719,15 @@ namespace UnityEngine.EventSystems
                     // so even though this raycast came from a world space ray we must get a screen
                     // space position for the camera attached to this raycaster for compatability
                     leftData.position = ovrRaycaster.GetScreenPosition(raycast);
+
+                    // Find the world position and normal the Graphic the ray intersected
+                    RectTransform graphicRect = raycast.gameObject.GetComponent<RectTransform>();
+                    if (graphicRect != null)
+                    {
+                        Vector3 worldPos = raycast.worldPosition;
+                        Vector3 normal = GetRectTransformNormal(graphicRect);
+                        m_Cursor.SetCursorStartDest(handRay.position, worldPos, normal);
+                    }
                 }
 
                 // Now process physical raycast intersections

@@ -483,5 +483,97 @@ internal static class OVRProjectSetupRenderingTasks
             },
             fixMessage: "OVRManager.enableDynamicResolution = true, OVRManager.minDynamicResolutionScale = 0.7f, OVRManager.maxDynamicResolution = 1.3f"
         );
+
+#if USING_URP && UNITY_2022_2_OR_NEWER
+        // [Recommended] Disable Depth Texture
+        OVRProjectSetup.AddTask(
+            level: OVRProjectSetup.TaskLevel.Recommended,
+            platform: BuildTargetGroup.Android,
+            group: targetGroup,
+            isDone: BuildTargetGroup =>
+            {
+                var pipelineAssets = new System.Collections.Generic.List<RenderPipelineAsset>();
+                QualitySettings.GetAllRenderPipelineAssetsForPlatform("Android", ref pipelineAssets);
+
+                return !pipelineAssets.OfType<UniversalRenderPipelineAsset>().Any(asset => asset.supportsCameraDepthTexture);
+            },
+            fix: buildTargetGroup =>
+            {
+                var pipelineAssets = new System.Collections.Generic.List<RenderPipelineAsset>();
+                QualitySettings.GetAllRenderPipelineAssetsForPlatform("Android", ref pipelineAssets);
+
+                foreach (var urpAsset in pipelineAssets.OfType<UniversalRenderPipelineAsset>())
+                {
+                    urpAsset.supportsCameraDepthTexture = false;
+                }
+            },
+            message: "Enabling Depth Texture may significantly impact performance. It is recommended to disable it when it isn't required in a shader.");
+
+        // [Recommended] Disable Opaque Texture
+        OVRProjectSetup.AddTask(
+            level: OVRProjectSetup.TaskLevel.Recommended,
+            platform: BuildTargetGroup.Android,
+            group: targetGroup,
+            isDone: BuildTargetGroup =>
+            {
+                var pipelineAssets = new System.Collections.Generic.List<RenderPipelineAsset>();
+                QualitySettings.GetAllRenderPipelineAssetsForPlatform("Android", ref pipelineAssets);
+
+                return !pipelineAssets.OfType<UniversalRenderPipelineAsset>().Any(asset => asset.supportsCameraOpaqueTexture);
+            },
+            fix: buildTargetGroup =>
+            {
+                var pipelineAssets = new System.Collections.Generic.List<RenderPipelineAsset>();
+                QualitySettings.GetAllRenderPipelineAssetsForPlatform("Android", ref pipelineAssets);
+
+                foreach (var urpAsset in pipelineAssets.OfType<UniversalRenderPipelineAsset>())
+                {
+                    urpAsset.supportsCameraOpaqueTexture = false;
+                }
+            },
+            message: "Enabling Opaque Texture may significantly impact performance. It is recommended to disable it when it isn't required in a shader.");
+
+        // [Recommended] Disable HDR
+        OVRProjectSetup.AddTask(
+            level: OVRProjectSetup.TaskLevel.Recommended,
+            platform: BuildTargetGroup.Android,
+            group: targetGroup,
+            isDone: BuildTargetGroup =>
+            {
+                var pipelineAssets = new System.Collections.Generic.List<RenderPipelineAsset>();
+                QualitySettings.GetAllRenderPipelineAssetsForPlatform("Android", ref pipelineAssets);
+
+                return !pipelineAssets
+                    .OfType<UniversalRenderPipelineAsset>()
+                    .Any(asset => asset.supportsHDR);
+            },
+            fix: buildTargetGroup =>
+            {
+                var pipelineAssets = new System.Collections.Generic.List<RenderPipelineAsset>();
+                QualitySettings.GetAllRenderPipelineAssetsForPlatform("Android", ref pipelineAssets);
+
+                foreach (var urpAsset in pipelineAssets.OfType<UniversalRenderPipelineAsset>())
+                {
+                    urpAsset.supportsHDR = false;
+                }
+            },
+            message: "Using HDR may significantly impact performance. It is recommended to disable HDR.");
+
+        // [Recommended] Disable Camera Stack
+        OVRProjectSetup.AddTask(
+            level: OVRProjectSetup.TaskLevel.Recommended,
+            platform: BuildTargetGroup.Android,
+            group: targetGroup,
+            isDone: buildTargetGroup =>
+            {
+                // Any camera in the scene is using a camera stack
+                return !OVRProjectSetupUtils
+                    .FindComponentsInScene<Camera>()
+                    ?.Select(camera => camera.GetUniversalAdditionalCameraData())
+                    ?.Any(cameraData => cameraData.cameraStack?.Any() ?? false) ?? false;
+            },
+            message: "Using the camera stack may significantly impact performance. It is not recommended to use the camera stack feature."
+        );
+#endif
     }
 }

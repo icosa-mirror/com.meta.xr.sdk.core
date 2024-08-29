@@ -240,6 +240,38 @@ namespace Meta.XR.Editor.UserInterface
                 stretchWidth = false
             };
 
+            public readonly GUIStyle ExperimentalNoticeIconStyle = new GUIStyle()
+            {
+                padding = new RectOffset(Constants.Margin, Constants.Margin, 0, 0),
+                fixedWidth = Constants.LargeMargin,
+                stretchWidth = false,
+                stretchHeight = false,
+                alignment = TextAnchor.MiddleCenter,
+            };
+
+            public readonly GUIStyle ExperimentalNoticeTextStyle = new GUIStyle()
+            {
+                padding = new RectOffset(Constants.Padding, Constants.Padding, Constants.Padding, Constants.Padding),
+                stretchWidth = true,
+                richText = true,
+                fontSize = 11,
+                wordWrap = true,
+                normal =
+                {
+                    textColor = Colors.DarkGray
+                }
+            };
+
+            public readonly GUIStyle ExperimentalNoticeBox = new GUIStyle()
+            {
+                padding = new RectOffset(Constants.Margin, Constants.Margin, Constants.Border, Constants.Border),
+                stretchWidth = true,
+                stretchHeight = false,
+                normal =
+                {
+                    background = Colors.ExperimentalColor.ToTexture()
+                }
+            };
 
             public readonly GUIStyle HeaderIcons = new GUIStyle()
             {
@@ -264,6 +296,9 @@ namespace Meta.XR.Editor.UserInterface
 
             public static readonly TextureContent CheckIcon =
                 TextureContent.CreateContent("ovr_icon_check.png", TextureContent.Categories.Generic, null);
+
+            internal static readonly TextureContent ExperimentalIcon =
+                TextureContent.CreateContent("ovr_icon_experimental.png", TextureContent.Categories.Generic, null);
 
         }
 

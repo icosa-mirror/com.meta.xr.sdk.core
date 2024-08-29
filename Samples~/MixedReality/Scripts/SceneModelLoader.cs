@@ -36,6 +36,7 @@ using UnityEngine;
 public class SceneModelLoader : MonoBehaviour
 {
     public GameObject SceneObjectPrefab;
+    [SerializeField] private Transform _trackingSpace;
 
     void Start()
     {
@@ -94,8 +95,8 @@ public class SceneModelLoader : MonoBehaviour
             if (locatable.TryGetSceneAnchorPose(out var pose))
             {
                 gObj.transform.SetPositionAndRotation(
-                    pose.ComputeWorldPosition(Camera.main).GetValueOrDefault(),
-                    pose.ComputeWorldRotation(Camera.main).GetValueOrDefault()
+                    pose.ComputeWorldPosition(_trackingSpace).GetValueOrDefault(),
+                    pose.ComputeWorldRotation(_trackingSpace).GetValueOrDefault()
                 );
             }
 

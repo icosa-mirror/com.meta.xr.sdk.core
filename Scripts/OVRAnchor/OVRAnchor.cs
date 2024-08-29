@@ -552,7 +552,7 @@ public readonly partial struct OVRAnchor : IEquatable<OVRAnchor>, IDisposable
         var handle = Handle;
         unsafe
         {
-            return SaveSpacesAsync(&handle, 1);
+            return SaveSpacesAsync(new(&handle, 1));
         }
     }
 
@@ -573,45 +573,41 @@ public readonly partial struct OVRAnchor : IEquatable<OVRAnchor>, IDisposable
     /// <exception cref="ArgumentException">Thrown if <paramref name="anchors"/> contains more than 32 anchors.</exception>
     public static OVRTask<OVRResult<SaveResult>> SaveAsync(IEnumerable<OVRAnchor> anchors)
     {
-        var collection = anchors.ToNonAlloc();
-        var count = collection.GetCount();
-        if (count > OVRAnchor.MaxPersistentAnchorBatchSize)
-            throw new ArgumentException($"There must not be more than {OVRAnchor.MaxPersistentAnchorBatchSize} anchors at once ({count} were provided).", nameof(anchors));
+        using var spaces = OVRNativeList.WithSuggestedCapacityFrom(anchors).AllocateEmpty<ulong>(Allocator.Temp);
+        foreach (var anchor in anchors.ToNonAlloc())
+        {
+            spaces.Add(anchor.Handle);
+        }
 
-        if (count == 0)
+        if (spaces.Count > MaxPersistentAnchorBatchSize)
+            throw new ArgumentException($"There must not be more than {MaxPersistentAnchorBatchSize} anchors at once ({spaces.Count} were provided).", nameof(anchors));
+
+        if (spaces.Count == 0)
         {
             return OVRTask.FromResult(OVRResult.From(SaveResult.Success));
         }
 
-        unsafe
-        {
-            var spaces = stackalloc ulong[count];
-
-            var index = 0;
-            foreach (var anchor in collection)
-            {
-                spaces[index++] = anchor.Handle;
-            }
-
-            return SaveSpacesAsync(spaces, count);
-        }
+        return SaveSpacesAsync(spaces);
     }
 
-    internal static unsafe OVRTask<OVRResult<SaveResult>> SaveSpacesAsync(ulong* spaces, int count)
+    internal static unsafe OVRTask<OVRResult<SaveResult>> SaveSpacesAsync(ReadOnlySpan<ulong> spaces)
     {
-        if (count > OVRAnchor.MaxPersistentAnchorBatchSize)
-            throw new ArgumentOutOfRangeException(nameof(count), count, $"Cannot save more than {OVRAnchor.MaxPersistentAnchorBatchSize} anchors at once ({count} were provided).");
+        if (spaces.Length > MaxPersistentAnchorBatchSize)
+            throw new ArgumentOutOfRangeException(nameof(spaces), spaces.Length, $"Cannot save more than {MaxPersistentAnchorBatchSize} anchors at once ({spaces.Length} were provided).");
 
         var telemetryMarker = OVRTelemetry
             .Start((int)Telemetry.MarkerId.SaveSpaces)
-            .AddAnnotation(Telemetry.Annotation.SpaceCount, (long)count);
+            .AddAnnotation(Telemetry.Annotation.SpaceCount, (long)spaces.Length);
 
-        var result = SaveSpaces(spaces, count, out var requestId);
-        Telemetry.SetSyncResult(telemetryMarker, requestId, result);
+        fixed (ulong* ptr = spaces)
+        {
+            var result = SaveSpaces(ptr, spaces.Length, out var requestId);
+            Telemetry.SetSyncResult(telemetryMarker, requestId, result);
 
-        return result.IsSuccess()
-            ? OVRTask.FromRequest<OVRResult<SaveResult>>(requestId)
-            : OVRTask.FromResult(OVRResult.From((SaveResult)result));
+            return result.IsSuccess()
+                ? OVRTask.FromRequest<OVRResult<SaveResult>>(requestId)
+                : OVRTask.FromResult(OVRResult.From((SaveResult)result));
+        }
     }
 
     // Invoked by OVRManager event loop
@@ -635,10 +631,10 @@ public readonly partial struct OVRAnchor : IEquatable<OVRAnchor>, IDisposable
     /// <seealso cref="EraseAsync(IEnumerable{OVRAnchor},IEnumerable{Guid})"/>
     public OVRTask<OVRResult<EraseResult>> EraseAsync()
     {
-        var handle = Handle;
+        var uuid = Uuid;
         unsafe
         {
-            return EraseSpacesAsync(1, &handle, 0, null);
+            return EraseSpacesAsync(default, new(&uuid, 1));
         }
     }
 
@@ -663,55 +659,42 @@ public readonly partial struct OVRAnchor : IEquatable<OVRAnchor>, IDisposable
         if (anchors == null && uuids == null)
             throw new ArgumentException($"One of {nameof(anchors)} or {nameof(uuids)} must not be null.");
 
-        var anchorCollection = anchors.ToNonAlloc();
-        var spaceCount = anchorCollection.GetCount();
+        using var spaces = OVRNativeList.WithSuggestedCapacityFrom(anchors).AllocateEmpty<ulong>(Allocator.Temp);
+        foreach (var anchor in anchors.ToNonAlloc())
+        {
+            spaces.Add(anchor.Handle);
+        }
 
-        var uuidCollection = uuids.ToNonAlloc();
-        var uuidCount = uuidCollection.GetCount();
+        using var ids = uuids.ToNativeList(Allocator.Temp);
 
-        if (spaceCount + uuidCount > OVRAnchor.MaxPersistentAnchorBatchSize)
-            throw new ArgumentException($"Cannot erase more than {OVRAnchor.MaxPersistentAnchorBatchSize} anchors at once ({spaceCount + uuidCount} were provided).");
+        if (spaces.Count + ids.Count > MaxPersistentAnchorBatchSize)
+            throw new ArgumentException($"Cannot erase more than {MaxPersistentAnchorBatchSize} anchors at once ({spaces.Count + ids.Count} were provided).");
 
-        if (spaceCount == 0 && uuidCount == 0)
+        if (spaces.Count == 0 && ids.Count == 0)
         {
             return OVRTask.FromResult(OVRResult.From(EraseResult.Success));
         }
 
-        unsafe
-        {
-            var spaces = stackalloc ulong[spaceCount];
-            var ids = stackalloc Guid[uuidCount];
-
-            var index = 0;
-            foreach (var anchor in anchorCollection)
-            {
-                spaces[index++] = anchor.Handle;
-            }
-
-            index = 0;
-            foreach (var uuid in uuidCollection)
-            {
-                ids[index++] = uuid;
-            }
-
-            return EraseSpacesAsync(spaceCount, spaces, uuidCount, ids);
-        }
+        return EraseSpacesAsync(spaces, ids);
     }
 
-    static unsafe OVRTask<OVRResult<EraseResult>> EraseSpacesAsync(int spaceCount, ulong* spaces,
-        int uuidCount, Guid* uuids)
+    static unsafe OVRTask<OVRResult<EraseResult>> EraseSpacesAsync(ReadOnlySpan<ulong> spaces, ReadOnlySpan<Guid> uuids)
     {
         var telemetryMarker = OVRTelemetry
             .Start((int)Telemetry.MarkerId.EraseSpaces)
-            .AddAnnotation(Telemetry.Annotation.SpaceCount, (long)spaceCount)
-            .AddAnnotation(Telemetry.Annotation.UuidCount, (long)uuidCount);
+            .AddAnnotation(Telemetry.Annotation.SpaceCount, spaces.Length)
+            .AddAnnotation(Telemetry.Annotation.UuidCount, uuids.Length);
 
-        var result = EraseSpaces((uint)spaceCount, spaces, (uint)uuidCount, uuids, out var requestId);
-        Telemetry.SetSyncResult(telemetryMarker, requestId, result);
+        fixed (ulong* spacesPtr = spaces)
+        fixed (Guid* uuidsPtr = uuids)
+        {
+            var result = EraseSpaces((uint)spaces.Length, spacesPtr, (uint)uuids.Length, uuidsPtr, out var requestId);
+            Telemetry.SetSyncResult(telemetryMarker, requestId, result);
 
-        return result.IsSuccess()
-            ? OVRTask.FromRequest<OVRResult<EraseResult>>(requestId)
-            : OVRTask.FromResult(OVRResult.From((EraseResult)result));
+            return result.IsSuccess()
+                ? OVRTask.FromRequest<OVRResult<EraseResult>>(requestId)
+                : OVRTask.FromResult(OVRResult.From((EraseResult)result));
+        }
     }
 
     internal static void OnEraseSpacesResult(OVRDeserialize.SpacesEraseResultData eventData)
@@ -737,24 +720,19 @@ public readonly partial struct OVRAnchor : IEquatable<OVRAnchor>, IDisposable
         if (users == null)
             throw new ArgumentNullException(nameof(users));
 
-        var userCollection = users.ToNonAlloc();
-        var userCount = userCollection.GetCount();
-
-        if (userCount < 1)
-            throw new ArgumentException($"{nameof(users)} must contain at least one user.");
-
         unsafe
         {
-            var handle = Handle;
-            var usersArray = stackalloc ulong[userCount];
-
-            var index = 0;
-            foreach (var user in userCollection)
+            using var userList = OVRNativeList.WithSuggestedCapacityFrom(users).AllocateEmpty<ulong>(Allocator.Temp);
+            foreach (var user in users.ToNonAlloc())
             {
-                usersArray[index++] = user._handle;
+                userList.Add(user._handle);
             }
 
-            return ShareSpacesAsync(1, &handle, userCount, usersArray);
+            if (userList.Count < 1)
+                throw new ArgumentException($"{nameof(users)} must contain at least one user.");
+
+            var handle = Handle;
+            return ShareSpacesAsync(new(&handle, 1), userList);
         }
     }
 
@@ -784,47 +762,43 @@ public readonly partial struct OVRAnchor : IEquatable<OVRAnchor>, IDisposable
         if (users == null)
             throw new ArgumentNullException(nameof(users));
 
-        var anchorCollection = anchors.ToNonAlloc();
-        var spaceCount = anchorCollection.GetCount();
+        using var spaceList = OVRNativeList.WithSuggestedCapacityFrom(anchors).AllocateEmpty<ulong>(Allocator.Temp);
+        foreach (var anchor in anchors.ToNonAlloc())
+        {
+            spaceList.Add(anchor.Handle);
+        }
 
-        var userCollection = users.ToNonAlloc();
-        var userCount = userCollection.GetCount();
+        using var userList = OVRNativeList.WithSuggestedCapacityFrom(users).AllocateEmpty<ulong>(Allocator.Temp);
+        foreach (var user in users.ToNonAlloc())
+        {
+            userList.Add(user._handle);
+        }
 
-        if (userCount < 1)
+        if (userList.Count < 1)
             throw new ArgumentException($"{nameof(users)} must contain at least one user.");
 
-        if (spaceCount == 0)
+        if (spaceList.Count == 0)
             return OVRTask.FromResult(OVRResult.From(ShareResult.Success));
 
-        unsafe
-        {
-            var spacesArray = stackalloc ulong[spaceCount];
-            var usersArray = stackalloc ulong[userCount];
-
-            var index = 0;
-            foreach (var anchor in anchorCollection)
-            {
-                spacesArray[index++] = anchor.Handle;
-            }
-
-            index = 0;
-            foreach (var user in userCollection)
-            {
-                usersArray[index++] = user._handle;
-            }
-
-            return ShareSpacesAsync(spaceCount, spacesArray, userCount, usersArray);
-        }
+        return ShareSpacesAsync(spaces: spaceList, users: userList);
     }
 
-    static unsafe OVRTask<OVRResult<ShareResult>> ShareSpacesAsync(int spaceCount, ulong* spaces,
-        int userCount, ulong* users)
+    static unsafe OVRTask<OVRResult<ShareResult>> ShareSpacesAsync(ReadOnlySpan<ulong> spaces, ReadOnlySpan<ulong> users)
     {
-        var result = ShareSpaces(spaces, (uint)spaceCount, users, (uint)userCount, out var requestId);
+        fixed (ulong* spacePtr = spaces)
+        fixed (ulong* userPtr = users)
+        {
+            var result = ShareSpaces(
+                spaces: spacePtr,
+                numSpaces: (uint)spaces.Length,
+                userHandles: userPtr,
+                numUsers: (uint)users.Length,
+                out var requestId);
 
-        return result.IsSuccess()
-            ? OVRTask.FromRequest<OVRResult<ShareResult>>(requestId)
-            : OVRTask.FromResult(OVRResult.From((ShareResult)result));
+            return result.IsSuccess()
+                ? OVRTask.FromRequest<OVRResult<ShareResult>>(requestId)
+                : OVRTask.FromResult(OVRResult.From((ShareResult)result));
+        }
     }
 
 

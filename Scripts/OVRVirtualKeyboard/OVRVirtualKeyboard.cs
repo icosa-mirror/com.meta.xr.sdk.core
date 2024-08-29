@@ -43,6 +43,9 @@ using UnityEngine.Serialization;
 [Feature(Feature.VirtualKeyboard)]
 public class OVRVirtualKeyboard : MonoBehaviour
 {
+
+    private static readonly string _defaultShaderName = "Unlit/Color";
+    private static readonly string _defaultAlphaBlendShaderName = "Unlit/Transparent";
     /// <summary>
     /// The initial position of the keyboard, which determines the input style used to type. Far uses raycasting to type. Near uses direct touch to type. If set to Far or Near, the keyboard position is runtime controlled, so the Transform component will be locked.
     /// </summary>
@@ -677,12 +680,14 @@ public class OVRVirtualKeyboard : MonoBehaviour
     {
         if (keyboardModelShader == null)
         {
-            keyboardModelShader = Shader.Find("Unlit/Color");
+            Debug.LogWarning($"keyboardModelShader not specified; falling back to {_defaultShaderName}");
+            keyboardModelShader = Shader.Find(_defaultShaderName);
         }
 
         if (keyboardModelAlphaBlendShader == null)
         {
-            keyboardModelAlphaBlendShader = Shader.Find("Unlit/Transparent");
+            Debug.LogWarning($"keyboardModelAlphaBlendShader not specified; falling back to {_defaultAlphaBlendShaderName}");
+            keyboardModelAlphaBlendShader = Shader.Find(_defaultAlphaBlendShaderName);
         }
 
         if (singleton_ != null)
@@ -766,6 +771,12 @@ public class OVRVirtualKeyboard : MonoBehaviour
     void OnDisable()
     {
         HideKeyboard();
+    }
+
+    private void Reset()
+    {
+        keyboardModelShader = Shader.Find(_defaultShaderName);
+        keyboardModelAlphaBlendShader = Shader.Find(_defaultAlphaBlendShaderName);
     }
 
 #if UNITY_EDITOR

@@ -18,6 +18,7 @@
  * limitations under the License.
  */
 
+using System;
 using UnityEngine;
 using Fusion;
 using Meta.XR.MultiplayerBlocks.Shared;
@@ -27,14 +28,23 @@ namespace Meta.XR.MultiplayerBlocks.Fusion
     public class AvatarBehaviourFusion : NetworkBehaviour, IAvatarBehaviour
     {
         private const float LERP_TIME = 0.5f;
+        private const int AvatarDataStreamMaxCapacity = 800; // Enough storage for an avatar in high LOD
+        private Transform _cameraRig;
+        private byte[] _buffer;
 
         [Networked, OnChangedRender(nameof(OnAvatarIdChanged))] public ulong OculusId { get; set; }
         [Networked, OnChangedRender(nameof(OnAvatarIdChanged))] public int LocalAvatarIndex { get; set; }
-        private Transform _cameraRig;
+        [Networked] private int AvatarDataStreamLength { get; set; }
+
+        [Networked]
+        [Capacity(AvatarDataStreamMaxCapacity)]
+        [OnChangedRender(nameof(OnAvatarDataStreamChanged))]
+        private NetworkArray<byte> AvatarDataStream { get; } = MakeInitializer(Array.Empty<byte>());
 
 #if META_AVATAR_SDK_DEFINED
         private AvatarEntity _avatar;
 #endif // META_AVATAR_SDK_DEFINED
+
         public override void Spawned()
         {
             if (OVRManager.instance)
@@ -60,11 +70,21 @@ namespace Meta.XR.MultiplayerBlocks.Fusion
 #endif // META_AVATAR_SDK_DEFINED
         }
 
-        [Rpc(RpcSources.InputAuthority, RpcTargets.Proxies, InvokeLocal = false, Channel = RpcChannel.Unreliable)]
-        private void RPC_RecieveStreamData(byte[] bytes)
+        private void OnAvatarDataStreamChanged()
         {
 #if META_AVATAR_SDK_DEFINED
-            _avatar.AddToStreamDataList(bytes);
+            if (Object.HasStateAuthority)
+            {
+                return;
+            }
+
+            if (_buffer == null || _buffer.Length != AvatarDataStreamLength)
+            {
+                _buffer = new byte[AvatarDataStreamLength];
+            }
+
+            AvatarDataStream.CopyTo(_buffer);
+            _avatar.SetStreamData(_buffer);
 #endif // META_AVATAR_SDK_DEFINED
         }
 
@@ -89,12 +109,15 @@ namespace Meta.XR.MultiplayerBlocks.Fusion
 
         public void ReceiveStreamData(byte[] bytes)
         {
-            RPC_RecieveStreamData(bytes);
+            if (bytes.Length > AvatarDataStreamMaxCapacity)
+            {
+                Debug.LogError($"[{nameof(AvatarBehaviourFusion)}] Cannot send a stream data of length {bytes.Length} greater than the max capacity of {AvatarDataStreamMaxCapacity}");
+                return;
+            }
+
+            AvatarDataStreamLength = bytes.Length;
+            AvatarDataStream.CopyFrom(bytes, 0, bytes.Length);
         }
-
-        public bool ShouldReduceLOD(int nAvatars) => true; // For Fusion LOD must be low as RPC maximum payload size is 512 bytes
-
-        public bool DynamicLOD { get; set; }
 
         #endregion
     }

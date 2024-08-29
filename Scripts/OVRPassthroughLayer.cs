@@ -23,6 +23,8 @@ using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using Meta.XR.Util;
 using UnityEngine;
+using UnityEngine.Events;
+using UnityEngine.Serialization;
 using ColorMapType = OVRPlugin.InsightPassthroughColorMapType;
 
 /// <summary>
@@ -215,9 +217,18 @@ public class OVRPassthroughLayer : MonoBehaviour
     }
 
     /// <summary>
+    /// \deprecated Occurs when a passthrough layer has been rendered and presented on the HMD screen for the first time after being restarted.
+    /// </summary>
+    [Obsolete("This event is deprecated, use " + nameof(passthroughLayerResumed) + " UnityEvent instead", error: false)]
+    public event Action PassthroughLayerResumed;
+
+    /// <summary>
     /// Occurs when a passthrough layer has been rendered and presented on the HMD screen for the first time after being restarted.
     /// </summary>
-    public event Action PassthroughLayerResumed;
+    /// <remarks>
+    /// @params (OVRPassthroughLayer passthroughLayer): the sender of the event
+    /// </remarks>
+    public UnityEvent<OVRPassthroughLayer> passthroughLayerResumed = new();
 
     /// <summary>
     /// This color map method allows to recolor the grayscale camera images by specifying a color lookup table.
@@ -1064,10 +1075,11 @@ public class OVRPassthroughLayer : MonoBehaviour
 
         {
             if (PassthroughLayerResumed != null)
-
             {
                 PassthroughLayerResumed();
             }
+
+            passthroughLayerResumed?.Invoke(this);
         }
     }
     #endregion

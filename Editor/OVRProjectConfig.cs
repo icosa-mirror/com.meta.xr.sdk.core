@@ -32,6 +32,7 @@ using UnityEngine.Serialization;
 #endif
 public class OVRProjectConfig : ScriptableObject, ISerializationCallbackReceiver
 {
+    // Consider targetDeviceTypes when modifying
     public enum DeviceType
     {
         //GearVrOrGo = 0, // DEPRECATED
@@ -95,8 +96,8 @@ public class OVRProjectConfig : ScriptableObject, ISerializationCallbackReceiver
         Required = 2
     }
 
-    public List<DeviceType> targetDeviceTypes = new List<DeviceType>
-        { DeviceType.Quest, DeviceType.Quest2, DeviceType.QuestPro };
+    public List<DeviceType> targetDeviceTypes = new()
+        { DeviceType.Quest, DeviceType.Quest2, DeviceType.QuestPro, DeviceType.Quest3 };
 
     public bool allowOptional3DofHeadTracking = false;
     public HandTrackingSupport handTrackingSupport = HandTrackingSupport.ControllersOnly;
@@ -186,14 +187,13 @@ public class OVRProjectConfig : ScriptableObject, ISerializationCallbackReceiver
     //public const string OculusProjectConfigAssetPath = "Assets/Oculus/OculusProjectConfig.asset";
 
     private static OVRProjectConfig _cachedProjectConfig;
-
     public static OVRProjectConfig CachedProjectConfig
     {
         get
         {
             if (_cachedProjectConfig == null)
             {
-                GetProjectConfig();
+                _cachedProjectConfig = GetOrCreateProjectConfig();
             }
 
             return _cachedProjectConfig;
@@ -210,7 +210,7 @@ public class OVRProjectConfig : ScriptableObject, ISerializationCallbackReceiver
     static void Update()
     {
         // Initialize the asset if it doesn't exist
-        GetProjectConfig();
+        GetOrCreateProjectConfig();
         // Stop running Update
         EditorApplication.update -= Update;
     }
@@ -246,7 +246,7 @@ public class OVRProjectConfig : ScriptableObject, ISerializationCallbackReceiver
         return ComputeOculusProjectAssetPath("OculusProjectConfig.asset");
     }
 
-    public static OVRProjectConfig GetProjectConfig(bool create = true)
+    private static OVRProjectConfig GetOrCreateProjectConfig()
     {
         OVRProjectConfig projectConfig = null;
         string oculusProjectConfigAssetPath = ComputeOculusProjectConfigAssetPath();
@@ -262,12 +262,6 @@ public class OVRProjectConfig : ScriptableObject, ISerializationCallbackReceiver
                 e.Message);
         }
 
-        if (projectConfig == null && !create)
-        {
-            _cachedProjectConfig = null;
-            return null;
-        }
-
         // Initialize the asset only if a build is not currently running.
         if (projectConfig == null && !BuildPipeline.isBuildingPlayer)
         {
@@ -277,6 +271,7 @@ public class OVRProjectConfig : ScriptableObject, ISerializationCallbackReceiver
             projectConfig.targetDeviceTypes.Add(DeviceType.Quest);
             projectConfig.targetDeviceTypes.Add(DeviceType.Quest2);
             projectConfig.targetDeviceTypes.Add(DeviceType.QuestPro);
+            projectConfig.targetDeviceTypes.Add(DeviceType.Quest3);
             projectConfig.allowOptional3DofHeadTracking = false;
             projectConfig.handTrackingSupport = HandTrackingSupport.ControllersOnly;
             projectConfig.handTrackingFrequency = HandTrackingFrequency.LOW;
@@ -302,7 +297,6 @@ public class OVRProjectConfig : ScriptableObject, ISerializationCallbackReceiver
 
         if (projectConfig == null)
         {
-            _cachedProjectConfig = null;
             return null;
         }
 
@@ -324,9 +318,13 @@ public class OVRProjectConfig : ScriptableObject, ISerializationCallbackReceiver
             {
                 projectConfig.targetDeviceTypes.Add(DeviceType.QuestPro);
             }
+
+            if (!projectConfig.targetDeviceTypes.Contains(DeviceType.Quest3))
+            {
+                projectConfig.targetDeviceTypes.Add(DeviceType.Quest3);
+            }
         }
 
-        _cachedProjectConfig = projectConfig;
         return projectConfig;
     }
 

@@ -105,6 +105,7 @@ public class OVRPassthroughLayerEditor : Editor
     private SerializedProperty _propColorMapEditorPosterize;
     private SerializedProperty _propColorMapEditorGradient;
     private SerializedProperty _propColorMapEditorSaturation;
+    private SerializedProperty _propPassthroughLayerResumed;
 
     private SerializedProperty _propColorLutSourceTexture;
     private SerializedProperty _propColorLutTargetTexture;
@@ -129,6 +130,8 @@ public class OVRPassthroughLayerEditor : Editor
         _propColorMapEditorSaturation =
             serializedObject.FindProperty(nameof(OVRPassthroughLayer.colorMapEditorSaturation));
         _propColorMapEditorGradient = serializedObject.FindProperty(nameof(OVRPassthroughLayer.colorMapEditorGradient));
+        _propPassthroughLayerResumed = serializedObject.FindProperty(nameof(OVRPassthroughLayer.passthroughLayerResumed));
+
 
         _propColorLutSourceTexture = serializedObject.FindProperty(nameof(OVRPassthroughLayer._colorLutSourceTexture));
         _propColorLutTargetTexture = serializedObject.FindProperty(nameof(OVRPassthroughLayer._colorLutTargetTexture));
@@ -254,6 +257,8 @@ public class OVRPassthroughLayerEditor : Editor
                 : "Blend between the source and the target LUT. A value of 0 fully applies the source LUT and a value of 1 fully applies the target LUT.";
             EditorGUILayout.PropertyField(_propLutWeight, new GUIContent("Blend", weightTooltip));
         }
+
+        EditorGUILayout.PropertyField(_propPassthroughLayerResumed, new GUIContent("On Layer Resumed"));
 
         serializedObject.ApplyModifiedProperties();
     }

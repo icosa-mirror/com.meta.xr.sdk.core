@@ -107,6 +107,7 @@ namespace Meta.XR.Guides.Editor
 
         internal new void Show(bool ignoreDontShowAgainFlag = false)
         {
+            if (Application.isBatchMode) return;
             if ((ignoreDontShowAgainFlag || !_guideOptions.ShowDontShowAgainOption || !DontShowAgainPref()) && !_isVisible)
             {
                 base.Show();

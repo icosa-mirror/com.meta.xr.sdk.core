@@ -27,7 +27,7 @@ namespace Meta.XR.BuildingBlocks.Editor
 {
     internal class MissingInstallationRoutineException : InvalidOperationException
     {
-        internal MissingInstallationRoutineException(string message) : base(message) {}
+        internal MissingInstallationRoutineException(string message) : base(message) { }
     }
     internal static class InstallationRoutineSelector
     {

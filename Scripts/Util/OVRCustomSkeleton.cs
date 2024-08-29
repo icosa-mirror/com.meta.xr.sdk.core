@@ -67,6 +67,8 @@ public class OVRCustomSkeleton : OVRSkeleton, ISerializationCallbackReceiver
 
     private void AllocateBones()
     {
+        int max = (int)BoneId.Max;
+
         if (_customBones_V2.Count == (int)BoneId.Max) return;
 
         // Make sure we have the right number of bones

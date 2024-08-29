@@ -18,6 +18,8 @@
             #pragma fragment frag
             #pragma multi_compile _ WITH_CLIP
             #pragma multi_compile _ EXPENSIVE
+            #pragma multi_compile _ ALPHA_TO_MASK
+            #pragma multi_compile _ OVERLAP_MASK
 
             #include "UnityCG.cginc"
 
@@ -43,16 +45,29 @@
             }
 
             fixed4 frag(v2f i) : SV_Target {
-                #if !WITH_CLIP
+                #if !WITH_CLIP && !ALPHA_TO_MASK
                     if (_Color.x == 0 && _Color.y == 0 && _Color.z == 0)
                     {
                         return _Color;
                     }
                 #endif
-                #if EXPENSIVE
+                #if OVERLAP_MASK
+                // perform 4x multitap sample, selecting min value
+                float2 dx = 0.5 * ddx(i.texcoord);
+                float2 dy = 0.5 * ddy(i.texcoord);
+                // sample the corners of the pixel
+                fixed4 col = min(
+                    min(
+                        tex2D(_MainTex, i.texcoord + dx + dy),
+                        tex2D(_MainTex, i.texcoord - dx + dy)),
+                    min(
+                        tex2D(_MainTex, i.texcoord + dx - dy),
+                        tex2D(_MainTex, i.texcoord - dx - dy)));
+                #elif EXPENSIVE
                 // perform 4x multitap sample
                 float2 dx = 0.25 * ddx(i.texcoord);
                 float2 dy = 0.25 * ddy(i.texcoord);
+                // sample four points inside the pixel
                 fixed4 col = 0.25 * (
                     tex2D(_MainTex, i.texcoord + dx + dy) +
                     tex2D(_MainTex, i.texcoord - dx + dy) +
@@ -67,6 +82,12 @@
                 #if WITH_CLIP
                     clip(col.a - 0.5);
                 #endif
+
+                #if ALPHA_TO_MASK
+                    // quantize to avoid dither
+                    col.a = floor(4.0 * col.a + 0.5) * 0.25;
+                #endif
+
                 return col;
             }
             ENDCG

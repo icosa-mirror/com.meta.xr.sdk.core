@@ -20,7 +20,6 @@
 
 using System;
 using UnityEngine;
-using System.Collections.Generic;
 using Meta.XR.MultiplayerBlocks.Shared;
 using Unity.Netcode;
 
@@ -28,15 +27,19 @@ namespace Meta.XR.MultiplayerBlocks.NGO
 {
     public class AvatarBehaviourNGO : NetworkBehaviour, IAvatarBehaviour
     {
-        private NetworkVariable<ulong> _oculusId = new();
-        private NetworkVariable<int> _localAvatarIndex = new();
+        private readonly NetworkVariable<ulong> _oculusId = new();
+        private readonly NetworkVariable<int> _localAvatarIndex = new();
+        private NetworkAvatarDataStream _avatarDataStream;
+
         private Transform _cameraRig;
-        private readonly List<ulong> _targetClientIds = new();
+
 #if META_AVATAR_SDK_DEFINED
         private AvatarEntity _avatarEntity;
 #endif // META_AVATAR_SDK_DEFINED
         private void Awake()
         {
+            _avatarDataStream = new NetworkAvatarDataStream(readPerm: NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Owner);
+
             if (OVRManager.instance)
             {
                 _cameraRig = OVRManager.instance.GetComponentInChildren<OVRCameraRig>().transform;
@@ -55,12 +58,14 @@ namespace Meta.XR.MultiplayerBlocks.NGO
         {
             _oculusId.OnValueChanged += OnAvatarIdChanged;
             _localAvatarIndex.OnValueChanged += OnAvatarIdChanged;
+            _avatarDataStream.OnDataChanged += OnAvatarDataStreamChanged;
         }
 
         public override void OnNetworkDespawn()
         {
             _oculusId.OnValueChanged -= OnAvatarIdChanged;
             _localAvatarIndex.OnValueChanged -= OnAvatarIdChanged;
+            _avatarDataStream.OnDataChanged -= OnAvatarDataStreamChanged;
         }
 
         private void OnAvatarIdChanged<T>(T prev, T val) where T : IEquatable<T>
@@ -70,6 +75,18 @@ namespace Meta.XR.MultiplayerBlocks.NGO
             {
                 _avatarEntity.ReloadAvatarManually();
             }
+#endif // META_AVATAR_SDK_DEFINED
+        }
+
+        private void OnAvatarDataStreamChanged()
+        {
+#if META_AVATAR_SDK_DEFINED
+            if (IsOwner)
+            {
+                return;
+            }
+
+            _avatarEntity.SetStreamData(_avatarDataStream.Value);
 #endif // META_AVATAR_SDK_DEFINED
         }
 
@@ -90,41 +107,8 @@ namespace Meta.XR.MultiplayerBlocks.NGO
             t.rotation = _cameraRig.rotation;
         }
 
-        [ServerRpc]
-        private void ReceiveStreamDataServerRpc(byte[] bytes, ServerRpcParams serverRpcParams = default)
-        {
-            _targetClientIds.Clear();
-            foreach (var (clientId, _) in NetworkManager.ConnectedClients)
-            {
-                if (clientId == serverRpcParams.Receive.SenderClientId)
-                {
-                    continue;
-                }
-
-                _targetClientIds.Add(clientId);
-            }
-
-            ReceiveStreamDataClientRpc(bytes, new ClientRpcParams
-            {
-                Send = new ClientRpcSendParams
-                {
-                    TargetClientIds = _targetClientIds
-                }
-            });
-        }
-
-        [ClientRpc]
-        private void ReceiveStreamDataClientRpc(byte[] bytes, ClientRpcParams clientRpcParams = default)
-        {
-#if META_AVATAR_SDK_DEFINED
-            if (_avatarEntity != null)
-            {
-                _avatarEntity.AddToStreamDataList(bytes);
-            }
-#endif // META_AVATAR_SDK_DEFINED
-        }
-
         #region IAvatarBehaviour
+
         public ulong OculusId
         {
             get => _oculusId.Value;
@@ -138,14 +122,11 @@ namespace Meta.XR.MultiplayerBlocks.NGO
         }
 
         public bool HasInputAuthority => IsOwner;
+
         public void ReceiveStreamData(byte[] bytes)
         {
-            ReceiveStreamDataServerRpc(bytes);
+            _avatarDataStream.Value = bytes;
         }
-
-        public bool ShouldReduceLOD(int nAvatars) => DynamicLOD && nAvatars >= 3;
-
-        public bool DynamicLOD { get; set; }
 
         #endregion
     }

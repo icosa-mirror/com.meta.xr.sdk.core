@@ -30,7 +30,7 @@ using static OVRPlugin;
 /// See https://developer.oculus.com/documentation/unity/unity-scene-overview for more details on Scene.
 /// </remarks>
 [Feature(Feature.Scene)]
-public static class OVRScene
+public static partial class OVRScene
 {
     /// <summary>
     /// Requests Space Setup

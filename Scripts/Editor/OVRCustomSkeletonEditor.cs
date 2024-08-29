@@ -164,19 +164,19 @@ public static class OVRCustomSkeletonEditorExtensions
         }
         else
         {
+            var handBoneNames = FBXHandBoneNames;
             if (bi >= OVRPlugin.BoneId.Hand_ThumbTip && bi <= OVRPlugin.BoneId.Hand_PinkyTip)
             {
                 return FBXHandSidePrefix[(int)skeletonType] +
-                       FBXHandFingerNames[(int)bi - (int)OVRPlugin.BoneId.Hand_ThumbTip] +
-                       "_finger_tip_marker";
+                        FBXHandFingerNames[(int)bi - (int)OVRPlugin.BoneId.Hand_ThumbTip] +
+                        "_finger_tip_marker";
             }
             else
             {
-                return FBXHandBonePrefix + FBXHandSidePrefix[(int)skeletonType] + FBXHandBoneNames[(int)bi];
+                return FBXHandBonePrefix + FBXHandSidePrefix[(int)skeletonType] + handBoneNames[(int)bi];
             }
         }
     }
-
     private static readonly string[] FBXBodyBoneNames =
     {
         "Root",
@@ -339,7 +339,7 @@ public static class OVRCustomSkeletonEditorExtensions
         "RightFootBall"
     };
 
-    private static readonly string[] FBXHandSidePrefix = { "l_", "r_" };
+    private static readonly string[] FBXHandSidePrefix = { "l_", "r_", "", "", "l_", "r_" };
     private const string FBXHandBonePrefix = "b_";
 
     private static readonly string[] FBXHandBoneNames =
@@ -363,6 +363,42 @@ public static class OVRCustomSkeletonEditorExtensions
         "pinky1",
         "pinky2",
         "pinky3"
+    };
+
+    private static readonly string[] OculusSkeletonV2BoneNames =
+    {
+        "b_{0}palm",
+        "b_{0}wrist",
+        // Thumb0 isn't present in the OpenXR hand skeleton format.
+        "b_{0}thumb1",
+        "b_{0}thumb2",
+        "b_{0}thumb3",
+        "{0}thumb_finger_tip_marker",
+
+        // Index fingers.
+        "b_{0}index1",
+        "b_{0}index2",
+        "b_{0}index3",
+        "b_{0}index_null",
+        "{0}index_finger_tip_marker",
+
+        "b_{0}middle1",
+        "b_{0}middle2",
+        "b_{0}middle3",
+        "b_{0}middle_null",
+        "{0}middle_finger_tip_marker",
+
+        "b_{0}ring1",
+        "b_{0}ring2",
+        "b_{0}ring3",
+        "b_{0}ring_null",
+        "{0}ring_finger_tip_marker",
+
+        "b_{0}pinky0",
+        "b_{0}pinky1",
+        "b_{0}pinky2",
+        "b_{0}pinky3",
+        "{0}pinky_finger_tip_marker",
     };
 
     private static readonly string[] FBXHandFingerNames =

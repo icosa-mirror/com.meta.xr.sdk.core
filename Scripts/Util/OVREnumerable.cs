@@ -25,7 +25,7 @@ using System.Runtime.CompilerServices;
 using Unity.Collections;
 
 /// <summary>
-/// Allows you to enumerate an IEnumerable in a non allocating way, if possible.
+/// (Internal) Allows you to enumerate an IEnumerable in a non allocating way, if possible.
 /// </summary>
 /// <typeparam name="T">The type of item contained by the collection.</typeparam>
 /// <seealso cref="OVRExtensions.ToNonAlloc{T}"/>
@@ -35,31 +35,45 @@ internal readonly struct OVREnumerable<T> : IEnumerable<T>
 
     public OVREnumerable(IEnumerable<T> enumerable) => _enumerable = enumerable;
 
-    public Enumerator GetEnumerator() => new Enumerator(_enumerable);
+    public Enumerator GetEnumerator() => new(_enumerable);
 
     IEnumerator<T> IEnumerable<T>.GetEnumerator() => GetEnumerator();
 
     IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
 
+    // If the count can be determined without enumerating the collection, sets count and returns True.
+    // Otherwise, returns False.
+    public bool TryGetCount(out int count)
+    {
+        var ncount = Count;
+        count = ncount ?? 0;
+        return ncount.HasValue;
+    }
+
+    // Returns the count if it can do so without enumerating the collection, otherwise null.
+    public int? Count => _enumerable switch
+    {
+        null => 0,
+        ICollection c => c.Count,
+        ICollection<T> c => c.Count,
+        IReadOnlyCollection<T> c => c.Count,
+        _ => null,
+    };
+
+    [Obsolete("This method may enumerate the collection. Consider " + nameof(Count) + " or " +
+              nameof(TryGetCount) + " instead.")]
     public int GetCount()
     {
-        switch (_enumerable)
+        if (!TryGetCount(out var count))
         {
-            case null: return 0;
-            case List<T> list: return list.Count;
-            case IReadOnlyList<T> readOnlyList: return readOnlyList.Count;
-            case HashSet<T> hashSet: return hashSet.Count;
-            case Queue<T> queue: return queue.Count;
-            default:
+            count = 0;
+            foreach (var item in _enumerable)
             {
-                var count = 0;
-                foreach (var item in _enumerable)
-                {
-                    count++;
-                }
-                return count;
+                count++;
             }
         }
+
+        return count;
     }
 
     public struct Enumerator : IEnumerator<T>
@@ -237,7 +251,7 @@ static partial class OVRExtensions
     /// <param name="enumerable">The collection you wish to enumerate.</param>
     /// <typeparam name="T">The type of item in the collection.</typeparam>
     /// <returns>Returns a non-allocating enumerable.</returns>
-    internal static OVREnumerable<T> ToNonAlloc<T>(this IEnumerable<T> enumerable) => new OVREnumerable<T>(enumerable);
+    internal static OVREnumerable<T> ToNonAlloc<T>(this IEnumerable<T> enumerable) => new(enumerable);
 
     /// <summary>
     /// Copies a collection to a `NativeArray`.

@@ -83,7 +83,7 @@ public static class OVRProjectSetup
     internal static readonly TextureContent StatusIcon = TextureContent.CreateContent("ovr_icon_upst.png",
         OVRProjectSetupUtils.ProjectSetupToolIcons, $"Open {PublicName}");
 
-    private const string DocumentationUrl ="https://developer.oculus.com/documentation/unity/unity-upst-overview";
+    private const string DocumentationUrl = "https://developer.oculus.com/documentation/unity/unity-upst-overview";
 
 
     internal static Item Item = new Item()
@@ -146,14 +146,14 @@ public static class OVRProjectSetup
 
     private static (string, Color?) ComputeInfoText() => (_statusMenuSubText, null);
 
-    private static (TextureContent, Color?) ComputePillIcon()
+    private static (TextureContent, Color?, bool) ComputePillIcon()
     {
         return _latestSummary?.HighestFixLevel switch
         {
-            OVRProjectSetup.TaskLevel.Optional => (OVRProjectSetupDrawer.Styles.Contents.InfoIcon, InfoColor),
-            OVRProjectSetup.TaskLevel.Recommended => (OVRProjectSetupDrawer.Styles.Contents.WarningIcon, WarningColor),
-            OVRProjectSetup.TaskLevel.Required => (OVRProjectSetupDrawer.Styles.Contents.ErrorIcon, ErrorColor),
-            _ => (null, null)
+            OVRProjectSetup.TaskLevel.Optional => (OVRProjectSetupDrawer.Styles.Contents.InfoIcon, InfoColor, true),
+            OVRProjectSetup.TaskLevel.Recommended => (OVRProjectSetupDrawer.Styles.Contents.WarningIcon, WarningColor, true),
+            OVRProjectSetup.TaskLevel.Required => (OVRProjectSetupDrawer.Styles.Contents.ErrorIcon, ErrorColor, true),
+            _ => (null, null, false)
         };
     }
 

@@ -26,5 +26,7 @@ using System.Runtime.CompilerServices;
 [assembly: InternalsVisibleTo("Meta.XR.MultiplayerBlocks.Fusion.Editor")]
 [assembly: InternalsVisibleTo("Meta.XR.MultiplayerBlocks.Shared.Editor")]
 [assembly: InternalsVisibleTo("Meta.XR.MultiplayerBlocks.NGO.Editor")]
+[assembly: InternalsVisibleTo("meta.xr.mrutilitykit.editor")]
+[assembly: InternalsVisibleTo("Meta.XR.BuildingBlocks.DepthAPI.Editor")]
 
 

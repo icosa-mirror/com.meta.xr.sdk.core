@@ -171,7 +171,7 @@ namespace Meta.XR.Guides.Editor
 
                 PlatformSettings.MobileAppID = _appIdField.Text;
                 PlatformSettings.AppID = _appIdField.Text;
-                EditorApplication.ExecuteMenuItem("Oculus/Platform/Edit Settings");
+                Selection.activeObject = PlatformSettings.Instance;
                 _appIdSet = true;
                 UpdateAppIdStatus();
 
@@ -264,8 +264,7 @@ namespace Meta.XR.Guides.Editor
         {
             return new GroupedGuideItem(new List<IGuideItem>
             {
-                new Button("Open Platform Settings",
-                    () => EditorApplication.ExecuteMenuItem("Oculus/Platform/Edit Settings")),
+                new Button("Open Platform Settings", () => Selection.activeObject = PlatformSettings.Instance),
                 new Button("Close", () => _window.Close())
             });
         }

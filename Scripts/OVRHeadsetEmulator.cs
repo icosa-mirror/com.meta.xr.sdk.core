@@ -21,6 +21,9 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+#if ENABLE_INPUT_SYSTEM && UNITY_NEW_INPUT_SYSTEM_INSTALLED
+using UnityEngine.InputSystem;
+#endif
 
 public class OVRHeadsetEmulator : MonoBehaviour
 {
@@ -35,9 +38,18 @@ public class OVRHeadsetEmulator : MonoBehaviour
     public bool resetHmdPoseOnRelease = true;
     public bool resetHmdPoseByMiddleMouseButton = true;
 
-    public KeyCode[] activateKeys = new KeyCode[] { KeyCode.LeftControl, KeyCode.RightControl };
+    public KeyCode[] activateKeys = new KeyCode[] { KeyCode.LeftControl, KeyCode.RightControl, KeyCode.F1 };
 
-    public KeyCode[] pitchKeys = new KeyCode[] { KeyCode.LeftAlt, KeyCode.RightAlt };
+    public KeyCode[] pitchKeys = new KeyCode[] { KeyCode.LeftAlt, KeyCode.RightAlt, KeyCode.F2 };
+
+#if ENABLE_INPUT_SYSTEM && UNITY_NEW_INPUT_SYSTEM_INSTALLED
+    private InputAction[] activeKeyActions;
+    private InputAction[] pitchKeyActions;
+    private InputAction middleMouseButtonAction;
+    private InputAction mouseScrollAction;
+    private InputAction mouseMoveAction;
+#endif
+
 
     OVRManager manager;
 
@@ -60,13 +72,32 @@ public class OVRHeadsetEmulator : MonoBehaviour
     // Use this for initialization
     void Start()
     {
+#if ENABLE_INPUT_SYSTEM && UNITY_NEW_INPUT_SYSTEM_INSTALLED
+        activeKeyActions = new InputAction[activateKeys.Length];
+        for (int i = 0; i < activateKeys.Length; i++) {
+            activeKeyActions[i] = new InputAction(binding: "<Keyboard>/" + activateKeys[i].ToString());
+            activeKeyActions[i].Enable();
+        }
+
+        pitchKeyActions = new InputAction[pitchKeys.Length];
+        for (int i = 0; i < pitchKeys.Length; i++) {
+            pitchKeyActions[i] = new InputAction(binding: "<Keyboard>/" + pitchKeys[i].ToString());
+            pitchKeyActions[i].Enable();
+        }
+
+        middleMouseButtonAction = new InputAction(type: InputActionType.Button, binding: "<Mouse>/middleButton");
+        mouseScrollAction = new InputAction(type: InputActionType.Value, binding: "<Mouse>/scroll/y");
+        mouseMoveAction = new InputAction(type: InputActionType.Value, binding: "<Mouse>/delta");
+        middleMouseButtonAction.Enable();
+        mouseScrollAction.Enable();
+        mouseMoveAction.Enable();
+#endif
     }
 
     // Update is called once per frame
     void Update()
     {
         //todo: enable for Unity Input System
-#if ENABLE_LEGACY_INPUT_MANAGER
         if (!emulatorHasInitialized)
         {
             if (OVRManager.OVRManagerinitialized)
@@ -97,7 +128,27 @@ public class OVRHeadsetEmulator : MonoBehaviour
                 manager.headPoseRelativeOffsetRotation = recordedHeadPoseRelativeOffsetRotation;
             }
 
-            if (resetHmdPoseByMiddleMouseButton && Input.GetMouseButton(2))
+            bool middleMousePressed = false;
+            float deltaMouseScrollWheel = 0f;
+            float deltaX = 0f;
+            float deltaY = 0f;
+#if ENABLE_LEGACY_INPUT_MANAGER
+            middleMousePressed = Input.GetMouseButton(2);
+            deltaMouseScrollWheel = Input.GetAxis("Mouse ScrollWheel");
+            Vector2 mouseDelta = new Vector2(Input.GetAxis("Mouse X"), Input.GetAxis("Mouse Y"));
+            deltaX = mouseDelta.x;
+            deltaY = mouseDelta.y;
+#else
+#if UNITY_NEW_INPUT_SYSTEM_INSTALLED
+            middleMousePressed = middleMouseButtonAction.phase == InputActionPhase.Performed;
+            deltaMouseScrollWheel = mouseScrollAction.ReadValue<float>();
+            Vector2 mouseDelta = mouseMoveAction.ReadValue<Vector2>();
+            deltaX = mouseDelta.x * 0.05f;
+            deltaY = mouseDelta.y * 0.05f;
+#endif
+#endif
+
+            if (resetHmdPoseByMiddleMouseButton && middleMousePressed)
             {
                 manager.headPoseRelativeOffsetTranslation = Vector3.zero;
                 manager.headPoseRelativeOffsetRotation = Vector3.zero;
@@ -105,13 +156,9 @@ public class OVRHeadsetEmulator : MonoBehaviour
             else
             {
                 Vector3 emulatedTranslation = manager.headPoseRelativeOffsetTranslation;
-                float deltaMouseScrollWheel = Input.GetAxis("Mouse ScrollWheel");
                 float emulatedHeight = deltaMouseScrollWheel * MOUSE_SCALE_HEIGHT;
                 emulatedTranslation.y += emulatedHeight;
                 manager.headPoseRelativeOffsetTranslation = emulatedTranslation;
-
-                float deltaX = Input.GetAxis("Mouse X");
-                float deltaY = Input.GetAxis("Mouse Y");
 
                 Vector3 emulatedAngles = manager.headPoseRelativeOffsetRotation;
                 float emulatedRoll = emulatedAngles.x;
@@ -154,7 +201,6 @@ public class OVRHeadsetEmulator : MonoBehaviour
         }
 
         lastFrameEmulationActivated = emulationActivated;
-#endif
     }
 
     bool IsEmulationActivated()
@@ -168,12 +214,23 @@ public class OVRHeadsetEmulator : MonoBehaviour
             return false;
         }
 
+#if ENABLE_LEGACY_INPUT_MANAGER
         foreach (KeyCode key in activateKeys)
         {
             if (Input.GetKey(key))
                 return true;
         }
-
+#else
+#if UNITY_NEW_INPUT_SYSTEM_INSTALLED
+        foreach (var action in activeKeyActions)
+        {
+            if (action.phase == InputActionPhase.Started)
+            {
+                return true;
+            }
+        }
+#endif
+#endif
         return false;
     }
 
@@ -182,12 +239,49 @@ public class OVRHeadsetEmulator : MonoBehaviour
         if (!IsEmulationActivated())
             return false;
 
+#if ENABLE_LEGACY_INPUT_MANAGER
         foreach (KeyCode key in pitchKeys)
         {
             if (Input.GetKey(key))
                 return true;
         }
+#else
+#if UNITY_NEW_INPUT_SYSTEM_INSTALLED
+        foreach (var action in pitchKeyActions)
+        {
+            if (action.phase == InputActionPhase.Started)
+            {
+                return true;
+            }
+        }
+#endif
+#endif
 
         return false;
+    }
+
+    void OnDestroy()
+    {
+#if ENABLE_INPUT_SYSTEM && UNITY_NEW_INPUT_SYSTEM_INSTALLED
+        if (activeKeyActions != null)
+        {
+            foreach (var action in activeKeyActions)
+            {
+                action.Disable();
+            }
+        }
+
+        if (pitchKeyActions != null)
+        {
+            foreach (var action in pitchKeyActions)
+            {
+                action.Disable();
+            }
+        }
+
+        middleMouseButtonAction?.Disable();
+        mouseScrollAction?.Disable();
+        mouseMoveAction?.Disable();
+#endif
     }
 }

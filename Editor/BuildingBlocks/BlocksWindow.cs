@@ -278,13 +278,7 @@ namespace Meta.XR.BuildingBlocks.Editor
         private static IReadOnlyList<BlockBaseData> _blockList;
         private static IList<Tag> _tagList;
 
-        private static IReadOnlyList<BlockBaseData> GetList() =>
-            BlockBaseData.Registry.Values
-                .Where(obj => !string.IsNullOrEmpty(obj.name))
-                .OrderBy(block => block.Order)
-                .ThenBy(block => block.BlockName.Value)
-                .ToList();
-
+        private static IReadOnlyList<BlockBaseData> GetList() => Utils.Sort.MostPopular(BlockBaseData.Registry.Values).ToList();
 
         private void ShowList(Dimensions dimensions)
         {
@@ -398,28 +392,10 @@ namespace Meta.XR.BuildingBlocks.Editor
         {
             return _sortTypes[_selectedSortTypeIndex] switch
             {
-                SortTypeAlphabetically => blocks.OrderByDescending(b => b),
-                SortTypeMostUsed => GetSortedMostUsedBlocks(blocks),
+                SortTypeAlphabetically => Utils.Sort.Alphabetical(blocks),
+                SortTypeMostUsed => Utils.Sort.MostUsed(blocks),
                 _ => blocks
             };
-        }
-
-        private IEnumerable<BlockBaseData> GetSortedMostUsedBlocks(IEnumerable<BlockBaseData> blocks)
-        {
-            var freqTable = Utils.GetUsageFreqTable();
-            if (freqTable == null) return blocks.OrderByDescending(b => b);
-
-            var unusedBlocks = blocks
-                .Where(b => !freqTable.ContainsKey(b.Id))
-                .OrderByDescending(b => b);
-
-            var frequentlyUsedBlocks = freqTable
-                .OrderByDescending(kvp => kvp.Value)
-                .Select(kvp => blocks.FirstOrDefault(block => block.Id == kvp.Key))
-                .ToList();
-            frequentlyUsedBlocks.AddRange(unusedBlocks);
-
-            return frequentlyUsedBlocks;
         }
 
         private BlockBaseData GetBlockFromId(IEnumerable<BlockBaseData> blocks, string id)
@@ -459,7 +435,10 @@ namespace Meta.XR.BuildingBlocks.Editor
         {
             if (block is InterfaceBlockData interfaceBlockData)
             {
-                return interfaceBlockData.HasInstallationRoutine && !interfaceBlockData.HasMissingDependencies && !interfaceBlockData.IsSingletonAndAlreadyPresent;
+                return interfaceBlockData.HasInstallationRoutine
+                       && !interfaceBlockData.HasMissingDependencies
+                       && !interfaceBlockData.IsSingletonAndAlreadyPresent
+                       && !Utils.IsApplicationPlaying.Invoke();
             }
 
             return block.CanBeAdded;

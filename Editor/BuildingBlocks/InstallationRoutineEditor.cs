@@ -32,7 +32,7 @@ namespace Meta.XR.BuildingBlocks.Editor
                                                       $"\n• Set a name and description to this <b>{nameof(InstallationRoutine)}</b>." +
                                                       $"\n• Link the <b>{nameof(InstallationRoutine)}</b> to a specific block with the <i>{nameof(InstallationRoutine.TargetBlockDataId)}</i>." +
                                                       $"\n• Inherit from <b>{nameof(InstallationRoutine)}</b> if you want to offer customisation on installation.";
-        private readonly string  _variantInstructions = $"<b>Variants</b> let you customize your Installation Routine." +
+        private readonly string _variantInstructions = $"<b>Variants</b> let you customize your Installation Routine." +
                                                         $"\n• Add <b>[{nameof(VariantAttribute)}]</b> to any field in your <b>{nameof(InstallationRoutine)}</b> class." +
                                                         $"\n• <i>Definition</i> variants are used to select the appropriate Installation Routine." +
                                                         $"\n• <i>Parameter</i> variants are used to pass additional information to the Installation Routine." +

@@ -83,6 +83,20 @@ public class OVRVignette : MonoBehaviour
     [Tooltip("The color of the vignette. Alpha value is ignored")]
     public Color VignetteColor;
 
+    [Tooltip("Whether the Vignette Should write to the Stencil Buffer.")]
+    public bool WriteStencil;
+
+    [Tooltip("If WriteStencil is enabled, the stencil value for the opaque " +
+             "portion of the vignette")]
+    public int OpaqueStencilValue;
+
+    [Tooltip("If WriteStencil is enabled, the stencil value for the transparent " +
+             "portion of the vignette")]
+    public int TransparentStencilValue;
+
+    [Tooltip("If the Vignette should write color, or only depth/stencil.")]
+    public bool WriteColor = true;
+
     private Camera _Camera;
     private MeshFilter _OpaqueMeshFilter;
     private MeshFilter _TransparentMeshFilter;
@@ -96,6 +110,9 @@ public class OVRVignette : MonoBehaviour
 
     private int _ShaderScaleAndOffset0Property;
     private int _ShaderScaleAndOffset1Property;
+    private int _ShaderStencilRefProperty;
+    private int _ShaderStencilOpProperty;
+    private int _ShaderColorMaskProperty;
 
     private Vector4[] _TransparentScaleAndOffset0 = new Vector4[2];
     private Vector4[] _TransparentScaleAndOffset1 = new Vector4[2];
@@ -222,9 +239,9 @@ public class OVRVignette : MonoBehaviour
                 hideFlags = HideFlags.HideAndDontSave,
                 renderQueue = (int)RenderQueue.Background
             };
-            _OpaqueMaterial.SetFloat("_BlendSrc", (float)BlendMode.One);
-            _OpaqueMaterial.SetFloat("_BlendDst", (float)BlendMode.Zero);
-            _OpaqueMaterial.SetFloat("_ZWrite", 1);
+            _OpaqueMaterial.SetInt("_BlendSrc", (int)BlendMode.One);
+            _OpaqueMaterial.SetInt("_BlendDst", (int)BlendMode.Zero);
+            _OpaqueMaterial.SetInt("_ZWrite", 1);
         }
 
         _OpaqueMeshRenderer.sharedMaterial = _OpaqueMaterial;
@@ -238,9 +255,9 @@ public class OVRVignette : MonoBehaviour
                 renderQueue = (int)RenderQueue.Overlay
             };
 
-            _TransparentMaterial.SetFloat("_BlendSrc", (float)BlendMode.SrcAlpha);
-            _TransparentMaterial.SetFloat("_BlendDst", (float)BlendMode.OneMinusSrcAlpha);
-            _TransparentMaterial.SetFloat("_ZWrite", 0);
+            _TransparentMaterial.SetInt("_BlendSrc", (int)BlendMode.SrcAlpha);
+            _TransparentMaterial.SetInt("_BlendDst", (int)BlendMode.OneMinusSrcAlpha);
+            _TransparentMaterial.SetInt("_ZWrite", 0);
         }
 
         if (Falloff == FalloffType.Quadratic)
@@ -279,6 +296,9 @@ public class OVRVignette : MonoBehaviour
         _Camera = GetComponent<Camera>();
         _ShaderScaleAndOffset0Property = Shader.PropertyToID("_ScaleAndOffset0");
         _ShaderScaleAndOffset1Property = Shader.PropertyToID("_ScaleAndOffset1");
+        _ShaderStencilRefProperty = Shader.PropertyToID("_StencilRef");
+        _ShaderStencilOpProperty = Shader.PropertyToID("_StencilOp");
+        _ShaderColorMaskProperty = Shader.PropertyToID("_ColorMask");
 
         GameObject opaqueObject = new GameObject("Opaque Vignette") { hideFlags = HideFlags.HideAndDontSave };
         opaqueObject.transform.SetParent(_Camera.transform, false);
@@ -417,9 +437,17 @@ public class OVRVignette : MonoBehaviour
 
         _OpaqueMaterial.SetVectorArray(_ShaderScaleAndOffset0Property, _OpaqueScaleAndOffset0);
         _OpaqueMaterial.SetVectorArray(_ShaderScaleAndOffset1Property, _OpaqueScaleAndOffset1);
+        _OpaqueMaterial.SetInt(_ShaderStencilOpProperty, WriteStencil ? (int)StencilOp.Replace : (int)StencilOp.Keep);
+        _OpaqueMaterial.SetInt(_ShaderStencilRefProperty, OpaqueStencilValue);
+        _OpaqueMaterial.SetInt(_ShaderColorMaskProperty, WriteColor ? 15 : 0);
         _OpaqueMaterial.color = VignetteColor;
         _TransparentMaterial.SetVectorArray(_ShaderScaleAndOffset0Property, _TransparentScaleAndOffset0);
         _TransparentMaterial.SetVectorArray(_ShaderScaleAndOffset1Property, _TransparentScaleAndOffset1);
+        _TransparentMaterial.SetInt(_ShaderStencilOpProperty, WriteStencil ? (int)StencilOp.Replace : (int)StencilOp.Keep);
+        _TransparentMaterial.SetInt(_ShaderStencilRefProperty, TransparentStencilValue);
+        _TransparentMaterial.SetInt(_ShaderColorMaskProperty, WriteColor ? 15 : 0);
+        // If we aren't writing color, move the transparent draw early to prefill the stencil buffer
+        _TransparentMaterial.renderQueue = WriteColor ? (int)RenderQueue.Overlay : (int)RenderQueue.Background;
         _TransparentMaterial.color = VignetteColor;
     }
 

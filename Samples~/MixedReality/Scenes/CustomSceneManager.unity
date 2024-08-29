@@ -1186,6 +1186,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: c1ca019a7ed88b84792a6d0610555b21, type: 3}
   m_Name:
   m_EditorClassIdentifier:
+  _trackingSpace: {fileID: 1239852884}
 --- !u!4 &1422659748
 Transform:
   m_ObjectHideFlags: 0
@@ -1218,6 +1219,7 @@ MonoBehaviour:
   FloorPrefab: {fileID: 7655821934844648022, guid: 0db28632592e0804ea9d8edb800dec15, type: 3}
   FallbackPrefab: {fileID: 1905315858713022392, guid: 21ec74c3721919145a3607ebf0d4d495, type: 3}
   UpdateFrequencySeconds: 5
+  _trackingSpace: {fileID: 1239852884}
 --- !u!114 &1422659750
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1244,6 +1246,7 @@ MonoBehaviour:
   m_Name:
   m_EditorClassIdentifier:
   UpdateFrequencySeconds: 5
+  _trackingSpace: {fileID: 1239852884}
 --- !u!1 &1471243541
 GameObject:
   m_ObjectHideFlags: 0

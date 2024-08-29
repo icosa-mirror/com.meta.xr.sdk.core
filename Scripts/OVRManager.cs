@@ -160,6 +160,12 @@ public partial class OVRManager : MonoBehaviour, OVRMixedRealityCaptureConfigura
         PC_Placeholder_4107 = OVRPlugin.SystemHeadset.PC_Placeholder_4107
     }
 
+    public enum SystemHeadsetTheme
+    {
+        Dark,
+        Light
+    }
+
     public enum XRDevice
     {
         Unknown = 0,
@@ -1629,6 +1635,39 @@ public partial class OVRManager : MonoBehaviour, OVRMixedRealityCaptureConfigura
     }
 
     /// <summary>
+    /// Get the system headset theme.
+    /// This feature is only supported on Android-based devices.
+    /// It will return dark (the default theme) on other devices.
+    /// </summary>
+    public static SystemHeadsetTheme systemHeadsetTheme
+    {
+        get { return GetSystemHeadsetTheme(); }
+    }
+
+    private static bool _isSystemHeadsetThemeCached = false;
+    private static SystemHeadsetTheme _cachedSystemHeadsetTheme = SystemHeadsetTheme.Dark;
+
+    static private SystemHeadsetTheme GetSystemHeadsetTheme()
+    {
+#if UNITY_ANDROID
+        if (!_isSystemHeadsetThemeCached)
+        {
+            const int UI_MODE_NIGHT_MASK = 0x30;
+            const int UI_MODE_NIGHT_NO = 0x10;
+            AndroidJavaClass unityPlayer = new AndroidJavaClass("com.unity3d.player.UnityPlayer");
+            AndroidJavaObject currentActivity = unityPlayer.GetStatic<AndroidJavaObject>("currentActivity");
+            AndroidJavaObject currentResources = currentActivity.Call<AndroidJavaObject>("getResources");
+            AndroidJavaObject currentConfiguration = currentResources.Call<AndroidJavaObject>("getConfiguration");
+            int uiMode = currentConfiguration.Get<int>("uiMode");
+            int currentUIMode = uiMode & UI_MODE_NIGHT_MASK;
+            _cachedSystemHeadsetTheme = currentUIMode == UI_MODE_NIGHT_NO ? SystemHeadsetTheme.Light : SystemHeadsetTheme.Dark;
+            _isSystemHeadsetThemeCached = true;
+        }
+#endif // UNITY_ANDROID
+        return _cachedSystemHeadsetTheme;
+    }
+
+    /// <summary>
     /// Sets the Color Scale and Offset which is commonly used for effects like fade-to-black.
     /// In our compositor, once a given frame is rendered, warped, and ready to be displayed, we then multiply
     /// each pixel by colorScale and add it to colorOffset, whereby newPixel = oldPixel * colorScale + colorOffset.
@@ -1690,21 +1729,34 @@ public partial class OVRManager : MonoBehaviour, OVRMixedRealityCaptureConfigura
         Camera mainCamera = FindMainCamera();
         if (enabled)
         {
-            m_CachedDepthTextureMode = mainCamera.depthTextureMode;
-            mainCamera.depthTextureMode |= (DepthTextureMode.MotionVectors | DepthTextureMode.Depth);
-
-            m_AppSpaceTransform = mainCamera.transform.parent;
+            PrepareCameraForSpaceWarp(mainCamera);
+            m_lastSpaceWarpCamera = new WeakReference<Camera>(mainCamera);
         }
         else
         {
-            mainCamera.depthTextureMode = m_CachedDepthTextureMode;
+            Camera lastSpaceWarpCamera;
+            if (mainCamera != null && m_lastSpaceWarpCamera.TryGetTarget(out lastSpaceWarpCamera) && lastSpaceWarpCamera == mainCamera)
+            {
+                // Restore the depth texture mode only if we're disabling space warp on the same camera we enabled it on.
+                mainCamera.depthTextureMode = m_CachedDepthTextureMode;
+            }
+
             m_AppSpaceTransform = null;
+            m_lastSpaceWarpCamera = null;
         }
 
         SetSpaceWarp_Internal(enabled);
         m_SpaceWarpEnabled = enabled;
     }
 
+    private static void PrepareCameraForSpaceWarp(Camera camera)
+    {
+        m_CachedDepthTextureMode = camera.depthTextureMode;
+        camera.depthTextureMode |= (DepthTextureMode.MotionVectors | DepthTextureMode.Depth);
+        m_AppSpaceTransform = camera.transform.parent;
+    }
+
+    protected static WeakReference<Camera> m_lastSpaceWarpCamera;
     protected static bool m_SpaceWarpEnabled;
     protected static Transform m_AppSpaceTransform;
     protected static DepthTextureMode m_CachedDepthTextureMode;
@@ -3080,10 +3132,25 @@ public partial class OVRManager : MonoBehaviour, OVRMixedRealityCaptureConfigura
 
         if (m_SpaceWarpEnabled)
         {
-            if (m_AppSpaceTransform != null)
+            Camera currentMainCamera = FindMainCamera();
+
+            if (currentMainCamera != null)
             {
+                Camera lastSpaceWarpCamera;
+                m_lastSpaceWarpCamera.TryGetTarget(out lastSpaceWarpCamera);
+                if (currentMainCamera != lastSpaceWarpCamera)
+                {
+                    Debug.Log("Main camera changed. Updating new camera for space warp.");
+
+                    // If a camera is changed while space warp is still enabled, there is some setup we have to do
+                    // to make sure space warp works properly such as setting the depth texture mode.
+                    PrepareCameraForSpaceWarp(currentMainCamera);
+                    m_lastSpaceWarpCamera = new WeakReference<Camera>(currentMainCamera);
+                }
+
                 var pos = m_AppSpaceTransform.position;
                 var rot = m_AppSpaceTransform.rotation;
+
                 // Strange behavior may occur with non-uniform scale
                 var scale = m_AppSpaceTransform.lossyScale;
                 SetAppSpacePosition(pos.x / scale.x, pos.y / scale.y, pos.z / scale.z);
