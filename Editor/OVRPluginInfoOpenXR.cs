@@ -169,12 +169,12 @@ namespace Oculus.VR.Editor
             return pluginPath;
         }
 
+        // See https://communityforums.atmeta.com/t5/Quest-Development/False-OVRPlugin-change-detection-from-Meta-XR-Core-SDK-v63/td-p/1190201
         private static string GetFileChecksum(string filePath)
         {
             using var md5 = new MD5CryptoServiceProvider();
             byte[] buffer = md5.ComputeHash(File.ReadAllBytes(filePath));
-            byte[] pathBuffer = md5.ComputeHash(Encoding.UTF8.GetBytes(filePath));
-            return string.Join(null, buffer.Select(b => b.ToString("x2"))) + string.Join(null, pathBuffer.Select(b => b.ToString("x2")));
+            return string.Join(null, buffer.Select(b => b.ToString("x2")));
         }
 
         private static void RestartUnityEditor()
