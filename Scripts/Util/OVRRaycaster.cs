@@ -32,6 +32,7 @@ using UnityEngine.Serialization;
 /// pointer positions
 /// </summary>
 [RequireComponent(typeof(Canvas))]
+[HelpURL("https://developer.oculus.com/documentation/unity/unity-dronerage-example-scenes/")]
 public class OVRRaycaster : GraphicRaycaster, IPointerEnterHandler
 {
     [Tooltip("A world space pointer for this canvas")]
@@ -40,10 +41,14 @@ public class OVRRaycaster : GraphicRaycaster, IPointerEnterHandler
     public int sortOrder = 0;
 
     protected OVRRaycaster()
-    { }
+    {
+    }
 
     [NonSerialized]
     private Canvas m_Canvas;
+
+    [NonSerialized]
+    private OVRRayTransformer m_RayTransformer;
 
     private Canvas canvas
     {
@@ -53,43 +58,50 @@ public class OVRRaycaster : GraphicRaycaster, IPointerEnterHandler
                 return m_Canvas;
 
             m_Canvas = GetComponent<Canvas>();
+            // Also populate RayTransformer if it exists
+            m_RayTransformer = GetComponent<OVRRayTransformer>();
             return m_Canvas;
         }
     }
 
+    private OVRRayTransformer rayTransformer
+    {
+        get { return m_RayTransformer; }
+    }
+
     public override Camera eventCamera
     {
-        get
-        {
-            return canvas.worldCamera;
-        }
+        get { return canvas.worldCamera; }
     }
 
     public override int sortOrderPriority
     {
-        get
+        get { return sortOrder; }
+    }
+
+    protected override void Start()
+    {
+        if (!canvas.worldCamera)
         {
-            return sortOrder;
+            Debug.Log("Canvas does not have an event camera attached. " +
+                      "Attaching OVRCameraRig.centerEyeAnchor as default.");
+            OVRCameraRig rig = FindAnyObjectByType<OVRCameraRig>();
+            if (rig)
+            {
+                canvas.worldCamera = rig.centerEyeAnchor.gameObject.GetComponent<Camera>();
+            }
         }
     }
 
-	protected override void Start()
-	{
-		if(!canvas.worldCamera)
-		{
-			Debug.Log("Canvas does not have an event camera attached. Attaching OVRCameraRig.centerEyeAnchor as default.");
-			OVRCameraRig rig = FindObjectOfType<OVRCameraRig>();
-			canvas.worldCamera = rig.centerEyeAnchor.gameObject.GetComponent<Camera>();
-		}
-	}
-
-	/// <summary>
-	/// For the given ray, find graphics on this canvas which it intersects and are not blocked by other
-	/// world objects
-	/// </summary>
-	[NonSerialized]
+    /// <summary>
+    /// For the given ray, find graphics on this canvas which it intersects and are not blocked by other
+    /// world objects
+    /// </summary>
+    [NonSerialized]
     private List<RaycastHit> m_RaycastResults = new List<RaycastHit>();
-    private void Raycast(PointerEventData eventData, List<RaycastResult> resultAppendList, Ray ray, bool checkForBlocking)
+
+    private void Raycast(PointerEventData eventData, List<RaycastResult> resultAppendList, Ray ray,
+        bool checkForBlocking)
     {
         //This function is closely based on
         //void GraphicRaycaster.Raycast(PointerEventData eventData, List<RaycastResult> resultAppendList)
@@ -126,7 +138,7 @@ public class OVRRaycaster : GraphicRaycaster, IPointerEnterHandler
 
         m_RaycastResults.Clear();
 
-        GraphicRaycast(canvas, ray, m_RaycastResults);
+        GraphicRaycast(canvas, rayTransformer, ray, m_RaycastResults);
 
         for (var index = 0; index < m_RaycastResults.Count; index++)
         {
@@ -183,6 +195,7 @@ public class OVRRaycaster : GraphicRaycaster, IPointerEnterHandler
             Raycast(eventData, resultAppendList, eventData.GetRay(), true);
         }
     }
+
     /// <summary>
     /// Performs a raycast using the pointer object attached to this OVRRaycaster
     /// </summary>
@@ -192,7 +205,9 @@ public class OVRRaycaster : GraphicRaycaster, IPointerEnterHandler
     {
         if (pointer != null && pointer.activeInHierarchy)
         {
-            Raycast(eventData, resultAppendList, new Ray(eventCamera.transform.position, (pointer.transform.position - eventCamera.transform.position).normalized), false);
+            Raycast(eventData, resultAppendList,
+                new Ray(eventCamera.transform.position,
+                    (pointer.transform.position - eventCamera.transform.position).normalized), false);
         }
     }
 
@@ -202,12 +217,17 @@ public class OVRRaycaster : GraphicRaycaster, IPointerEnterHandler
     /// </summary>
     [NonSerialized]
     static readonly List<RaycastHit> s_SortedGraphics = new List<RaycastHit>();
-    private void GraphicRaycast(Canvas canvas, Ray ray, List<RaycastHit> results)
+
+    private void GraphicRaycast(Canvas canvas, OVRRayTransformer rayTransformer, Ray ray, List<RaycastHit> results)
     {
         //This function is based closely on :
         // void GraphicRaycaster.Raycast(Canvas canvas, Camera eventCamera, Vector2 pointerPosition, List<Graphic> results)
         // But modified to take a Ray instead of a canvas pointer, and also to explicitly ignore
         // the graphic associated with the pointer
+        if (rayTransformer != null)
+        {
+            ray = rayTransformer.TransformRay(ray);
+        }
 
         // Necessary for the event system
         var foundGraphics = GraphicRegistry.GetGraphicsForCanvas(canvas);
@@ -243,6 +263,7 @@ public class OVRRaycaster : GraphicRaycaster, IPointerEnterHandler
             results.Add(s_SortedGraphics[i]);
         }
     }
+
     /// <summary>
     /// Get screen position of worldPosition contained in this RaycastResult
     /// </summary>
@@ -254,6 +275,7 @@ public class OVRRaycaster : GraphicRaycaster, IPointerEnterHandler
         return eventCamera.WorldToScreenPoint(raycastResult.worldPosition);
     }
 
+    static readonly Vector3[] _corners = new Vector3[4];
 
     /// <summary>
     /// Detects whether a ray intersects a RectTransform and if it does also
@@ -265,9 +287,8 @@ public class OVRRaycaster : GraphicRaycaster, IPointerEnterHandler
     /// <returns></returns>
     static bool RayIntersectsRectTransform(RectTransform rectTransform, Ray ray, out Vector3 worldPos)
     {
-        Vector3[] corners = new Vector3[4];
-        rectTransform.GetWorldCorners(corners);
-        Plane plane = new Plane(corners[0], corners[1], corners[2]);
+        rectTransform.GetWorldCorners(_corners);
+        Plane plane = new Plane(_corners[0], _corners[1], _corners[2]);
 
         float enter;
         if (!plane.Raycast(ray, out enter))
@@ -278,16 +299,17 @@ public class OVRRaycaster : GraphicRaycaster, IPointerEnterHandler
 
         Vector3 intersection = ray.GetPoint(enter);
 
-        Vector3 BottomEdge = corners[3] - corners[0];
-        Vector3 LeftEdge = corners[1] - corners[0];
-        float BottomDot = Vector3.Dot(intersection - corners[0], BottomEdge);
-        float LeftDot = Vector3.Dot(intersection - corners[0], LeftEdge);
+        Vector3 BottomEdge = _corners[3] - _corners[0];
+        Vector3 LeftEdge = _corners[1] - _corners[0];
+        float BottomDot = Vector3.Dot(intersection - _corners[0], BottomEdge);
+        float LeftDot = Vector3.Dot(intersection - _corners[0], LeftEdge);
         if (BottomDot < BottomEdge.sqrMagnitude && // Can use sqrMag because BottomEdge is not normalized
             LeftDot < LeftEdge.sqrMagnitude &&
-                BottomDot >= 0 &&
-                LeftDot >= 0)
+            BottomDot >= 0 &&
+            LeftDot >= 0)
         {
-            worldPos = corners[0] + LeftDot * LeftEdge / LeftEdge.sqrMagnitude + BottomDot * BottomEdge / BottomEdge.sqrMagnitude;
+            worldPos = _corners[0] + LeftDot * LeftEdge / LeftEdge.sqrMagnitude +
+                       BottomDot * BottomEdge / BottomEdge.sqrMagnitude;
             return true;
         }
         else
@@ -322,11 +344,10 @@ public class OVRRaycaster : GraphicRaycaster, IPointerEnterHandler
         {
             // Gaze has entered this canvas. We'll make it the active one so that canvas-mouse pointer can be used.
             OVRInputModule inputModule = EventSystem.current.currentInputModule as OVRInputModule;
-            if(inputModule != null)
+            if (inputModule != null)
             {
                 inputModule.activeGraphicRaycaster = this;
             }
-
         }
     }
 }

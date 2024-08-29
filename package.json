@@ -1,20 +1,36 @@
 {
-    "name": "com.meta.xr.sdk.utilities",
-    "displayName": "Meta XR Utilities",
-    "version": "47.0.0-preview",
-    "description": "Meta XR Unity Utilities package provides the latest features to create immersive experiences for Meta XR devices.",
-    "samples": [
-        {
-            "displayName": "Sample Scenes",
-            "path": "Samples~/Scenes"
-        }
-    ],
-    "unity": "2020.3",
-    "author": {
-        "name": "Meta Platforms, Inc.",
-        "url": "https://developer.oculus.com/"
+  "name": "com.meta.xr.sdk.core",
+  "displayName": "Meta XR Core SDK",
+  "version": "68.0.2",
+  "description": "Meta XR Core SDK package provides the latest features to create immersive experiences for Meta XR devices.",
+  "samples": [
+    {
+      "displayName": "Sample Scenes",
+      "description": "Simple samples demonstrating core VR features",
+      "path": "Samples~/Scenes"
     },
-    "documentationUrl": "https://developer.oculus.com/documentation/unity/",
-    "changelogUrl": "https://developer.oculus.com/downloads/package/unity-integration/",
-    "licensesUrl": "https://developer.oculus.com/licenses/oculussdk"
+    {
+      "displayName": "Mixed Reality Sample",
+      "description": "A basic sample demonstrating core MR features Scene and Passthrough",
+      "path": "Samples~/MixedReality"
+    }
+  ],
+  "unity": "2021.3",
+  "unityRelease": "26f1",
+  "author": {
+    "name": "Meta Platforms, Inc.",
+    "url": "https://developer.oculus.com/"
+  },
+  "licensesUrl": "https://developer.oculus.com/licenses/oculussdk",
+  "licenseMessage": "By adding or using this package you agree to the terms and conditions of the Meta Platforms Technologies SDK License Agreement: https://developer.oculus.com/licenses/oculussdk",
+  "keywords": [
+    "Oculus",
+    "XR",
+    "Utilities",
+    "Quest",
+    "Meta",
+    "SDK"
+  ],
+  "documentationUrl": "https://developer.oculus.com/documentation/unity/",
+  "changelogUrl": "https://developer.oculus.com/downloads/package/meta-xr-core-sdk/"
 }

@@ -1,4 +1,4 @@
-﻿/*
+/*
  * Copyright (c) Meta Platforms, Inc. and affiliates.
  * All rights reserved.
  *
@@ -20,7 +20,9 @@
 
 using System;
 using System.Collections.Generic;
+using Meta.XR.Util;
 using UnityEngine;
+using Object = UnityEngine.Object;
 
 /// <summary>
 /// Represents a scene anchor.
@@ -33,6 +35,9 @@ using UnityEngine;
 /// <seealso cref="OVRSceneVolume"/>
 /// <seealso cref="OVRSemanticClassification"/>
 [DisallowMultipleComponent]
+[HelpURL("https://developer.oculus.com/documentation/unity/unity-scene-use-scene-anchors/#ovrsceneanchor")]
+[Obsolete(OVRSceneManager.DeprecationMessage)]
+[Feature(Feature.Scene)]
 public sealed class OVRSceneAnchor : MonoBehaviour
 {
     /// <summary>
@@ -46,14 +51,36 @@ public sealed class OVRSceneAnchor : MonoBehaviour
     public Guid Uuid { get; private set; }
 
     /// <summary>
+    /// Associated OVRAnchor
+    /// </summary>
+    public OVRAnchor Anchor { get; private set; }
+
+    /// <summary>
     /// Indicates whether this anchor is tracked by the system.
     /// </summary>
     public bool IsTracked { get; internal set; }
 
     private static readonly Quaternion RotateY180 = Quaternion.Euler(0, 180, 0);
     private OVRPlugin.Posef? _pose = null;
+    private bool _isLocatable = false;
 
-    private bool IsComponentEnabled(OVRPlugin.SpaceComponentType spaceComponentType) =>
+    private readonly List<OVRPlugin.SpaceComponentType> _supportedComponents =
+        new List<OVRPlugin.SpaceComponentType>();
+
+    private bool IsComponentSupported(OVRPlugin.SpaceComponentType spaceComponentType)
+    {
+        // late initialization and caching as this doesn't
+        // change during the lifetime of a scene anchor
+        if (_supportedComponents.Count == 0)
+        {
+            if (!Anchor.GetSupportedComponents(_supportedComponents))
+                return false;
+        }
+        return _supportedComponents.Contains(spaceComponentType);
+    }
+
+    internal bool IsComponentEnabled(OVRPlugin.SpaceComponentType spaceComponentType) =>
+        IsComponentSupported(spaceComponentType) &&
         OVRPlugin.GetSpaceComponentStatus(Space, spaceComponentType, out var componentEnabled, out _)
         && componentEnabled;
 
@@ -80,8 +107,11 @@ public sealed class OVRSceneAnchor : MonoBehaviour
         _pose = null;
     }
 
-    internal void Initialize(OVRSpace space, Guid uuid)
+    public void Initialize(OVRAnchor anchor)
     {
+        var space = (OVRSpace)anchor.Handle;
+        var uuid = anchor.Uuid;
+
         if (Space.Valid)
             throw new InvalidOperationException($"[{uuid}] {nameof(OVRSceneAnchor)} has already been initialized.");
 
@@ -90,6 +120,7 @@ public sealed class OVRSceneAnchor : MonoBehaviour
 
         Space = space;
         Uuid = uuid;
+        Anchor = anchor;
 
         ClearPoseCache();
 
@@ -99,30 +130,31 @@ public sealed class OVRSceneAnchor : MonoBehaviour
         AnchorReferenceCountDictionary.TryGetValue(Space, out var referenceCount);
         AnchorReferenceCountDictionary[Space] = referenceCount + 1;
 
-        if (!IsComponentEnabled(OVRPlugin.SpaceComponentType.Locatable))
-        {
-            OVRSceneManager.Development.LogError(nameof(OVRSceneAnchor),
-                $"[{uuid}] Is missing the {nameof(OVRPlugin.SpaceComponentType.Locatable)} component.");
-        }
+        // certain components are not locatable, such as room.
+        _isLocatable = IsComponentSupported(OVRPlugin.SpaceComponentType.Locatable);
 
         // Generally, we want to set the transform as soon as possible, but there is a valid use case where we want to
         // disable this component as soon as its added to override the transform.
         if (enabled)
         {
-            var updateTransformSucceeded = TryUpdateTransform(false);
-
-            // This should work; so add some development-only logs so we know if something is wrong here.
-            if (updateTransformSucceeded)
+            if (!_isLocatable)
+            {
+                OVRSceneManager.Development.Log(nameof(OVRSceneAnchor),
+                    $"[{uuid}] Skiping transform set, as the entity is not locatable.",
+                    gameObject);
+            }
+            else if (TryUpdateTransform(false))
             {
                 IsTracked = true;
-                OVRSceneManager.Development.Log(nameof(OVRSceneAnchor), $"[{uuid}] Initial transform set.");
+                OVRSceneManager.Development.Log(nameof(OVRSceneAnchor),
+                    $"[{uuid}] Initial transform set.", gameObject);
             }
             else
             {
                 OVRSceneManager.Development.LogWarning(nameof(OVRSceneAnchor),
-                    $"[{uuid}] {nameof(OVRPlugin.TryLocateSpace)} failed. The entity may have the wrong initial transform.");
+                    $"[{uuid}] {nameof(OVRPlugin.TryLocateSpace)} failed. The entity may have the wrong initial transform.",
+                    gameObject);
             }
-
         }
 
         SyncComponent<OVRSemanticClassification>(OVRPlugin.SpaceComponentType.SemanticLabels);
@@ -141,13 +173,19 @@ public sealed class OVRSceneAnchor : MonoBehaviour
         if (other == null)
             throw new ArgumentNullException(nameof(other));
 
-        Initialize(other.Space, other.Uuid);
+        Initialize(other.Anchor);
     }
 
     /// <summary>
-    /// Get the list of all scene anchors.
+    /// Get the list of all scene anchors that the <see cref="OVRSceneManager"/> created.
     /// </summary>
-    /// <param name="anchors">A list of <see cref="OVRSceneAnchor"/> to populate.</param>
+    /// <remarks>
+    /// Anchor components such as <see cref="OVRSceneRoom"/>, <see cref="OVRScenePlane"/>,
+    /// and <see cref="OVRSceneVolume"/> all have a <see cref="OVRSceneAnchor"/>
+    /// component, so this method should be used to find those sibling components.
+    /// </remarks>
+    /// <param name="anchors">A list of <see cref="OVRSceneAnchor"/>s to
+    /// populate. Any existing elements in the list will be removed.</param>
     /// <exception cref="ArgumentNullException">Thrown if <paramref name="anchors"/> is `null`.</exception>
     public static void GetSceneAnchors(List<OVRSceneAnchor> anchors)
     {
@@ -158,16 +196,50 @@ public sealed class OVRSceneAnchor : MonoBehaviour
         anchors.AddRange(SceneAnchorsList);
     }
 
+    /// <summary>
+    /// Get the list of all scene anchors filtered by type.
+    /// </summary>
+    /// <remarks>
+    /// Anchor components such as <see cref="OVRSceneRoom"/>, <see cref="OVRScenePlane"/>, and
+    /// <see cref="OVRSceneVolume"/> all have a <see cref="OVRSceneAnchor"/> component, so this method should be used to
+    /// find those sibling components.
+    ///
+    /// This method traverses all <see cref="OVRSceneAnchor"/> instantiated by the <see cref="OVRSceneManager"/>
+    /// and filters them based on whether they have the given component.
+    /// </remarks>
+    /// <typeparam name="T">The type of component the <see cref="OVRSceneAnchor"/> must have.</typeparam>
+    /// <param name="anchors">A list of components of type <typeparamref name="T"/> to populate. Any existing elements
+    /// in the list will be removed.</param>
+    /// <exception cref="ArgumentNullException">Thrown if <paramref name="anchors"/> is `null`.</exception>
+    public static void GetSceneAnchorsOfType<T>(List<T> anchors) where T : Object
+    {
+        if (anchors == null)
+            throw new ArgumentNullException(nameof(anchors));
+
+        anchors.Clear();
+        foreach (var anchor in SceneAnchorsList)
+        {
+            if (anchor.TryGetComponent<T>(out var component))
+            {
+                anchors.Add(component);
+            }
+        }
+    }
+
     internal bool TryUpdateTransform(bool useCache)
     {
-        if (!Space.Valid || !enabled) return false;
+        if (!Space.Valid || !enabled || !_isLocatable)
+            return false;
 
         if (!useCache || _pose == null)
         {
-            if (!OVRPlugin.TryLocateSpace(Space, OVRPlugin.GetTrackingOriginType(), out var pose))
+            var tryLocateSpace = OVRPlugin.TryLocateSpace(Space, OVRPlugin.GetTrackingOriginType(), out var pose,
+                out var locationFlags);
+            if (!tryLocateSpace || !locationFlags.IsOrientationValid() || !locationFlags.IsPositionValid())
             {
                 return false;
             }
+
             _pose = pose;
         }
 
@@ -205,13 +277,16 @@ public sealed class OVRSceneAnchor : MonoBehaviour
         SceneAnchors.Remove(this.Uuid);
         SceneAnchorsList.Remove(this);
 
-        // Anchor destroyed. Adding it to an ignore list.
-        DestroyedSceneAnchors.Add(this.Uuid);
+        if (!Space.Valid)
+        {
+            return;
+        }
 
         if (!AnchorReferenceCountDictionary.TryGetValue(Space, out var referenceCount))
         {
             OVRSceneManager.Development.LogError(nameof(OVRSceneAnchor),
-                $"[Anchor {Space.Handle}] has not been found, can't find it for deletion");
+                $"[Anchor {Space.Handle}] has not been found, can't find it for deletion",
+                gameObject);
             return;
         }
 
@@ -237,7 +312,6 @@ public sealed class OVRSceneAnchor : MonoBehaviour
 
     internal static readonly Dictionary<Guid, OVRSceneAnchor> SceneAnchors = new Dictionary<Guid, OVRSceneAnchor>();
     internal static readonly List<OVRSceneAnchor> SceneAnchorsList = new List<OVRSceneAnchor>();
-    internal static readonly HashSet<Guid> DestroyedSceneAnchors = new HashSet<Guid>();
 }
 
 internal interface IOVRSceneComponent

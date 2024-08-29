@@ -20,8 +20,9 @@
 
 using System;
 using System.Runtime.InteropServices;
+using Unity.Collections;
 using Unity.Collections.LowLevel.Unsafe;
-using UnityEngine;
+using static OVRPlugin;
 
 //-------------------------------------------------------------------------------------
 /// <summary>
@@ -29,7 +30,7 @@ using UnityEngine;
 /// </summary>
 internal static class OVRDeserialize
 {
-    public static T ByteArrayToStructure<T>(byte[] bytes) where T: struct
+    public static T ByteArrayToStructure<T>(byte[] bytes) where T : struct
     {
         T stuff;
         GCHandle handle = GCHandle.Alloc(bytes, GCHandleType.Pinned);
@@ -41,7 +42,25 @@ internal static class OVRDeserialize
         {
             handle.Free();
         }
+
         return stuff;
+    }
+
+    public static unsafe T MarshalEntireStructAs<T>(this EventDataBuffer eventDataBuffer, Allocator allocator = Allocator.Temp)
+    {
+        using var buffer = new NativeArray<byte>(eventDataBuffer.EventData.Length + sizeof(OVRPlugin.EventType), allocator);
+        var dst = (byte*)buffer.GetUnsafePtr();
+
+        fixed (byte* src = eventDataBuffer.EventData)
+        {
+            *(OVRPlugin.EventType*)dst = eventDataBuffer.EventType;
+            UnsafeUtility.MemCpy(
+                destination: dst + sizeof(OVRPlugin.EventType),
+                source: src,
+                eventDataBuffer.EventData.Length);
+
+            return Marshal.PtrToStructure<T>(new IntPtr(dst));
+        }
     }
 
     public struct DisplayRefreshRateChangedData
@@ -66,6 +85,8 @@ internal static class OVRDeserialize
         public UInt64 RequestId;
         public int Result;
     }
+
+
 
 
     public struct SpatialAnchorCreateCompleteData
@@ -115,4 +136,43 @@ internal static class OVRDeserialize
 
         public int Result;
     }
+
+
+    public struct SpaceDiscoveryCompleteData
+    {
+        public UInt64 RequestId;
+        public int Result;
+    }
+
+    public struct SpaceDiscoveryResultsData
+    {
+        public UInt64 RequestId;
+    }
+
+    public struct SpacesSaveResultData
+    {
+        public UInt64 RequestId;
+        public OVRAnchor.SaveResult Result;
+    }
+
+    public struct SpacesEraseResultData
+    {
+        public UInt64 RequestId;
+        public OVRAnchor.EraseResult Result;
+    }
+
+    public struct PassthroughLayerResumedData
+    {
+        public int LayerId;
+    }
+
+
+    public struct BoundaryVisibilityChangedData
+    {
+        public BoundaryVisibility BoundaryVisibility;
+    }
+
+
+
+
 }

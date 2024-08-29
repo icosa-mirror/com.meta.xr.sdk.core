@@ -19,6 +19,7 @@
  */
 
 using System;
+using UnityEngine;
 
 /// <summary>
 /// Represents a "space" in the Oculus Runtime.
@@ -28,6 +29,7 @@ public readonly struct OVRSpace : IEquatable<OVRSpace>
     /// <summary>
     /// Represents a storage location for an <see cref="OVRSpace"/>.
     /// </summary>
+    [Obsolete("Anchor APIs no longer require a storage location.")]
     public enum StorageLocation
     {
         /// <summary>
@@ -91,9 +93,9 @@ public readonly struct OVRSpace : IEquatable<OVRSpace>
 
     public override int GetHashCode() => Handle.GetHashCode();
 
-    public static bool operator== (OVRSpace lhs, OVRSpace rhs) => lhs.Handle == rhs.Handle;
+    public static bool operator ==(OVRSpace lhs, OVRSpace rhs) => lhs.Handle == rhs.Handle;
 
-    public static bool operator!= (OVRSpace lhs, OVRSpace rhs) => lhs.Handle != rhs.Handle;
+    public static bool operator !=(OVRSpace lhs, OVRSpace rhs) => lhs.Handle != rhs.Handle;
 
     public static implicit operator OVRSpace(ulong handle) => new OVRSpace(handle);
 
@@ -102,6 +104,7 @@ public readonly struct OVRSpace : IEquatable<OVRSpace>
 
 public static partial class OVRExtensions
 {
+    [Obsolete("Anchor APIs that specify a storage location are obsolete.")]
     internal static OVRPlugin.SpaceStorageLocation ToSpaceStorageLocation(this OVRSpace.StorageLocation storageLocation)
     {
         switch (storageLocation)
@@ -109,7 +112,8 @@ public static partial class OVRExtensions
             case OVRSpace.StorageLocation.Local: return OVRPlugin.SpaceStorageLocation.Local;
             case OVRSpace.StorageLocation.Cloud: return OVRPlugin.SpaceStorageLocation.Cloud;
             default:
-                throw new NotSupportedException($"{storageLocation} is not a supported {nameof(OVRPlugin.SpaceStorageLocation)}");
+                throw new NotSupportedException(
+                    $"{storageLocation} is not a supported {nameof(OVRPlugin.SpaceStorageLocation)}");
         }
     }
 }

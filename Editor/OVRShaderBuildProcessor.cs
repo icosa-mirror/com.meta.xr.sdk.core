@@ -27,49 +27,56 @@ using UnityEngine.Rendering;
 
 public class OVRShaderBuildProcessor : IPreprocessShaders
 {
-	public int callbackOrder { get { return 0; } }
+    public int callbackOrder
+    {
+        get { return 0; }
+    }
 
-	public void OnProcessShader(
-		Shader shader, ShaderSnippetData snippet, IList<ShaderCompilerData> shaderCompilerData)
-	{
-		var projectConfig = OVRProjectConfig.GetProjectConfig();
-		if (projectConfig == null)
-		{
-			return;
-		}
+    public void OnProcessShader(
+        Shader shader, ShaderSnippetData snippet, IList<ShaderCompilerData> shaderCompilerData)
+    {
+        var projectConfig = OVRProjectConfig.CachedProjectConfig;
+        if (projectConfig == null)
+        {
+            return;
+        }
 
-		if (!projectConfig.skipUnneededShaders)
-		{
-			return;
-		}
+        if (!projectConfig.skipUnneededShaders)
+        {
+            return;
+        }
 
-		if (EditorUserBuildSettings.activeBuildTarget != BuildTarget.Android)
-		{
-			return;
-		}
+        // Don't strip if we are using SRP, only BiRP
+        if (GraphicsSettings.currentRenderPipeline != null)
+        {
+            return;
+        }
 
-		var strippedGraphicsTiers = new HashSet<GraphicsTier>();
+        if (EditorUserBuildSettings.activeBuildTarget != BuildTarget.Android)
+        {
+            return;
+        }
 
-		// Unity only uses shader Tier2 on Quest and Go (regardless of graphics API)
-		if (projectConfig.targetDeviceTypes.Contains(OVRProjectConfig.DeviceType.Quest) ||
-			projectConfig.targetDeviceTypes.Contains(OVRProjectConfig.DeviceType.Quest2) ||
-			projectConfig.targetDeviceTypes.Contains(OVRProjectConfig.DeviceType.QuestPro))
-		{
-			strippedGraphicsTiers.Add(GraphicsTier.Tier1);
-			strippedGraphicsTiers.Add(GraphicsTier.Tier3);
-		}
+        var strippedGraphicsTiers = new HashSet<GraphicsTier>();
 
-		if (strippedGraphicsTiers.Count == 0)
-		{
-			return;
-		}
+        // Unity only uses shader Tier2 on Quest and Go (regardless of graphics API)
+        if (projectConfig.targetDeviceTypes.Count != 0)
+        {
+            strippedGraphicsTiers.Add(GraphicsTier.Tier1);
+            strippedGraphicsTiers.Add(GraphicsTier.Tier3);
+        }
 
-		for (int i = shaderCompilerData.Count - 1; i >= 0; --i)
-		{
-			if (strippedGraphicsTiers.Contains(shaderCompilerData[i].graphicsTier))
-			{
-				shaderCompilerData.RemoveAt(i);
-			}
-		}
-	}
+        if (strippedGraphicsTiers.Count == 0)
+        {
+            return;
+        }
+
+        for (int i = shaderCompilerData.Count - 1; i >= 0; --i)
+        {
+            if (strippedGraphicsTiers.Contains(shaderCompilerData[i].graphicsTier))
+            {
+                shaderCompilerData.RemoveAt(i);
+            }
+        }
+    }
 }

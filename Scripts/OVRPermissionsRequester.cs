@@ -24,9 +24,15 @@ using UnityEngine;
 using UnityEngine.Android;
 
 /// <summary>
-/// This class handles android permission requests for the capabilities listed in <see cref = "Permission"/>.
+/// This class handles Android permission requests for the capabilities listed in <see cref="Permission"/>.
 /// </summary>
-internal static class OVRPermissionsRequester
+/// <remarks>
+/// It is recommended to use Unity's Android Permission API directly to request permissions which
+/// require callbacks. Subscribing to events here may not be guaranteed to be called when
+/// using <see cref="OVRManager"/> startup permissions toggle, due to a potential race
+/// condition if the request completes before your callback has been registered.
+/// </remarks>
+public static class OVRPermissionsRequester
 {
     /// <summary>
     /// Occurs when a <see cref="Permission"/> is granted.
@@ -51,12 +57,24 @@ internal static class OVRPermissionsRequester
         /// <summary>
         /// Represents the Eye Tracking capability.
         /// </summary>
-        EyeTracking
+        EyeTracking,
+
+        /// <summary>
+        /// Represents the Scene capability.
+        /// </summary>
+        Scene,
+
+        /// <summary>
+        /// Represents the Audio Recording permission (required for audio based Face Tracking capability).
+        /// </summary>
+        RecordAudio,
     }
 
-    private const string FaceTrackingPermission = "com.oculus.permission.FACE_TRACKING";
-    private const string EyeTrackingPermission  = "com.oculus.permission.EYE_TRACKING";
-    private const string BodyTrackingPermission = "com.oculus.permission.BODY_TRACKING";
+    public const string FaceTrackingPermission = "com.oculus.permission.FACE_TRACKING";
+    public const string EyeTrackingPermission = "com.oculus.permission.EYE_TRACKING";
+    public const string BodyTrackingPermission = "com.oculus.permission.BODY_TRACKING";
+    public const string ScenePermission = "com.oculus.permission.USE_SCENE";
+    public const string RecordAudioPermission = "android.permission.RECORD_AUDIO";
 
     /// <summary>
     /// Returns the permission ID of the given <see cref="Permission"/> to be requested from the user.
@@ -71,6 +89,8 @@ internal static class OVRPermissionsRequester
             Permission.FaceTracking => FaceTrackingPermission,
             Permission.BodyTracking => BodyTrackingPermission,
             Permission.EyeTracking => EyeTrackingPermission,
+            Permission.Scene => ScenePermission,
+            Permission.RecordAudio => RecordAudioPermission,
             _ => throw new ArgumentOutOfRangeException(nameof(permission), permission, null)
         };
     }
@@ -79,16 +99,24 @@ internal static class OVRPermissionsRequester
     {
         return permission switch
         {
-            Permission.FaceTracking => OVRPlugin.faceTrackingSupported,
+            Permission.FaceTracking => OVRPlugin.faceTrackingSupported || OVRPlugin.faceTracking2Supported,
             Permission.BodyTracking => OVRPlugin.bodyTrackingSupported,
             Permission.EyeTracking => OVRPlugin.eyeTrackingSupported,
+            // Scene is a no-op on unsupported platforms, but the request can always be made
+            Permission.Scene => true,
+            Permission.RecordAudio => true,
             _ => throw new ArgumentOutOfRangeException(nameof(permission), permission, null)
         };
     }
 
+
     /// <summary>
     /// Returns whether the <see cref="permission"/> has been granted.
     /// </summary>
+    /// <remarks>
+    /// These permissions are Android-specific, therefore we always return
+    /// true if on any other platform.
+    /// </remarks>
     /// <param name="permission"><see cref="Permission"/> to be checked.</param>
     public static bool IsPermissionGranted(Permission permission)
     {
@@ -106,6 +134,12 @@ internal static class OVRPermissionsRequester
     public static void Request(IEnumerable<Permission> permissions)
     {
 #if UNITY_ANDROID && !UNITY_EDITOR
+        RequestPermissions(permissions);
+#endif // UNITY_ANDROID && !UNITY_EDITOR
+    }
+
+    private static void RequestPermissions(IEnumerable<Permission> permissions)
+    {
         var permissionIdsToRequest = new List<string>();
 
         foreach (var permission in permissions)
@@ -121,7 +155,6 @@ internal static class OVRPermissionsRequester
             UnityEngine.Android.Permission.RequestUserPermissions(permissionIdsToRequest.ToArray(),
                 BuildPermissionCallbacks());
         }
-#endif
     }
 
     private static bool ShouldRequestPermission(Permission permission)
@@ -143,16 +176,13 @@ internal static class OVRPermissionsRequester
         {
             Debug.LogWarning($"[{nameof(OVRPermissionsRequester)}] Permission {permissionId} was denied.");
         };
-        permissionCallbacks.PermissionDeniedAndDontAskAgain += permissionId =>
-        {
-            Debug.LogWarning(
-                $"[{nameof(OVRPermissionsRequester)}] Permission {permissionId} was denied and blocked from being requested again.");
-        };
         permissionCallbacks.PermissionGranted += permissionId =>
         {
             Debug.Log($"[{nameof(OVRPermissionsRequester)}] Permission {permissionId} was granted.");
             PermissionGranted?.Invoke(permissionId);
         };
+        // as per Unity guidelines, PermissionDeniedAndDontAskAgain is unreliable
+        // Denied will be fired instead if this isn't subscribed to
         return permissionCallbacks;
     }
 }

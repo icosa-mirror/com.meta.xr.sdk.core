@@ -3,7 +3,11 @@
     "rootNamespace": "",
     "references": [
         "Unity.RenderPipelines.Universal.Runtime",
-        "Unity.XR.OpenXR"
+        "Unity.XR.OpenXR",
+        "Unity.XR.OpenXR.Editor",
+        "Unity.XR.Management",
+        "Meta.XR.Editor.Callbacks",
+        "Unity.InputSystem"
     ],
     "includePlatforms": [],
     "excludePlatforms": [],
@@ -44,8 +48,38 @@
             "define": "USING_MRC_COMPATIBLE_URP_VERSION"
         },
         {
+            "name": "com.unity.xr.oculus",
+            "expression": "3.2.6",
+            "define": "OCULUS_XR_ETFR_DELAYED_PERMISSION_REQUEST"
+        },
+        {
+            "name": "com.unity.xr.oculus",
+            "expression": "3.3.0",
+            "define": "OCULUS_XR_3_3_0_OR_NEWER"
+        },
+        {
+            "name": "com.unity.xr.openxr",
+            "expression": "1.5.3",
+            "define": "UNITY_OPENXR_1_5_3"
+        },
+        {
+            "name": "com.unity.xr.openxr",
+            "expression": "1.8.0",
+            "define": "UNITY_OPENXR_BOOT_CONFIG"
+        },
+        {
+            "name": "com.unity.xr.openxr",
+            "expression": "1.9.0",
+            "define": "UNITY_OPENXR_1_9_0"
+        },
+        {
+            "name": "com.unity.inputsystem",
+            "expression": "",
+            "define": "UNITY_NEW_INPUT_SYSTEM_INSTALLED"
+        },
+        {
             "define": "OVR_UNITY_PACKAGE_MANAGER",
-            "name": "com.meta.xr.sdk.utilities",
+            "name": "com.meta.xr.sdk.core",
             "expression": ""
         }
     ],

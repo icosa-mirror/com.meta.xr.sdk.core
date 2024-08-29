@@ -18,451 +18,603 @@
  * limitations under the License.
  */
 
-using System.Collections;
 using System.Collections.Generic;
 using System.IO;
 using System;
+using System.Runtime.InteropServices;
+using System.Text;
 using UnityEngine;
 using OVRSimpleJSON;
-using Unity.Jobs;
-using Unity.Collections;
 
 public enum OVRGLTFType
 {
-	NONE,
-	SCALAR,
-	VEC2,
-	VEC3,
-	VEC4,
-	MAT4,
+    NONE,
+    SCALAR,
+    VEC2,
+    VEC3,
+    VEC4,
+    MAT4,
 }
 
 public enum OVRGLTFComponentType
 {
-	BYTE = 5120,
-	UNSIGNED_BYTE = 5121,
-	SHORT = 5122,
-	UNSIGNED_SHORT = 5123,
-	UNSIGNED_INT = 5125,
-	FLOAT = 5126,
+    NONE = 0,
+    BYTE = 5120,
+    UNSIGNED_BYTE = 5121,
+    SHORT = 5122,
+    UNSIGNED_SHORT = 5123,
+    UNSIGNED_INT = 5125,
+    FLOAT = 5126,
 }
 
-public class OVRGLTFAccessor
+public class OVRGLTFAccessor : IDisposable
 {
-	// Buffer View parameters
-	private int byteOffset;
-	private int byteLength;
-	private int byteStride;
-	private int bufferId;
-	private int bufferLength;
+    private struct GLTFAccessor
+    {
+        public OVRGLTFType Type;
 
-	// Accessor parameters
-	private int additionalOffset;
-	private OVRGLTFType dataType;
-	private OVRGLTFComponentType componentType;
-	private int dataCount;
+        public OVRGLTFComponentType ComponentType;
+        public int ComponentTypeStride;
+        public int BufferViewIndex;
+        public int ByteOffset;
+        public int Count;
+        public JSONNode Min;
+        public JSONNode Max;
+    }
 
-	public OVRGLTFAccessor(JSONNode node, JSONNode root, bool bufferViewOnly = false)
-	{
-		JSONNode jsonBufferView = node;
-		if (!bufferViewOnly)
-		{
-			additionalOffset = node["byteOffset"].AsInt;
-			dataType = ToOVRType(node["type"].Value);
-			componentType = (OVRGLTFComponentType)node["componentType"].AsInt;
-			dataCount = node["count"].AsInt;
+    private struct GLTFBufferView
+    {
+        public int BufferIndex;
+        public int ByteOffset;
+        public int ByteLength;
+        public int ByteStride;
+    }
 
-			int bufferViewId = node["bufferView"].AsInt;
-			jsonBufferView = root["bufferViews"][bufferViewId];
-		}
+    private struct GLTFBuffer
+    {
+        public int ByteLength;
+    }
 
-		int bufferId = jsonBufferView["buffer"].AsInt;
-		byteOffset = jsonBufferView["byteOffset"].AsInt;
-		byteLength = jsonBufferView["byteLength"].AsInt;
-		byteStride = jsonBufferView["byteStride"].AsInt;
+    private readonly List<GLTFAccessor> _accessors = new List<GLTFAccessor>();
+    private readonly List<GLTFBufferView> _bufferViews = new List<GLTFBufferView>();
+    private readonly List<GLTFBuffer> _buffers = new List<GLTFBuffer>();
+    private readonly Stream _binaryChunk;
+    private readonly int _binaryChunkLength;
+    private readonly int _binaryChunkStart;
+    private readonly BinaryReader _reader;
 
-		var jsonBuffer = root["buffers"][bufferId];
-		bufferLength = jsonBuffer["byteLength"].AsInt;
-	}
+    private GLTFAccessor _activeGltfAccessor;
+    private GLTFBufferView _activeBufferView;
+    private GLTFBuffer _activeBuffer;
+    private int _activeBufferOffset;
+    private bool _requireStrideSeek;
 
-	public int GetDataCount()
-	{
-		return dataCount;
-	}
+    public static bool TryCreate(JSONNode accessorsRoot, JSONNode bufferViewsRoot, JSONNode buffersRoot, Stream binaryChunk, out OVRGLTFAccessor dataAccessor)
+    {
+        var reader = new BinaryReader(binaryChunk, Encoding.UTF8, true);
+        var chunkLength = reader.ReadUInt32();
+        var chunkType = reader.ReadUInt32();
+        if (chunkType != (uint)OVRChunkType.BIN)
+        {
+            Debug.LogError("Read chunk does not match type.");
+            dataAccessor = null;
+            return false;
+        }
+        dataAccessor = new OVRGLTFAccessor(accessorsRoot, bufferViewsRoot, buffersRoot, reader, (int)binaryChunk.Position, (int)chunkLength);
+        return true;
+    }
 
-	private static OVRGLTFType ToOVRType(string type)
-	{
-		switch(type)
-		{
-			case "SCALAR":
-				return OVRGLTFType.SCALAR;
-			case "VEC2":
-				return OVRGLTFType.VEC2;
-			case "VEC3":
-				return OVRGLTFType.VEC3;
-			case "VEC4":
-				return OVRGLTFType.VEC4;
-			case "MAT4":
-				return OVRGLTFType.MAT4;
-			default:
-				Debug.LogError("Unsupported accessor type.");
-				return OVRGLTFType.NONE;
-		}
-	}
+    private OVRGLTFAccessor(JSONNode accessorsRoot, JSONNode bufferViewsRoot, JSONNode buffersRoot, BinaryReader binaryChunkReader, int binaryChinkStart, int binaryChunkLength)
+    {
+        _reader = binaryChunkReader;
+        _binaryChunk = binaryChunkReader.BaseStream;
+        _binaryChunkLength = binaryChunkLength;
+        _binaryChunkStart = binaryChinkStart;
+        foreach (var accessorNode in accessorsRoot.Children)
+        {
+            var accessor = new GLTFAccessor();
+            foreach (var attribute in accessorNode)
+            {
+                switch (attribute.Key)
+                {
+                    case "bufferView":
+                        accessor.BufferViewIndex = attribute.Value.AsInt;
+                        break;
+                    case "byteOffset":
+                        accessor.ByteOffset = attribute.Value.AsInt;
+                        break;
+                    case "componentType":
+                        accessor.ComponentType = (OVRGLTFComponentType)attribute.Value.AsInt;
+                        accessor.ComponentTypeStride = GetStrideForType(accessor.ComponentType);
+                        break;
+                    case "count":
+                        accessor.Count = attribute.Value.AsInt;
+                        break;
+                    case "type":
+                        accessor.Type = ToOVRType(attribute.Value.Value);
+                        break;
+                    case "max":
+                        accessor.Max = attribute.Value;
+                        break;
+                    case "min":
+                        accessor.Min = attribute.Value;
+                        break;
+                    case "sparse":
+                        Debug.LogWarning("Sparse accessors unsupported");
+                        break;
+                }
+            }
+            _accessors.Add(accessor);
+        }
 
-	public void ReadAsInt(OVRBinaryChunk chunk, ref int[] data, int offset)
-	{
-		if (dataType != OVRGLTFType.SCALAR)
-		{
-			Debug.LogError("Tried to read non-scalar data as a uint array.");
-			return;
-		}
+        foreach (var bufferViewNode in bufferViewsRoot.Children)
+        {
+            var bufferView = new GLTFBufferView();
+            foreach (var attribute in bufferViewNode)
+            {
+                switch (attribute.Key)
+                {
+                    case "bufferIndex":
+                        bufferView.BufferIndex = attribute.Value.AsInt;
+                        break;
+                    case "byteOffset":
+                        bufferView.ByteOffset = attribute.Value.AsInt;
+                        break;
+                    case "byteLength":
+                        bufferView.ByteLength = attribute.Value.AsInt;
+                        break;
+                    case "byteStride":
+                        bufferView.ByteStride = attribute.Value.AsInt;
+                        break;
+                }
+            }
+            _bufferViews.Add(bufferView);
+        }
 
-		if (chunk.chunkLength != bufferLength)
-		{
-			Debug.LogError("Chunk length is not equal to buffer length.");
-			return;
-		}
+        foreach (var bufferNode in buffersRoot.Children)
+        {
+            var buffer = new GLTFBuffer();
+            foreach (var attribute in bufferNode)
+            {
+                switch (attribute.Key)
+                {
+                    case "byteLength":
+                        buffer.ByteLength = attribute.Value.AsInt;
+                        break;
+                }
+            }
+            _buffers.Add(buffer);
+        }
+    }
 
-		byte[] bufferData = new byte[byteLength];
+    private static OVRGLTFType ToOVRType(string type)
+    {
+        switch (type)
+        {
+            case "SCALAR":
+                return OVRGLTFType.SCALAR;
+            case "VEC2":
+                return OVRGLTFType.VEC2;
+            case "VEC3":
+                return OVRGLTFType.VEC3;
+            case "VEC4":
+                return OVRGLTFType.VEC4;
+            case "MAT4":
+                return OVRGLTFType.MAT4;
+            default:
+                Debug.LogError("Unsupported accessor type.");
+                return OVRGLTFType.NONE;
+        }
+    }
 
-		chunk.chunkStream.Seek(chunk.chunkStart + byteOffset + additionalOffset, SeekOrigin.Begin);
-		chunk.chunkStream.Read(bufferData, 0, byteLength);
+    public void Seek(int accessorIndex, bool onlyBufferView = false)
+    {
+        if (accessorIndex >= _accessors.Count)
+        {
+            return;
+        }
+        _activeGltfAccessor = _accessors[accessorIndex];
+        _activeBufferView = _bufferViews[_activeGltfAccessor.BufferViewIndex];
+        _activeBuffer = _buffers[_activeBufferView.BufferIndex];
 
-		int stride = byteStride > 0 ? byteStride : GetStrideForType(componentType);
-		for(int i = 0; i < dataCount; i++)
-		{
-			data[offset + i] = (int)ReadElementAsUint(bufferData, i * stride, componentType);
-		}
-	}
+        _requireStrideSeek = _activeBufferView.ByteStride != 0 && _activeBufferView.ByteStride != _activeGltfAccessor.ComponentTypeStride;
 
-	public void ReadAsFloat(OVRBinaryChunk chunk, ref float[] data, int offset)
-	{
-		if (dataType != OVRGLTFType.SCALAR)
-		{
-			Debug.LogError("Tried to read non-scalar data as a uint array.");
-			return;
-		}
+        if (_binaryChunkLength != _activeBuffer.ByteLength)
+        {
+            Debug.LogError("Chunk length is not equal to buffer length.");
+            return;
+        }
 
-		if (chunk.chunkLength != bufferLength)
-		{
-			Debug.LogError("Chunk length is not equal to buffer length.");
-			return;
-		}
+        _activeBufferOffset = _binaryChunkStart + _activeBufferView.ByteOffset;
+        if (!onlyBufferView)
+        {
+            _activeBufferOffset += _activeGltfAccessor.ByteOffset;
+        }
+        _binaryChunk.Seek(_activeBufferOffset, SeekOrigin.Begin);
+    }
 
-		byte[] bufferData = new byte[byteLength];
+    private void SeekStride(int strideIndex)
+    {
+        if (!_requireStrideSeek || strideIndex == 0)
+        {
+            return;
+        }
+        if (strideIndex >= _activeGltfAccessor.Count)
+        {
+            Debug.LogError("Invalid seek index for data");
+            return;
+        }
+        var stride = _activeBufferView.ByteStride;
+        _binaryChunk.Seek(_activeBufferOffset + (stride * strideIndex), SeekOrigin.Begin);
+    }
 
-		chunk.chunkStream.Seek(chunk.chunkStart + byteOffset + additionalOffset, SeekOrigin.Begin);
-		chunk.chunkStream.Read(bufferData, 0, byteLength);
+    public float[] ReadFloat()
+    {
+        var res = new float[_activeGltfAccessor.Count];
+#if UNITY_2021_3_OR_NEWER
+        if (_activeGltfAccessor.ComponentType == OVRGLTFComponentType.FLOAT)
+        {
+            _binaryChunk.Read(MemoryMarshal.AsBytes(res.AsSpan()));
+        }
+        else
+#endif
+        {
+            for (var i = 0; i < res.Length; i++)
+            {
+                res[i] = ReadAsFloat(_reader, _activeGltfAccessor.ComponentType);
+            }
+        }
+        return res;
+    }
+    public int[] ReadInt()
+    {
+        var res = new int[_activeGltfAccessor.Count];
+        for (var i = 0; i < res.Length; i++)
+        {
+            res[i] = ReadAsInt(_reader, _activeGltfAccessor.ComponentType);
+        }
+        return res;
+    }
+    public Vector2[] ReadVector2()
+    {
+        var res = new Vector2[_activeGltfAccessor.Count];
+#if UNITY_2021_3_OR_NEWER
+        if (!_requireStrideSeek && _activeGltfAccessor.ComponentType == OVRGLTFComponentType.FLOAT)
+        {
+            _binaryChunk.Read(MemoryMarshal.AsBytes(res.AsSpan()));
+        }
+        else
+#endif
+        {
 
-		int stride = byteStride > 0 ? byteStride : GetStrideForType(componentType);
-		for (int i = 0; i < dataCount; i++)
-		{
-			data[offset + i] = ReadElementAsFloat(bufferData, i * stride);
-		}
-	}
+            for (var i = 0; i < res.Length; i++)
+            {
+                SeekStride(i);
+                res[i].x = ReadAsFloat(_reader, _activeGltfAccessor.ComponentType);
+                res[i].y = ReadAsFloat(_reader, _activeGltfAccessor.ComponentType);
+            }
+        }
+        return res;
+    }
+    public Vector3[] ReadVector3(Vector3 conversionScale)
+    {
+        var res = new Vector3[_activeGltfAccessor.Count];
+#if UNITY_2021_3_OR_NEWER
+        if (!_requireStrideSeek && _activeGltfAccessor.ComponentType == OVRGLTFComponentType.FLOAT)
+        {
+            _binaryChunk.Read(MemoryMarshal.AsBytes(res.AsSpan()));
+            for (var i = 0; i < res.Length; i++)
+            {
+                res[i].Scale(conversionScale);
+            }
+        }
+        else
+#endif
+        {
+            for (var i = 0; i < res.Length; i++)
+            {
+                SeekStride(i);
+                res[i].x = ReadAsFloat(_reader, _activeGltfAccessor.ComponentType);
+                res[i].y = ReadAsFloat(_reader, _activeGltfAccessor.ComponentType);
+                res[i].z = ReadAsFloat(_reader, _activeGltfAccessor.ComponentType);
+                res[i].Scale(conversionScale);
+            }
+        }
+        return res;
+    }
 
-	public void ReadAsVector2(OVRBinaryChunk chunk, ref Vector2[] data, int offset)
-	{
-		if (dataType != OVRGLTFType.VEC2)
-		{
-			Debug.LogError("Tried to read non-vec3 data as a vec2 array.");
-			return;
-		}
+    public Vector4[] ReadVector4(Vector4 conversionScale)
+    {
+        var res = new Vector4[_activeGltfAccessor.Count];
+#if UNITY_2021_3_OR_NEWER
+        if (!_requireStrideSeek && _activeGltfAccessor.ComponentType == OVRGLTFComponentType.FLOAT)
+        {
+            _binaryChunk.Read(MemoryMarshal.AsBytes(res.AsSpan()));
+            for (var i = 0; i < res.Length; i++)
+            {
+                res[i].Scale(conversionScale);
+            }
+        }
+        else
+#endif
+        {
+            for (var i = 0; i < res.Length; i++)
+            {
+                SeekStride(i);
+                res[i].x = ReadAsFloat(_reader, _activeGltfAccessor.ComponentType);
+                res[i].y = ReadAsFloat(_reader, _activeGltfAccessor.ComponentType);
+                res[i].z = ReadAsFloat(_reader, _activeGltfAccessor.ComponentType);
+                res[i].w = ReadAsFloat(_reader, _activeGltfAccessor.ComponentType);
+                res[i].Scale(conversionScale);
+            }
+        }
 
-		if (chunk.chunkLength != bufferLength)
-		{
-			Debug.LogError("Chunk length is not equal to buffer length.");
-			return;
-		}
+        return res;
+    }
 
-		byte[] bufferData = new byte[byteLength];
+    private static int ReadAsInt(BinaryReader reader, OVRGLTFComponentType type)
+    {
+        switch (type)
+        {
+            case OVRGLTFComponentType.NONE:
+                return 0;
+            case OVRGLTFComponentType.BYTE:
+                return reader.ReadSByte();
+            case OVRGLTFComponentType.UNSIGNED_BYTE:
+                return reader.ReadByte();
+            case OVRGLTFComponentType.SHORT:
+                return reader.ReadInt16();
+            case OVRGLTFComponentType.UNSIGNED_SHORT:
+                return reader.ReadUInt16();
+            case OVRGLTFComponentType.UNSIGNED_INT:
+                return (int)reader.ReadUInt32();
+            case OVRGLTFComponentType.FLOAT:
+                return (int)reader.ReadSingle();
+            default:
+                throw new ArgumentOutOfRangeException(nameof(type), type, null);
+        }
+    }
+    private static float ReadAsFloat(BinaryReader reader, OVRGLTFComponentType type)
+    {
+        switch (type)
+        {
+            case OVRGLTFComponentType.NONE:
+                return 0;
+            case OVRGLTFComponentType.BYTE:
+                return reader.ReadSByte();
+            case OVRGLTFComponentType.UNSIGNED_BYTE:
+                return reader.ReadByte();
+            case OVRGLTFComponentType.SHORT:
+                return reader.ReadInt16();
+            case OVRGLTFComponentType.UNSIGNED_SHORT:
+                return reader.ReadUInt16();
+            case OVRGLTFComponentType.UNSIGNED_INT:
+                return reader.ReadUInt32();
+            case OVRGLTFComponentType.FLOAT:
+                return reader.ReadSingle();
+            default:
+                throw new ArgumentOutOfRangeException(nameof(type), type, null);
+        }
+    }
+    public Color[] ReadColor()
+    {
+        if (_activeGltfAccessor.Type != OVRGLTFType.VEC4 && _activeGltfAccessor.Type != OVRGLTFType.VEC3)
+        {
+            Debug.LogError("Tried to read non-color type as a color array." + _activeGltfAccessor.Type);
+            return Array.Empty<Color>();
+        }
+        Color[] colors = new Color[_activeGltfAccessor.Count];
+#if UNITY_2021_3_OR_NEWER
+        if (!_requireStrideSeek && _activeGltfAccessor.ComponentType == OVRGLTFComponentType.FLOAT && _activeGltfAccessor.Type == OVRGLTFType.VEC4)
+        {
+            _binaryChunk.Read(MemoryMarshal.AsBytes(colors.AsSpan()));
+        }
+        else
+#endif
+        {
+            for (var i = 0; i < colors.Length; i++)
+            {
+                SeekStride(i);
+                if (_activeGltfAccessor.ComponentType == OVRGLTFComponentType.FLOAT)
+                {
+                    colors[i].r = _reader.ReadSingle();
+                    colors[i].g = _reader.ReadSingle();
+                    colors[i].b = _reader.ReadSingle();
+                    colors[i].a = (_activeGltfAccessor.Type == OVRGLTFType.VEC4) ? _reader.ReadSingle() : 1.0f;
+                }
+                else
+                {
+                    float maxValue = GetMaxValueForType(_activeGltfAccessor.ComponentType);
+                    colors[i].r = ReadAsInt(_reader, _activeGltfAccessor.ComponentType) / maxValue;
+                    colors[i].g = ReadAsInt(_reader, _activeGltfAccessor.ComponentType) / maxValue;
+                    colors[i].b = ReadAsInt(_reader, _activeGltfAccessor.ComponentType) / maxValue;
+                    colors[i].a = (_activeGltfAccessor.Type == OVRGLTFType.VEC4)
+                        ? ReadAsInt(_reader, _activeGltfAccessor.ComponentType) / maxValue
+                        : 1.0f;
+                }
+            }
+        }
 
-		chunk.chunkStream.Seek(chunk.chunkStart + byteOffset + additionalOffset, SeekOrigin.Begin);
-		chunk.chunkStream.Read(bufferData, 0, byteLength);
+        return colors;
+    }
 
-		int dataTypeSize = GetStrideForType(componentType);
-		int stride = byteStride > 0 ? byteStride : dataTypeSize * 2;
-		for (int i = 0; i < dataCount; i++)
-		{
-			if (componentType == OVRGLTFComponentType.FLOAT)
-			{
-				data[offset + i].x = ReadElementAsFloat(bufferData, i * stride);
-				data[offset + i].y = ReadElementAsFloat(bufferData, i * stride + dataTypeSize);
-			}
-		}
-	}
+    public void ReadWeights(ref BoneWeight[] resultsBoneWeights)
+    {
+        if (_activeGltfAccessor.Type != OVRGLTFType.VEC4)
+        {
+            Debug.LogError("Tried to read bone weights data as a non-vec4 array.");
+            return;
+        }
+        resultsBoneWeights ??= new BoneWeight[_activeGltfAccessor.Count];
 
-	public void ReadAsVector3(OVRBinaryChunk chunk, ref Vector3[] data, int offset, Vector3 conversionScale)
-	{
-		if (dataType != OVRGLTFType.VEC3)
-		{
-			Debug.LogError("Tried to read non-vec3 data as a vec3 array.");
-			return;
-		}
+        for (int i = 0; i < resultsBoneWeights.Length; i++)
+        {
+            SeekStride(i);
+            resultsBoneWeights[i].weight0 = _reader.ReadSingle();
+            resultsBoneWeights[i].weight1 = _reader.ReadSingle();
+            resultsBoneWeights[i].weight2 = _reader.ReadSingle();
+            resultsBoneWeights[i].weight3 = _reader.ReadSingle();
 
-		if (chunk.chunkLength != bufferLength)
-		{
-			Debug.LogError("Chunk length is not equal to buffer length.");
-			return;
-		}
+            float weightSum = resultsBoneWeights[i].weight0 + resultsBoneWeights[i].weight1 + resultsBoneWeights[i].weight2 + resultsBoneWeights[i].weight3;
+            if (!Mathf.Approximately(weightSum, 0))
+            {
+                resultsBoneWeights[i].weight0 /= weightSum;
+                resultsBoneWeights[i].weight1 /= weightSum;
+                resultsBoneWeights[i].weight2 /= weightSum;
+                resultsBoneWeights[i].weight3 /= weightSum;
+            }
+        }
+    }
 
-		byte[] bufferData = new byte[byteLength];
+    public void ReadJoints(ref BoneWeight[] resultsBoneWeights)
+    {
+        if (_activeGltfAccessor.Type != OVRGLTFType.VEC4)
+        {
+            Debug.LogError("Tried to read bone weights data as a non-vec4 array.");
+            return;
+        }
+        resultsBoneWeights ??= new BoneWeight[_activeGltfAccessor.Count];
+        for (int i = 0; i < resultsBoneWeights.Length; i++)
+        {
+            SeekStride(i);
+            resultsBoneWeights[i].boneIndex0 = ReadAsInt(_reader, _activeGltfAccessor.ComponentType);
+            resultsBoneWeights[i].boneIndex1 = ReadAsInt(_reader, _activeGltfAccessor.ComponentType);
+            resultsBoneWeights[i].boneIndex2 = ReadAsInt(_reader, _activeGltfAccessor.ComponentType);
+            resultsBoneWeights[i].boneIndex3 = ReadAsInt(_reader, _activeGltfAccessor.ComponentType);
+        }
+    }
 
-		chunk.chunkStream.Seek(chunk.chunkStart + byteOffset + additionalOffset, SeekOrigin.Begin);
-		chunk.chunkStream.Read(bufferData, 0, byteLength);
+    public Quaternion[] ReadQuaterion(Vector4 gltfToUnitySpaceRotation)
+    {
+        if (_activeGltfAccessor.Type != OVRGLTFType.VEC4)
+        {
+            Debug.LogError("Tried to read bone weights data as a non-vec4 array.");
+            return Array.Empty<Quaternion>();
+        }
 
-		int dataTypeSize = GetStrideForType(componentType);
-		int stride = byteStride > 0 ? byteStride : dataTypeSize * 3;
-		for (int i = 0; i < dataCount; i++)
-		{
-			if (componentType == OVRGLTFComponentType.FLOAT)
-			{
-				data[offset + i].x = ReadElementAsFloat(bufferData, i * stride);
-				data[offset + i].y = ReadElementAsFloat(bufferData, i * stride + dataTypeSize);
-				data[offset + i].z = ReadElementAsFloat(bufferData, i * stride + dataTypeSize * 2);
-			}
-			else
-			{
-				data[offset + i].x = ReadElementAsUint(bufferData, i * stride, componentType);
-				data[offset + i].y = ReadElementAsUint(bufferData, i * stride + dataTypeSize, componentType);
-				data[offset + i].z = ReadElementAsUint(bufferData, i * stride + dataTypeSize * 2, componentType);
-			}
-			data[offset + i].Scale(conversionScale);
-		}
-	}
+        var res = new Quaternion[_activeGltfAccessor.Count];
+#if UNITY_2021_3_OR_NEWER
+        if (!_requireStrideSeek && _activeGltfAccessor.ComponentType == OVRGLTFComponentType.FLOAT)
+        {
+            _binaryChunk.Read(MemoryMarshal.AsBytes(res.AsSpan()));
+            for (var i = 0; i < res.Length; i++)
+            {
+                res[i].x *= gltfToUnitySpaceRotation.x;
+                res[i].y *= gltfToUnitySpaceRotation.y;
+                res[i].z *= gltfToUnitySpaceRotation.z;
+                res[i].w *= gltfToUnitySpaceRotation.w;
+            }
+        }
+        else
+#endif
+        {
+            for (var i = 0; i < res.Length; i++)
+            {
+                SeekStride(i);
+                res[i].x = ReadAsFloat(_reader, _activeGltfAccessor.ComponentType) * gltfToUnitySpaceRotation.x;
+                res[i].y = ReadAsFloat(_reader, _activeGltfAccessor.ComponentType) * gltfToUnitySpaceRotation.y;
+                res[i].z = ReadAsFloat(_reader, _activeGltfAccessor.ComponentType) * gltfToUnitySpaceRotation.z;
+                res[i].w = ReadAsFloat(_reader, _activeGltfAccessor.ComponentType) * gltfToUnitySpaceRotation.w;
+            }
+        }
+        return res;
+    }
 
-	public void ReadAsVector4(OVRBinaryChunk chunk, ref Vector4[] data, int offset, Vector4 conversionScale)
-	{
-		if (dataType != OVRGLTFType.VEC4)
-		{
-			Debug.LogError("Tried to read non-vec4 data as a vec4 array.");
-			return;
-		}
+    public Matrix4x4[] ReadMatrix4x4(Vector3 conversionScale)
+    {
+        if (_activeGltfAccessor.Type != OVRGLTFType.MAT4)
+        {
+            Debug.LogError("Tried to read non-vec3 data as a vec3 array.");
+            return Array.Empty<Matrix4x4>();
+        }
 
-		if (chunk.chunkLength != bufferLength)
-		{
-			Debug.LogError("Chunk length is not equal to buffer length.");
-			return;
-		}
+        Matrix4x4 scale = Matrix4x4.Scale(conversionScale);
+        var res = new Matrix4x4[_activeGltfAccessor.Count];
+#if UNITY_2021_3_OR_NEWER
+        if (!_requireStrideSeek && _activeGltfAccessor.ComponentType == OVRGLTFComponentType.FLOAT)
+        {
+            _binaryChunk.Read(MemoryMarshal.AsBytes(res.AsSpan()));
+            for (var i = 0; i < _activeGltfAccessor.Count; i++)
+            {
+                res[i] = scale * res[i] * scale;
+            }
+        }
+        else
+#endif
+        {
+            for (var i = 0; i < _activeGltfAccessor.Count; i++)
+            {
+                SeekStride(i);
+                for (var m = 0; m < 16; m++)
+                {
+                    res[i][m] = ReadAsFloat(_reader, _activeGltfAccessor.ComponentType);
+                }
+                res[i] = scale * res[i] * scale;
+            }
+        }
+        return res;
+    }
 
-		byte[] bufferData = new byte[byteLength];
+    private int GetStrideForType(OVRGLTFComponentType type)
+    {
+        switch (type)
+        {
+            case OVRGLTFComponentType.BYTE:
+                return sizeof(sbyte);
+            case OVRGLTFComponentType.UNSIGNED_BYTE:
+                return sizeof(byte);
+            case OVRGLTFComponentType.SHORT:
+                return sizeof(short);
+            case OVRGLTFComponentType.UNSIGNED_SHORT:
+                return sizeof(ushort);
+            case OVRGLTFComponentType.UNSIGNED_INT:
+                return sizeof(uint);
+            case OVRGLTFComponentType.FLOAT:
+                return sizeof(float);
+            default:
+                Debug.LogWarning("GetStrideForType called with unsupported component type " + type);
+                return 0;
+        }
+    }
 
-		chunk.chunkStream.Seek(chunk.chunkStart + byteOffset + additionalOffset, SeekOrigin.Begin);
-		chunk.chunkStream.Read(bufferData, 0, byteLength);
+    private float GetMaxValueForType(OVRGLTFComponentType type)
+    {
+        switch (type)
+        {
+            case OVRGLTFComponentType.BYTE:
+                return sbyte.MaxValue;
+            case OVRGLTFComponentType.UNSIGNED_BYTE:
+                return byte.MaxValue;
+            case OVRGLTFComponentType.SHORT:
+                return short.MaxValue;
+            case OVRGLTFComponentType.UNSIGNED_SHORT:
+                return ushort.MaxValue;
+            case OVRGLTFComponentType.UNSIGNED_INT:
+                return uint.MaxValue;
+            case OVRGLTFComponentType.FLOAT:
+                return float.MaxValue;
+            default:
+                Debug.LogWarning("GetMaxValueForType called with unsupported component type " + type);
+                return 1;
+        }
+    }
 
-		int dataTypeSize = GetStrideForType(componentType);
-		int stride = byteStride > 0 ? byteStride : dataTypeSize * 4;
-		for (int i = 0; i < dataCount; i++)
-		{
-			if (componentType == OVRGLTFComponentType.FLOAT)
-			{
-				data[offset + i].x = ReadElementAsFloat(bufferData, i * stride);
-				data[offset + i].y = ReadElementAsFloat(bufferData, i * stride + dataTypeSize);
-				data[offset + i].z = ReadElementAsFloat(bufferData, i * stride + dataTypeSize * 2);
-				data[offset + i].w = ReadElementAsFloat(bufferData, i * stride + dataTypeSize * 3);
-			}
-			else
-			{
-				data[offset + i].x = ReadElementAsUint(bufferData, i * stride, componentType);
-				data[offset + i].y = ReadElementAsUint(bufferData, i * stride + dataTypeSize, componentType);
-				data[offset + i].z = ReadElementAsUint(bufferData, i * stride + dataTypeSize * 2, componentType);
-				data[offset + i].w = ReadElementAsUint(bufferData, i * stride + dataTypeSize * 3, componentType);
-			}
-			data[offset + i].Scale(conversionScale);
-		}
-	}
+    public byte[] ReadBuffer(int bufferViewIndex)
+    {
+        _activeBufferView = _bufferViews[bufferViewIndex];
+        _activeBuffer = _buffers[_activeBufferView.BufferIndex];
+        _binaryChunk.Seek(_binaryChunkStart, SeekOrigin.Begin);
+        _binaryChunk.Seek(_activeBufferView.ByteOffset, SeekOrigin.Current);
+        return _reader.ReadBytes(_activeBufferView.ByteLength);
+    }
 
-	public void ReadAsColor(OVRBinaryChunk chunk, ref Color[] data, int offset)
-	{
-		if (dataType != OVRGLTFType.VEC4 && dataType != OVRGLTFType.VEC3)
-		{
-			Debug.LogError("Tried to read non-color type as a color array.");
-			return;
-		}
+    public void Dispose()
+    {
+        _reader.Dispose();
+    }
 
-		if (chunk.chunkLength != bufferLength)
-		{
-			Debug.LogError("Chunk length is not equal to buffer length.");
-			return;
-		}
-
-		byte[] bufferData = new byte[byteLength];
-
-		chunk.chunkStream.Seek(chunk.chunkStart + byteOffset + additionalOffset, SeekOrigin.Begin);
-		chunk.chunkStream.Read(bufferData, 0, byteLength);
-
-		int vecSize = dataType == OVRGLTFType.VEC3 ? 3 : 4;
-		int dataTypeSize = GetStrideForType(componentType);
-		int stride = byteStride > 0 ? byteStride : dataTypeSize * vecSize;
-		float maxValue = GetMaxValueForType(componentType);
-		for (int i = 0; i < dataCount; i++)
-		{
-			if (componentType == OVRGLTFComponentType.FLOAT)
-			{
-				data[offset + i].r = ReadElementAsFloat(bufferData, i * stride);
-				data[offset + i].g = ReadElementAsFloat(bufferData, i * stride + dataTypeSize);
-				data[offset + i].b = ReadElementAsFloat(bufferData, i * stride + dataTypeSize * 2);
-				data[offset + i].a = dataType == OVRGLTFType.VEC3 ? 1.0f : ReadElementAsFloat(bufferData, i * stride + dataTypeSize * 3);
-			}
-			else
-			{
-				data[offset + i].r = ReadElementAsUint(bufferData, i * stride, componentType) / maxValue;
-				data[offset + i].g = ReadElementAsUint(bufferData, i * stride + dataTypeSize, componentType) / maxValue;
-				data[offset + i].b = ReadElementAsUint(bufferData, i * stride + dataTypeSize * 2, componentType) / maxValue;
-				data[offset + i].a = dataType == OVRGLTFType.VEC3 ? 1.0f : ReadElementAsUint(bufferData, i * stride + dataTypeSize * 3, componentType) / maxValue;
-			}
-		}
-	}
-
-	public void ReadAsMatrix4x4(OVRBinaryChunk chunk, ref Matrix4x4[] data, int offset, Vector3 conversionScale)
-	{
-		if (dataType != OVRGLTFType.MAT4)
-		{
-			Debug.LogError("Tried to read non-vec3 data as a vec3 array.");
-			return;
-		}
-
-		if (chunk.chunkLength != bufferLength)
-		{
-			Debug.LogError("Chunk length is not equal to buffer length.");
-			return;
-		}
-
-		byte[] bufferData = new byte[byteLength];
-
-		chunk.chunkStream.Seek(chunk.chunkStart + byteOffset + additionalOffset, SeekOrigin.Begin);
-		chunk.chunkStream.Read(bufferData, 0, byteLength);
-
-		int dataTypeSize = GetStrideForType(componentType);
-		int stride = byteStride > 0 ? byteStride : dataTypeSize * 16;
-
-		Matrix4x4 scale = Matrix4x4.Scale(conversionScale);
-		for (int i = 0; i < dataCount; i++)
-		{
-			for (int m = 0; m < 16; m++)
-			{
-				data[offset + i][m] = ReadElementAsFloat(bufferData, i * stride + dataTypeSize * m);
-			}
-			data[offset + i] = scale * data[offset + i] * scale;
-		}
-	}
-
-	public byte[] ReadAsKtxTexture(OVRBinaryChunk chunk)
-	{
-		if (chunk.chunkLength != bufferLength)
-		{
-			Debug.LogError("Chunk length is not equal to buffer length.");
-			return null;
-		}
-
-		byte[] bufferData = new byte[byteLength];
-		chunk.chunkStream.Seek(chunk.chunkStart + byteOffset + additionalOffset, SeekOrigin.Begin);
-		chunk.chunkStream.Read(bufferData, 0, byteLength);
-
-		return bufferData;
-	}
-
-	public void ReadAsBoneWeights(OVRBinaryChunk chunk, ref Vector4[] data, int offset)
-	{
-		if (dataType != OVRGLTFType.VEC4)
-		{
-			Debug.LogError("Tried to read bone weights data as a non-vec4 array.");
-			return;
-		}
-
-		if (chunk.chunkLength != bufferLength)
-		{
-			Debug.LogError("Chunk length is not equal to buffer length.");
-			return;
-		}
-
-		byte[] bufferData = new byte[byteLength];
-
-		chunk.chunkStream.Seek(chunk.chunkStart + byteOffset + additionalOffset, SeekOrigin.Begin);
-		chunk.chunkStream.Read(bufferData, 0, byteLength);
-
-		int dataTypeSize = GetStrideForType(componentType);
-		int stride = byteStride > 0 ? byteStride : dataTypeSize * 4;
-		for (int i = 0; i < dataCount; i++)
-		{
-			data[offset + i].x = ReadElementAsFloat(bufferData, i * stride);
-			data[offset + i].y = ReadElementAsFloat(bufferData, i * stride + dataTypeSize);
-			data[offset + i].z = ReadElementAsFloat(bufferData, i * stride + dataTypeSize * 2);
-			data[offset + i].w = ReadElementAsFloat(bufferData, i * stride + dataTypeSize * 3);
-
-			float weightSum = data[offset + i].x + data[offset + i].y + data[offset + i].z + data[offset + i].w;
-			if (!Mathf.Approximately(weightSum, 0))
-			{
-				data[offset + i] /= weightSum;
-			}
-		}
-	}
-
-	private int GetStrideForType(OVRGLTFComponentType type)
-	{
-		switch (type)
-		{
-			case OVRGLTFComponentType.BYTE:
-				return sizeof(sbyte);
-			case OVRGLTFComponentType.UNSIGNED_BYTE:
-				return sizeof(byte);
-			case OVRGLTFComponentType.SHORT:
-				return sizeof(short);
-			case OVRGLTFComponentType.UNSIGNED_SHORT:
-				return sizeof(ushort);
-			case OVRGLTFComponentType.UNSIGNED_INT:
-				return sizeof(uint);
-			case OVRGLTFComponentType.FLOAT:
-				return sizeof(float);
-			default:
-				return 0;
-		}
-	}
-
-	private float GetMaxValueForType(OVRGLTFComponentType type)
-	{
-		switch (type)
-		{
-			case OVRGLTFComponentType.BYTE:
-				return sbyte.MaxValue;
-			case OVRGLTFComponentType.UNSIGNED_BYTE:
-				return byte.MaxValue;
-			case OVRGLTFComponentType.SHORT:
-				return short.MaxValue;
-			case OVRGLTFComponentType.UNSIGNED_SHORT:
-				return ushort.MaxValue;
-			case OVRGLTFComponentType.UNSIGNED_INT:
-				return uint.MaxValue;
-			case OVRGLTFComponentType.FLOAT:
-				return float.MaxValue;
-			default:
-				return 0;
-		}
-	}
-
-	private uint ReadElementAsUint(byte[] data, int index, OVRGLTFComponentType type)
-	{
-		switch(type)
-		{
-			case OVRGLTFComponentType.BYTE:
-				return (uint)Convert.ToSByte(data[index]);
-			case OVRGLTFComponentType.UNSIGNED_BYTE:
-				return data[index];
-			case OVRGLTFComponentType.SHORT:
-				return (uint)BitConverter.ToInt16(data, index);
-			case OVRGLTFComponentType.UNSIGNED_SHORT:
-				return BitConverter.ToUInt16(data, index);
-			case OVRGLTFComponentType.UNSIGNED_INT:
-				return BitConverter.ToUInt32(data, index);
-			default:
-				Debug.Log(String.Format("Failed to read Component Type {0} as a uint.", type));
-				return 0;
-		}
-	}
-
-	private float ReadElementAsFloat(byte[] data, int index)
-	{
-		return BitConverter.ToSingle(data, index);
-	}
+    public int GetDataCount()
+    {
+        return _activeGltfAccessor.Count;
+    }
 }

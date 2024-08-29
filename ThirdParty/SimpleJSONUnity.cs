@@ -45,11 +45,13 @@ using UnityEngine;
 namespace OVRSimpleJSON // SimpleJSON
 {
     public enum JSONContainerType { Array, Object }
-	public partial class JSONNode
-	{
+    public partial class JSONNode
+    {
+        public static float ColorDefaultAlpha = 1f;
         public static JSONContainerType VectorContainerType = JSONContainerType.Array;
         public static JSONContainerType QuaternionContainerType = JSONContainerType.Array;
         public static JSONContainerType RectContainerType = JSONContainerType.Array;
+        public static JSONContainerType ColorContainerType = JSONContainerType.Array;
         private static JSONNode GetContainer(JSONContainerType aType)
         {
             if (aType == JSONContainerType.Array)
@@ -59,37 +61,43 @@ namespace OVRSimpleJSON // SimpleJSON
 
         #region implicit conversion operators
         public static implicit operator JSONNode(Vector2 aVec)
-		{
+        {
             JSONNode n = GetContainer(VectorContainerType);
             n.WriteVector2(aVec);
-			return n;
-		}
-		public static implicit operator JSONNode(Vector3 aVec)
-		{
+            return n;
+        }
+        public static implicit operator JSONNode(Vector3 aVec)
+        {
             JSONNode n = GetContainer(VectorContainerType);
             n.WriteVector3(aVec);
             return n;
         }
         public static implicit operator JSONNode(Vector4 aVec)
-		{
+        {
             JSONNode n = GetContainer(VectorContainerType);
             n.WriteVector4(aVec);
             return n;
         }
+        public static implicit operator JSONNode(Color aCol)
+        {
+            JSONNode n = GetContainer(ColorContainerType);
+            n.WriteColor(aCol);
+            return n;
+        }
         public static implicit operator JSONNode(Quaternion aRot)
-		{
+        {
             JSONNode n = GetContainer(QuaternionContainerType);
             n.WriteQuaternion(aRot);
             return n;
         }
         public static implicit operator JSONNode(Rect aRect)
-		{
+        {
             JSONNode n = GetContainer(RectContainerType);
             n.WriteRect(aRect);
             return n;
         }
         public static implicit operator JSONNode(RectOffset aRect)
-		{
+        {
             JSONNode n = GetContainer(RectContainerType);
             n.WriteRectOffset(aRect);
             return n;
@@ -106,6 +114,10 @@ namespace OVRSimpleJSON // SimpleJSON
         public static implicit operator Vector4(JSONNode aNode)
         {
             return aNode.ReadVector4();
+        }
+        public static implicit operator Color(JSONNode aNode)
+        {
+            return aNode.ReadColor();
         }
         public static implicit operator Quaternion(JSONNode aNode)
         {
@@ -234,6 +246,41 @@ namespace OVRSimpleJSON // SimpleJSON
             return this;
         }
         #endregion Vector4
+
+        #region Color
+        public Color ReadColor(Color aDefault)
+        {
+            if (IsObject)
+                return new Color(this["r"].AsFloat, this["g"].AsFloat, this["b"].AsFloat, HasKey("a")?this["a"].AsFloat:ColorDefaultAlpha);
+            if (IsArray)
+                return new Color(this[0].AsFloat, this[1].AsFloat, this[2].AsFloat, (Count>3)?this[3].AsFloat:ColorDefaultAlpha);
+            return aDefault;
+        }
+        public Color ReadColor()
+        {
+            return ReadColor(Color.clear);
+        }
+        public JSONNode WriteColor(Color aCol)
+        {
+            if (IsObject)
+            {
+                Inline = true;
+                this["r"].AsFloat = aCol.r;
+                this["g"].AsFloat = aCol.g;
+                this["b"].AsFloat = aCol.b;
+                this["a"].AsFloat = aCol.a;
+            }
+            else if (IsArray)
+            {
+                Inline = true;
+                this[0].AsFloat = aCol.r;
+                this[1].AsFloat = aCol.g;
+                this[2].AsFloat = aCol.b;
+                this[3].AsFloat = aCol.a;
+            }
+            return this;
+        }
+        #endregion Color
 
         #region Quaternion
         public Quaternion ReadQuaternion(Quaternion aDefault)

@@ -27,20 +27,32 @@ public class OVRManagerEditor : Editor
     private SerializedProperty _requestBodyTrackingPermissionOnStartup;
     private SerializedProperty _requestFaceTrackingPermissionOnStartup;
     private SerializedProperty _requestEyeTrackingPermissionOnStartup;
+    private SerializedProperty _requestScenePermissionOnStartup;
+    private SerializedProperty _requestRecordAudioPermissionOnStartup;
     private bool _expandPermissionsRequest;
+#if UNITY_EDITOR_WIN || UNITY_STANDALONE_WIN || UNITY_EDITOR_OSX || UNITY_STANDALONE_OSX || UNITY_ANDROID
+    private bool _showFaceTrackingDataSources = false;
+#endif
 
     void OnEnable()
     {
-        _requestBodyTrackingPermissionOnStartup = serializedObject.FindProperty(nameof(OVRManager.requestBodyTrackingPermissionOnStartup));
-        _requestFaceTrackingPermissionOnStartup = serializedObject.FindProperty(nameof(OVRManager.requestFaceTrackingPermissionOnStartup));
-        _requestEyeTrackingPermissionOnStartup = serializedObject.FindProperty(nameof(OVRManager.requestEyeTrackingPermissionOnStartup));
+        _requestBodyTrackingPermissionOnStartup =
+            serializedObject.FindProperty(nameof(OVRManager.requestBodyTrackingPermissionOnStartup));
+        _requestFaceTrackingPermissionOnStartup =
+            serializedObject.FindProperty(nameof(OVRManager.requestFaceTrackingPermissionOnStartup));
+        _requestEyeTrackingPermissionOnStartup =
+            serializedObject.FindProperty(nameof(OVRManager.requestEyeTrackingPermissionOnStartup));
+        _requestScenePermissionOnStartup =
+            serializedObject.FindProperty(nameof(OVRManager.requestScenePermissionOnStartup));
+        _requestRecordAudioPermissionOnStartup =
+            serializedObject.FindProperty(nameof(OVRManager.requestRecordAudioPermissionOnStartup));
     }
 
     public override void OnInspectorGUI()
     {
         serializedObject.ApplyModifiedProperties();
         OVRRuntimeSettings runtimeSettings = OVRRuntimeSettings.GetRuntimeSettings();
-        OVRProjectConfig projectConfig = OVRProjectConfig.GetProjectConfig();
+        OVRProjectConfig projectConfig = OVRProjectConfig.CachedProjectConfig;
 
 #if UNITY_ANDROID
         OVRProjectConfigEditor.DrawTargetDeviceInspector(projectConfig);
@@ -51,7 +63,7 @@ public class OVRManagerEditor : Editor
 
         bool modified = false;
 
-#if UNITY_EDITOR_WIN || UNITY_STANDALONE_WIN || UNITY_ANDROID
+#if UNITY_EDITOR_WIN || UNITY_STANDALONE_WIN || UNITY_EDITOR_OSX || UNITY_STANDALONE_OSX || UNITY_ANDROID
         OVRManager manager = (OVRManager)target;
 
         EditorGUILayout.Space();
@@ -84,13 +96,15 @@ public class OVRManagerEditor : Editor
 #if UNITY_EDITOR_WIN || UNITY_STANDALONE_WIN
         EditorGUILayout.Space();
         EditorGUILayout.BeginHorizontal();
-        manager.expandMixedRealityCapturePropertySheet = EditorGUILayout.BeginFoldoutHeaderGroup(manager.expandMixedRealityCapturePropertySheet, "Mixed Reality Capture");
+        manager.expandMixedRealityCapturePropertySheet =
+            EditorGUILayout.BeginFoldoutHeaderGroup(manager.expandMixedRealityCapturePropertySheet,
+                "Mixed Reality Capture");
         OVREditorUtil.DisplayDocLink("https://developer.oculus.com/documentation/unity/unity-mrc/");
         EditorGUILayout.EndHorizontal();
         if (manager.expandMixedRealityCapturePropertySheet)
         {
             string[] layerMaskOptions = new string[32];
-            for (int i=0; i<32; ++i)
+            for (int i = 0; i < 32; ++i)
             {
                 layerMaskOptions[i] = LayerMask.LayerToName(i);
                 if (layerMaskOptions[i].Length == 0)
@@ -101,88 +115,211 @@ public class OVRManagerEditor : Editor
 
             EditorGUI.indentLevel++;
 
-            OVREditorUtil.SetupBoolField(target, "enableMixedReality", ref manager.enableMixedReality, ref modified);
-            OVREditorUtil.SetupEnumField(target, "compositionMethod", ref manager.compositionMethod, ref modified);
-            OVREditorUtil.SetupLayerMaskField(target, "extraHiddenLayers", ref manager.extraHiddenLayers, layerMaskOptions, ref modified);
-            OVREditorUtil.SetupLayerMaskField(target, "extraVisibleLayers", ref manager.extraVisibleLayers, layerMaskOptions, ref modified);
-            OVREditorUtil.SetupBoolField(target, "dynamicCullingMask", ref manager.dynamicCullingMask, ref modified);
+            OVREditorUtil.SetupBoolField(target, "Enable MixedRealityCapture", ref manager.enableMixedReality,
+                ref modified);
+            OVREditorUtil.SetupEnumField(target, "Composition Method", ref manager.compositionMethod, ref modified);
+            OVREditorUtil.SetupLayerMaskField(target, "Extra Hidden Layers", ref manager.extraHiddenLayers,
+                layerMaskOptions, ref modified);
+            OVREditorUtil.SetupLayerMaskField(target, "Extra Visible Layers", ref manager.extraVisibleLayers,
+                layerMaskOptions, ref modified);
+            OVREditorUtil.SetupBoolField(target, "Dynamic Culling Mask", ref manager.dynamicCullingMask, ref modified);
 
-            if (manager.compositionMethod == OVRManager.CompositionMethod.External)
+            // CompositionMethod.External is the only composition method that is available.
+            // All other deprecated composition methods should fallback to the path below.
             {
+                // CompositionMethod.External
                 EditorGUILayout.Space();
                 EditorGUILayout.LabelField("External Composition", EditorStyles.boldLabel);
                 EditorGUI.indentLevel++;
 
-                OVREditorUtil.SetupColorField(target, "backdropColor (target, Rift)", ref manager.externalCompositionBackdropColorRift, ref modified);
-                OVREditorUtil.SetupColorField(target, "backdropColor (target, Quest)", ref manager.externalCompositionBackdropColorQuest, ref modified);
-                EditorGUI.indentLevel--;
-            }
-
-            if (manager.compositionMethod == OVRManager.CompositionMethod.Direct)
-            {
-                EditorGUILayout.Space();
-                EditorGUILayout.LabelField("Direct Composition", EditorStyles.boldLabel);
-                EditorGUI.indentLevel++;
-
-                EditorGUILayout.Space();
-                EditorGUILayout.LabelField("Camera", EditorStyles.boldLabel);
-                OVREditorUtil.SetupEnumField(target, "capturingCameraDevice", ref manager.capturingCameraDevice, ref modified);
-                OVREditorUtil.SetupBoolField(target, "flipCameraFrameHorizontally", ref manager.flipCameraFrameHorizontally, ref modified);
-                OVREditorUtil.SetupBoolField(target, "flipCameraFrameVertically", ref manager.flipCameraFrameVertically, ref modified);
-
-                EditorGUILayout.Space();
-                EditorGUILayout.LabelField("Chroma Key", EditorStyles.boldLabel);
-                OVREditorUtil.SetupColorField(target, "chromaKeyColor", ref manager.chromaKeyColor, ref modified);
-                OVREditorUtil.SetupFloatField(target, "chromaKeySimilarity", ref manager.chromaKeySimilarity, ref modified);
-                OVREditorUtil.SetupFloatField(target, "chromaKeySmoothRange", ref manager.chromaKeySmoothRange, ref modified);
-                OVREditorUtil.SetupFloatField(target, "chromaKeySpillRange", ref manager.chromaKeySpillRange, ref modified);
-
-                EditorGUILayout.Space();
-                EditorGUILayout.LabelField("Dynamic Lighting", EditorStyles.boldLabel);
-                OVREditorUtil.SetupBoolField(target, "useDynamicLighting", ref manager.useDynamicLighting, ref modified);
-                OVREditorUtil.SetupEnumField(target, "depthQuality", ref manager.depthQuality, ref modified);
-                OVREditorUtil.SetupFloatField(target, "dynamicLightingSmoothFactor", ref manager.dynamicLightingSmoothFactor, ref modified);
-                OVREditorUtil.SetupFloatField(target, "dynamicLightingDepthVariationClampingValue", ref manager.dynamicLightingDepthVariationClampingValue, ref modified);
-
-                EditorGUILayout.Space();
-                EditorGUILayout.LabelField("Virtual Green Screen", EditorStyles.boldLabel);
-                OVREditorUtil.SetupEnumField(target, "virtualGreenScreenType", ref manager.virtualGreenScreenType, ref modified);
-                OVREditorUtil.SetupFloatField(target, "virtualGreenScreenTopY", ref manager.virtualGreenScreenTopY, ref modified);
-                OVREditorUtil.SetupFloatField(target, "virtualGreenScreenBottomY", ref manager.virtualGreenScreenBottomY, ref modified);
-                OVREditorUtil.SetupBoolField(target, "virtualGreenScreenApplyDepthCulling", ref manager.virtualGreenScreenApplyDepthCulling, ref modified);
-                OVREditorUtil.SetupFloatField(target, "virtualGreenScreenDepthTolerance", ref manager.virtualGreenScreenDepthTolerance, ref modified);
-
-                EditorGUILayout.Space();
-                EditorGUILayout.LabelField("Latency Control", EditorStyles.boldLabel);
-                OVREditorUtil.SetupFloatField(target, "handPoseStateLatency", ref manager.handPoseStateLatency, ref modified);
+                OVREditorUtil.SetupColorField(target, "Backdrop Color (Target, Rift)",
+                    ref manager.externalCompositionBackdropColorRift, ref modified);
+                OVREditorUtil.SetupColorField(target, "Backdrop Color (Target, Quest)",
+                    ref manager.externalCompositionBackdropColorQuest, ref modified);
                 EditorGUI.indentLevel--;
             }
 
             EditorGUI.indentLevel--;
         }
+
         EditorGUILayout.EndFoldoutHeaderGroup();
 #endif
 
-#if UNITY_EDITOR_WIN || UNITY_STANDALONE_WIN || UNITY_ANDROID
-        // Insight Passthrough section
+#if UNITY_EDITOR_WIN || UNITY_STANDALONE_WIN || UNITY_EDITOR_OSX || UNITY_STANDALONE_OSX || UNITY_ANDROID
+        // Multimodal hands and controllers section
 #if UNITY_ANDROID
-        bool passthroughCapabilityEnabled = projectConfig.insightPassthroughEnabled;
-        EditorGUI.BeginDisabledGroup(!passthroughCapabilityEnabled);
-        GUIContent enablePassthroughContent = new GUIContent("Enable Passthrough", "Enables passthrough functionality for the scene. Can be toggled at runtime. Passthrough Capability must be enabled in the project settings.");
+        bool launchSimultaneousHandsControllersOnStartup = manager.SimultaneousHandsAndControllersEnabled;
+        EditorGUI.BeginDisabledGroup(!launchSimultaneousHandsControllersOnStartup);
+        GUIContent enableSimultaneousHandsAndControllersOnStartup = new GUIContent("Launch simultaneous hands and controllers mode on startup",
+            "Launches simultaneous hands and controllers on startup for the scene. Simultaneous Hands and Controllers Capability must be enabled in the project settings.");
 #else
-		GUIContent enablePassthroughContent = new GUIContent("Enable Passthrough", "Enables passthrough functionality for the scene. Can be toggled at runtime.");
+        GUIContent enableSimultaneousHandsAndControllersOnStartup = new GUIContent("Enable simultaneous hands and controllers mode on startup",
+            "Launches simultaneous hands and controllers on startup for the scene.");
 #endif
         EditorGUILayout.Space();
-        EditorGUILayout.LabelField("Insight Passthrough", EditorStyles.boldLabel);
+        EditorGUILayout.LabelField("Simultaneous hands and controllers", EditorStyles.boldLabel);
 #if UNITY_ANDROID
-        if (!passthroughCapabilityEnabled) {
-            EditorGUILayout.LabelField("Requires Passthrough Capability to be enabled in the General section of the Quest features.", EditorStyles.wordWrappedLabel);
+        if (!launchSimultaneousHandsControllersOnStartup)
+        {
+            EditorGUILayout.LabelField(
+                "Requires Simultaneous Hands and Controllers Capability to be enabled in the General section of the Quest features.",
+                EditorStyles.wordWrappedLabel);
         }
 #endif
-        OVREditorUtil.SetupBoolField(target, enablePassthroughContent, ref manager.isInsightPassthroughEnabled, ref modified);
+        OVREditorUtil.SetupBoolField(target, enableSimultaneousHandsAndControllersOnStartup,
+            ref manager.launchSimultaneousHandsControllersOnStartup,
+            ref modified);
 #if UNITY_ANDROID
         EditorGUI.EndDisabledGroup();
 #endif
+#endif
+
+#if UNITY_EDITOR_WIN || UNITY_STANDALONE_WIN || UNITY_EDITOR_OSX || UNITY_STANDALONE_OSX || UNITY_ANDROID
+        // Insight Passthrough section
+#if UNITY_ANDROID
+        bool passthroughCapabilityEnabled =
+            projectConfig.insightPassthroughSupport != OVRProjectConfig.FeatureSupport.None;
+        EditorGUI.BeginDisabledGroup(!passthroughCapabilityEnabled);
+        GUIContent enablePassthroughContent = new GUIContent("Enable Passthrough",
+            "Enables passthrough functionality for the scene. Can be toggled at runtime. Passthrough Capability must be enabled in the project settings.");
+#else
+        GUIContent enablePassthroughContent = new GUIContent("Enable Passthrough",
+            "Enables passthrough functionality for the scene. Can be toggled at runtime.");
+#endif
+        EditorGUILayout.Space();
+        EditorGUILayout.LabelField("Insight Passthrough & Guardian Boundary", EditorStyles.boldLabel);
+        EditorGUI.indentLevel++; // PT section
+#if UNITY_ANDROID
+        if (!passthroughCapabilityEnabled)
+        {
+            EditorGUILayout.LabelField(
+                "Requires Passthrough Capability to be enabled in the General section of the Quest features.",
+                EditorStyles.wordWrappedLabel);
+        }
+#endif
+        OVREditorUtil.SetupBoolField(target, enablePassthroughContent, ref manager.isInsightPassthroughEnabled,
+            ref modified);
+#if UNITY_ANDROID
+        EditorGUI.EndDisabledGroup();
+#endif
+
+        var boundaryCapabilityEnabled =
+            projectConfig.boundaryVisibilitySupport != OVRProjectConfig.FeatureSupport.None;
+
+        var canModifyBoundary = boundaryCapabilityEnabled && manager.isInsightPassthroughEnabled;
+        if (!canModifyBoundary)
+            manager.shouldBoundaryVisibilityBeSuppressed = false;
+
+        using (new EditorGUI.DisabledScope(!canModifyBoundary))
+        {
+            var content = new GUIContent("Should Boundary Visibility Be Suppressed",
+                "Request that the Guardian Boundary Visibility be suppressed. " +
+                "Can only be suppressed when Passthrough is enabled, and can " +
+                "therefore differ from the system boundary state. There can " +
+                "be a delay when setting this due to the delay in Passthrough startup. " +
+                "Boundary Visibility Capability must be enabled in the project settings.");
+            OVREditorUtil.SetupBoolField(target, content, ref manager.shouldBoundaryVisibilityBeSuppressed, ref modified);
+        }
+
+        // actual boundary state (readonly)
+        using (new EditorGUI.DisabledScope(true))
+        {
+            var isBoundaryVisibilitySuppressed = manager.isBoundaryVisibilitySuppressed;
+            OVREditorUtil.SetupBoolField(target, new GUIContent("Is Boundary Visibility Suppressed",
+                "The system state of the Guardian Boundary Visibility which may differ " +
+                "from the requested state."),
+                ref isBoundaryVisibilitySuppressed, ref modified);
+        }
+        EditorGUI.indentLevel--; // PT section
+
+
+        // Common Movement Tracking section header
+        EditorGUILayout.Space();
+        EditorGUILayout.LabelField("Movement Tracking", EditorStyles.boldLabel);
+        EditorGUI.indentLevel++;
+
+        // Body Tracking settings
+        EditorGUI.BeginDisabledGroup(projectConfig.bodyTrackingSupport == OVRProjectConfig.FeatureSupport.None);
+        OVRPlugin.BodyTrackingFidelity2 bodyTrackingFidelity = runtimeSettings.BodyTrackingFidelity;
+        OVREditorUtil.SetupEnumField(target, new GUIContent("Body Tracking Fidelity",
+                "Body Tracking Fidelity defines quality of tracking"), ref bodyTrackingFidelity, ref modified,
+            "https://developer.oculus.com/documentation/unity/move-body-tracking/");
+
+        if (modified)
+        {
+            runtimeSettings.BodyTrackingFidelity = bodyTrackingFidelity;
+            OVRRuntimeSettings.CommitRuntimeSettings(runtimeSettings);
+        }
+
+        OVRPlugin.BodyJointSet bodyTrackingJointSet = runtimeSettings.BodyTrackingJointSet;
+        OVREditorUtil.SetupEnumField(target, new GUIContent("Body Tracking Joint Set",
+                "Body Tracking Joint Set"), ref bodyTrackingJointSet, ref modified,
+            "https://developer.oculus.com/documentation/unity/move-body-tracking/");
+        if (modified)
+        {
+            runtimeSettings.BodyTrackingJointSet = bodyTrackingJointSet;
+            OVRRuntimeSettings.CommitRuntimeSettings(runtimeSettings);
+        }
+        EditorGUI.EndDisabledGroup();
+
+        // Face Tracking settings
+        EditorGUI.BeginDisabledGroup(projectConfig.faceTrackingSupport == OVRProjectConfig.FeatureSupport.None);
+
+        _showFaceTrackingDataSources = EditorGUILayout.Foldout(
+            _showFaceTrackingDataSources,
+            new GUIContent("Face Tracking Data Sources", "Specifies the face tracking data sources accepted by the application.\n\n" +
+                "Requires Face Tracking Support to be \"Required\" or \"Supported\" in the General section of Quest Features."));
+
+        bool visualFaceTracking = runtimeSettings.RequestsVisualFaceTracking;
+        bool audioFaceTracking = runtimeSettings.RequestsAudioFaceTracking;
+        bool dataSourceSelected = visualFaceTracking || audioFaceTracking;
+        // Show the warning under the foldout, even if the foldout is collapsed.
+        if (projectConfig.faceTrackingSupport != OVRProjectConfig.FeatureSupport.None && !dataSourceSelected)
+        {
+            EditorGUILayout.HelpBox("Please specify at least one face tracking data source. If you don't choose, all available data sources will be chosen.", MessageType.Warning, true);
+        }
+
+        // Warn about face tracking when simultaneous hands and controllers is enabled as an incompatibility exists
+        // for Quest 2 headsets
+        if (projectConfig.faceTrackingSupport != OVRProjectConfig.FeatureSupport.None && manager.SimultaneousHandsAndControllersEnabled == true) {
+            EditorGUILayout.HelpBox("For Quest 2, simultaneous hands and controllers are not supported together with face tracking. Please select only one of these features if shipping on Quest 2", MessageType.Warning, true);
+        }
+
+        // Also warn about Body API when simultaneous hands and controllers is enabled
+        bool bodyEnabled =
+            (GameObject.FindObjectOfType<OVRBody>() != null || manager.wideMotionModeHandPosesEnabled == true);
+        if (bodyEnabled && manager.SimultaneousHandsAndControllersEnabled)
+        {
+            EditorGUILayout.HelpBox("Simultaneous hands and controllers are not supported together with Body API. Please select only one of these features", MessageType.Warning, true);
+        }
+
+        if (_showFaceTrackingDataSources)
+        {
+            EditorGUI.indentLevel++;
+            OVREditorUtil.SetupBoolField(
+                target,
+                new GUIContent("Visual", "Estimate face expressions with visual or audiovisual data."),
+                ref visualFaceTracking,
+                ref modified);
+            OVREditorUtil.SetupBoolField(
+                target,
+                new GUIContent("Audio", "Estimate face expressions using audio data only."),
+                ref audioFaceTracking,
+                ref modified);
+            EditorGUI.indentLevel--;
+        }
+
+
+        if (modified)
+        {
+            runtimeSettings.RequestsVisualFaceTracking = visualFaceTracking;
+            runtimeSettings.RequestsAudioFaceTracking = audioFaceTracking;
+            OVRRuntimeSettings.CommitRuntimeSettings(runtimeSettings);
+        }
+        EditorGUI.EndDisabledGroup();
+
+        // Common Movement Tracking section footer
+        EditorGUI.indentLevel--;
 #endif
 
         #region PermissionRequests
@@ -192,26 +329,44 @@ public class OVRManagerEditor : Editor
             EditorGUILayout.BeginFoldoutHeaderGroup(_expandPermissionsRequest, "Permission Requests On Startup");
         if (_expandPermissionsRequest)
         {
-            void AddPermissionGroup(bool featureEnabled, string permissionName, SerializedProperty property)
+            // helper function for all permission requests
+            static void AddPermissionGroup(bool featureEnabled, string permissionName, string capabilityName, SerializedProperty property)
             {
                 using (new EditorGUI.DisabledScope(!featureEnabled))
                 {
                     if (!featureEnabled)
                     {
-                        EditorGUILayout.LabelField($"Requires {permissionName} Capability to be enabled in the Quest features section.",
+                        EditorGUILayout.LabelField(
+                            $"Requires {capabilityName} Capability to be enabled in Quest Features.",
                             EditorStyles.wordWrappedLabel);
+
+                        // disable if the Quest Features doesn't have support for it
+                        if (property.boolValue == true)
+                            property.boolValue = false;
                     }
 
                     var label = new GUIContent(permissionName,
-                        $"Requests {permissionName} permission on start up. {permissionName} Capability must be enabled in the project settings.");
+                        $"Requests {permissionName} permission on start up. " +
+                        $"{capabilityName} Capability must be enabled in Quest Features. " +
+                        "It is recommended to manage runtime permissions yourself, " +
+                        "and to only request them when needed."
+                        );
                     EditorGUILayout.PropertyField(property, label);
                 }
             }
 
-            AddPermissionGroup(projectConfig.bodyTrackingSupport != OVRProjectConfig.FeatureSupport.None, "Body Tracking", _requestBodyTrackingPermissionOnStartup);
-            AddPermissionGroup(projectConfig.faceTrackingSupport != OVRProjectConfig.FeatureSupport.None, "Face Tracking", _requestFaceTrackingPermissionOnStartup);
-            AddPermissionGroup(projectConfig.eyeTrackingSupport != OVRProjectConfig.FeatureSupport.None, "Eye Tracking", _requestEyeTrackingPermissionOnStartup);
+            AddPermissionGroup(projectConfig.bodyTrackingSupport != OVRProjectConfig.FeatureSupport.None,
+                "Body Tracking", "Body Tracking", _requestBodyTrackingPermissionOnStartup);
+            AddPermissionGroup(projectConfig.eyeTrackingSupport != OVRProjectConfig.FeatureSupport.None,
+                "Eye Tracking", "Eye Tracking", _requestEyeTrackingPermissionOnStartup);
+            AddPermissionGroup(projectConfig.faceTrackingSupport != OVRProjectConfig.FeatureSupport.None,
+                "Face Tracking", "Face Tracking", _requestFaceTrackingPermissionOnStartup);
+            AddPermissionGroup(projectConfig.faceTrackingSupport != OVRProjectConfig.FeatureSupport.None,
+                "Record Audio for audio based Face Tracking", "Face Tracking", _requestRecordAudioPermissionOnStartup);
+            AddPermissionGroup(projectConfig.sceneSupport != OVRProjectConfig.FeatureSupport.None,
+                "Scene", "Scene", _requestScenePermissionOnStartup);
         }
+
         EditorGUILayout.EndFoldoutHeaderGroup();
 
         #endregion
@@ -223,5 +378,19 @@ public class OVRManagerEditor : Editor
         }
 
         serializedObject.ApplyModifiedProperties();
+
+#if UNITY_EDITOR_WIN || UNITY_STANDALONE_WIN || UNITY_EDITOR_OSX || UNITY_STANDALONE_OSX || UNITY_ANDROID
+#if !OCULUS_XR_3_3_0_OR_NEWER || UNITY_2020
+        if (manager.enableDynamicResolution && !PlayerSettings.GetUseDefaultGraphicsAPIs(BuildTarget.Android))
+        {
+            UnityEngine.Rendering.GraphicsDeviceType[] apis = PlayerSettings.GetGraphicsAPIs(BuildTarget.Android);
+            if (apis.Length >= 1 && apis[0] == UnityEngine.Rendering.GraphicsDeviceType.Vulkan)
+            {
+                Debug.LogError("Vulkan Dynamic Resolution is not supported on your current build version. Ensure you are on Unity 2021+ with Oculus XR plugin v3.3.0+");
+                manager.enableDynamicResolution = false;
+            }
+        }
+#endif
+#endif
     }
 }
