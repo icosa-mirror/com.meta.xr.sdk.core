@@ -208,7 +208,7 @@ public class OVRGradleGeneration
         {
             if (PlayerSettings.colorSpace != ColorSpace.Linear)
             {
-                throw new BuildFailedException(
+                UnityEngine.Debug.LogWarning(
                     "Oculus Utilities Plugin with OpenXR only supports linear lighting. Please set 'Rendering/Color Space' to 'Linear' in Player Settings");
             }
         }
