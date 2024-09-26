@@ -5386,7 +5386,7 @@ public static partial class OVRPlugin
     public static bool GetActionStatePose(string actionName, out Posef result)
     {
 #if OVRPLUGIN_UNSUPPORTED_PLATFORM
-        pose = default(Posef);
+        result = default(Posef);
         return false;
 #else
         result = new Posef();
