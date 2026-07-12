@@ -51,42 +51,27 @@ namespace Meta.XR
                 unityRunningInBatchmode = true;
             }
 
-            bool needEnable = false;
-            var featureSetStandalone =
-                OpenXRFeatureSetManager.GetFeatureSetWithId(BuildTargetGroup.Standalone, MetaXRFeatureSet.featureSetId);
             var featureSetAndroid =
                 OpenXRFeatureSetManager.GetFeatureSetWithId(BuildTargetGroup.Android, MetaXRFeatureSet.featureSetId);
-
-            if (featureSetStandalone != null && !featureSetStandalone.isEnabled)
-                needEnable = true;
-
-            if (featureSetAndroid != null && !featureSetAndroid.isEnabled)
-                needEnable = true;
+            bool needEnable = featureSetAndroid != null && !featureSetAndroid.isEnabled;
 
             if (needEnable && !unityRunningInBatchmode)
             {
                 bool result =
                     EditorUtility.DisplayDialog("Enable Meta XR Feature Set",
-                        "Meta XR Feature Set must be enabled in OpenXR Feature Groups to support Oculus Utilities. Do you want to enable it now?",
+                        "Meta XR Feature Set must be enabled in the Android OpenXR Feature Group to support Oculus Utilities. Do you want to enable it now?",
                         "Enable", "Cancel");
                 if (!result)
                 {
                     needEnable = false;
                     EditorUtility.DisplayDialog("Meta XR Feature not enabled",
-                        "You can enable Meta XR Feature Set in XR Plugin-in Management / OpenXR for using Oculus Utilities functionalities. Please enable it in both Standalone and Android settings.",
+                        "You can enable Meta XR Feature Set in XR Plugin-in Management / OpenXR for Android to use Oculus Utilities functionality.",
                         "Ok");
                 }
             }
 
             if (needEnable)
             {
-                if (featureSetStandalone != null && !featureSetStandalone.isEnabled)
-                {
-                    Debug.Log("Meta XR Feature Set enabled on Standalone");
-                    featureSetStandalone.isEnabled = true;
-                    OpenXRFeatureSetManager.SetFeaturesFromEnabledFeatureSets(BuildTargetGroup.Standalone);
-                }
-
                 if (featureSetAndroid != null && !featureSetAndroid.isEnabled)
                 {
                     Debug.Log("Meta XR Feature Set enabled on Android");
