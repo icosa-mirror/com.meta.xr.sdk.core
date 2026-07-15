@@ -44,6 +44,12 @@ namespace Meta.XR
         private static void EnableMetaXRFeature()
         {
             EditorApplication.update -= EnableMetaXRFeature;
+
+            if (EditorUserBuildSettings.activeBuildTarget != BuildTarget.Android)
+            {
+                return;
+            }
+
             bool unityRunningInBatchmode = false;
 
             if (System.Environment.CommandLine.Contains("-batchmode"))
